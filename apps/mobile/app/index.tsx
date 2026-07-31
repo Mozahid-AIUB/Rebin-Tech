@@ -61,24 +61,142 @@ function PortalIcon({ portal, color, size = 26 }: { portal: PortalKey; color: st
   );
 }
 
+type FeatureKey = "certified" | "pickup" | "paid" | "impact";
+
+const FEATURES: { key: FeatureKey; label: string; body: string }[] = [
+  { key: "certified", label: "Certified & Secure", body: "Serial-tracked, compliant disposal" },
+  { key: "pickup", label: "Doorstep Pickup", body: "We collect from your location" },
+  { key: "paid", label: "Earn from E-Waste", body: "AI camera quote, fast payout" },
+  { key: "impact", label: "Reduce Impact", body: "Every device gets a next life" },
+];
+
+function FeatureIcon({ feature, size = 22 }: { feature: FeatureKey; size?: number }) {
+  const color = tokens.color.primary;
+  if (feature === "certified") {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+        <Path d="M9 12l2 2 4-4.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </Svg>
+    );
+  }
+  if (feature === "pickup") {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Path d="M2 8h11v8H2z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+        <Path d="M13 11h4l4 3v2h-8z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+        <Circle cx="6.5" cy="18" r="1.8" stroke={color} strokeWidth="1.8" />
+        <Circle cx="17.5" cy="18" r="1.8" stroke={color} strokeWidth="1.8" />
+      </Svg>
+    );
+  }
+  if (feature === "paid") {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Rect x="2" y="6" width="20" height="14" rx="2" stroke={color} strokeWidth="1.8" />
+        <Path d="M2 10h20" stroke={color} strokeWidth="1.8" />
+        <Circle cx="17" cy="15" r="1.6" fill={color} />
+      </Svg>
+    );
+  }
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.8" />
+      <Path d="M12 3c2.5 2.5 2.5 15.5 0 18M3 12h18" stroke={color} strokeWidth="1.4" opacity={0.6} />
+      <Path d="M15 7c2 1 2.5 3.5 1 5.5-2-0.2-3.3-1.7-3.3-3.7 0-.8.9-1.5 2.3-1.8z" fill={color} opacity={0.85} />
+    </Svg>
+  );
+}
+
 export default function Index() {
   const router = useRouter();
   return (
     <PortalThemeProvider portal="org">
       <Screen>
-        <View style={{ alignItems: "center", gap: tokens.space[2], marginBottom: tokens.space[2] }}>
-          <EWasteHero size={92} />
-          <View style={{ alignItems: "center", gap: 2 }}>
-            <AppText variant="label" tone="muted" style={{ letterSpacing: 2 }}>REBIN TECH</AppText>
-            <AppText variant="h1" style={{ textAlign: "center" }}>
-              Every device has a next life.
-            </AppText>
-            <AppText variant="bodySm" tone="muted" style={{ textAlign: "center", maxWidth: 300 }}>
-              Free removal, fair payouts, or dispatch work.
-            </AppText>
+        {/* Mark + wordmark */}
+        <View style={{ alignItems: "center", gap: 6, marginBottom: tokens.space[3] }}>
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: tokens.color.primaryLight,
+            }}
+          >
+            <AppText style={{ fontSize: 20, color: tokens.color.primary }}>♻</AppText>
           </View>
+          <AppText variant="h2" style={{ letterSpacing: 0.5 }}>
+            REBIN<AppText variant="h2" tone="accent">TECH</AppText>
+          </AppText>
+          <AppText variant="label" tone="muted" style={{ letterSpacing: 1.5, fontSize: 9 }}>E-WASTE RECYCLING</AppText>
         </View>
 
+        {/* Headline */}
+        <View style={{ alignItems: "center", gap: 2, marginBottom: tokens.space[3] }}>
+          <AppText variant="display" style={{ textAlign: "center", fontSize: 26, lineHeight: 30 }}>
+            Recycle Today.
+          </AppText>
+          <AppText variant="display" tone="accent" style={{ textAlign: "center", fontSize: 26, lineHeight: 30 }}>
+            Protect Tomorrow.
+          </AppText>
+          <AppText variant="bodySm" tone="muted" style={{ textAlign: "center", maxWidth: 280, marginTop: 4 }}>
+            Free removal, fair payouts, or dispatch work — choose the path that fits you.
+          </AppText>
+        </View>
+
+        {/* Hero illustration */}
+        <View style={{ alignItems: "center", marginBottom: tokens.space[3] }}>
+          <EWasteHero size={110} />
+        </View>
+
+        {/* Feature grid — grounded in the real portal benefits, not filler copy */}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: tokens.space[2], marginBottom: tokens.space[3] }}>
+          {FEATURES.map((f) => (
+            <View
+              key={f.key}
+              style={{
+                flexBasis: "47%",
+                flexGrow: 1,
+                alignItems: "center",
+                gap: 4,
+                paddingVertical: tokens.space[2],
+                paddingHorizontal: tokens.space[1],
+                borderRadius: tokens.radius.card,
+                backgroundColor: tokens.color.surfaceAlt,
+              }}
+            >
+              <FeatureIcon feature={f.key} />
+              <AppText variant="bodySm" style={{ fontWeight: "600", textAlign: "center" }}>{f.label}</AppText>
+              <AppText variant="label" tone="muted" style={{ fontSize: 9, textAlign: "center" }}>{f.body}</AppText>
+            </View>
+          ))}
+        </View>
+
+        {/* Primary CTA — the org path is free and the most common first step */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Get Started"
+          onPress={() => router.push(asHref("/portal/org"))}
+          style={({ pressed }) => ({
+            minHeight: 56,
+            borderRadius: tokens.radius.button,
+            backgroundColor: tokens.color.primary,
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 2,
+            marginBottom: tokens.space[3],
+            opacity: pressed ? 0.9 : 1,
+          })}
+        >
+          <AppText variant="h3" style={{ color: tokens.color.onPrimary }}>Get Started</AppText>
+          <AppText variant="label" style={{ color: tokens.color.onPrimary, opacity: 0.85, fontSize: 9 }}>
+            Join organizations, businesses & agents already onboard
+          </AppText>
+        </Pressable>
+
+        {/* Portal rows — the actual navigation choice */}
         <View>
           {PORTAL_ORDER.map((key, i) => {
             const p = PORTAL_CONTENT[key];
