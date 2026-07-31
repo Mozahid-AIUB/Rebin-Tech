@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@rebin/api": "workspace:*",
     "expo": "~57.0.9",
     "expo-constants": "~57.0.8",
     "expo-haptics": "~57.0.1",
