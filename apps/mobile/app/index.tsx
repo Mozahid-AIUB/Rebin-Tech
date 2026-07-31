@@ -148,7 +148,7 @@ export default function Index() {
 
         {/* Hero illustration */}
         <View style={{ alignItems: "center", marginBottom: tokens.space[3] }}>
-          <EWasteHero size={110} />
+          <EWasteHero size={180} />
         </View>
 
         {/* Feature grid — grounded in the real portal benefits, not filler copy */}
