@@ -12,4 +12,12 @@ module.exports = {
   transformIgnorePatterns: [
     "node_modules/(?!(?:\\.pnpm/[^/]+/node_modules/)?((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@rebin/.*|react-navigation|@react-navigation/.*|@shopify/.*|nativewind|react-native-css-interop))",
   ],
+  // Task 15: react-native-reanimated and react-native-keyboard-controller
+  // both bind to native modules that aren't available under Jest (and, for
+  // reanimated v4.5.1 + react-native-worklets 0.11.3, the package's own
+  // shipped mock.js/mock.ts is itself broken under Jest — see
+  // packages/ui/__mocks__/react-native-reanimated.js for details). Manual
+  // mocks in packages/ui/__mocks__/ stand in for both; Jest auto-resolves
+  // __mocks__/<pkg>.js for node_modules packages relative to rootDir, no
+  // explicit mapping needed.
 };

@@ -3,7 +3,7 @@ import { PORTAL_ACCENTS, PORTAL_ACCENTS_SUBTLE, type PortalKey } from "./tokens"
 
 type PortalTheme = { portal: PortalKey; accent: string; accentSubtle: string };
 
-const PortalThemeContext = createContext<PortalTheme | null>(null);
+export const PortalThemeContext = createContext<PortalTheme | null>(null);
 
 export function PortalThemeProvider({ portal, children }: { portal: PortalKey; children: ReactNode }) {
   const value = useMemo<PortalTheme>(
