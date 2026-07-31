@@ -6,3 +6,10 @@ dist/
 .DS_Store
 .env
 .env.local
+.turbo/
+*.tsbuildinfo
+android/
+ios/
+.metro-health-check*
+npm-debug.*
+web-build/

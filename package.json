@@ -1,0 +1,12 @@
+{
+  "name": "rebin-tech",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "test": "turbo test",
+    "typecheck": "turbo typecheck",
+    "lint": "turbo lint",
+    "mobile": "pnpm --filter mobile start"
+  },
+  "devDependencies": { "turbo": "^2.5.0", "typescript": "^5.6.0" }
+}
