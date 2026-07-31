@@ -9,6 +9,11 @@
 // (`bottomOffset`, etc.) that have no meaning without the native controller.
 // This file is test-only (Jest resolves `__mocks__/<pkg>.js` automatically
 // for node_modules mocks) and never ships in the app bundle.
+//
+// `KeyboardProvider` added to match apps/mobile's copy of this mock — the
+// app's root layout now wraps everything in it (a real runtime crash on web
+// was traced to this provider being missing app-wide). Pass-through here
+// too: just renders children.
 const React = require("react");
 const { ScrollView } = require("react-native");
 
@@ -19,6 +24,11 @@ const KeyboardAwareScrollView = React.forwardRef(function KeyboardAwareScrollVie
   return React.createElement(ScrollView, { ...props, ref });
 });
 
+function KeyboardProvider({ children }) {
+  return children ?? null;
+}
+
 module.exports = {
   KeyboardAwareScrollView,
+  KeyboardProvider,
 };

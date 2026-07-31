@@ -12,6 +12,14 @@
 // keyboard-avoidance-specific props (`bottomOffset`, etc.) that have no
 // meaning without the native controller. Test-only; never ships in the app
 // bundle.
+//
+// `KeyboardProvider` added because the root layout (apps/mobile/app/
+// _layout.tsx) wraps the whole app in it (the real package requires every
+// consumer of KeyboardAwareScrollView/etc. to have a KeyboardProvider
+// ancestor — the app was missing this and it caused a real runtime crash on
+// web, discovered via live browser testing, not by any test). No test
+// currently renders `_layout.tsx` directly, but this keeps the mock
+// complete for when one does. Pass-through: just renders children.
 const React = require("react");
 const { ScrollView } = require("react-native");
 
@@ -22,6 +30,11 @@ const KeyboardAwareScrollView = React.forwardRef(function KeyboardAwareScrollVie
   return React.createElement(ScrollView, { ...props, ref });
 });
 
+function KeyboardProvider({ children }) {
+  return children ?? null;
+}
+
 module.exports = {
   KeyboardAwareScrollView,
+  KeyboardProvider,
 };

@@ -1,4 +1,5 @@
 import { Redirect, Stack, usePathname, type Href } from "expo-router";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useSessionStore } from "../src/store/session";
 import { resolveInitialRoute } from "../src/components/RoleGuard";
@@ -75,9 +76,11 @@ function RootRedirect() {
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <RootRedirect />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#F6F4ED" } }} />
-    </SafeAreaProvider>
+    <KeyboardProvider>
+      <SafeAreaProvider>
+        <RootRedirect />
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#F6F4ED" } }} />
+      </SafeAreaProvider>
+    </KeyboardProvider>
   );
 }
