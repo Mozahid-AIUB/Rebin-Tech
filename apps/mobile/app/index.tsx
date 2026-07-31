@@ -198,7 +198,7 @@ export default function Index() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Get Started"
-              onPress={() => router.push(asHref("/portal-select"))}
+              onPress={() => router.push(asHref("/login"))}
               style={({ pressed }) => ({
                 borderRadius: 32,
                 overflow: "hidden",

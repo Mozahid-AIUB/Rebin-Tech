@@ -48,14 +48,27 @@ export default function Login() {
           <AuthButton label="Log In" onPress={onSubmit} loading={isPending} />
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Not you?"
+            accessibilityLabel="Register"
+            onPress={() => router.push(asHref("/signup/organization"))}
+            style={{ minHeight: 44, justifyContent: "center", alignItems: "center" }}
+          >
+            <AppText variant="bodySm" style={{ color: authTokens.muted }}>
+              Don&apos;t have an account?{" "}
+              <AppText variant="bodySm" style={{ color: authTokens.link }}>
+                Register
+              </AppText>
+            </AppText>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Back to home"
             onPress={() => router.replace(asHref("/"))}
             style={{ minHeight: 44, justifyContent: "center", alignItems: "center" }}
           >
             <AppText variant="bodySm" style={{ color: authTokens.muted }}>
               Not you?{" "}
               <AppText variant="bodySm" style={{ color: authTokens.link }}>
-                Choose a different portal
+                Back to home
               </AppText>
             </AppText>
           </Pressable>
