@@ -1,0 +1,4 @@
+-- Dev seed fixtures for local Supabase.
+-- Intentionally minimal for Phase-0: RLS isolation coverage lives in
+-- supabase/tests/rls.test.sql (pgTAP), which creates and rolls back its own
+-- fixtures. Add local-dev-only sample rows here as later tasks need them.
