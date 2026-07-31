@@ -114,25 +114,7 @@ export default function Login() {
   }
 
   return (
-    <AuthScreen
-      title="Welcome back!"
-      subtitle="Log in to continue your eco-journey"
-      footer={
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back to home"
-          onPress={() => router.replace(asHref("/"))}
-          style={{ minHeight: 44, justifyContent: "center", alignItems: "center" }}
-        >
-          <AppText variant="bodySm" style={{ color: authTokens.muted }}>
-            Not you?{" "}
-            <AppText variant="bodySm" style={{ color: authTokens.link }}>
-              Back to home
-            </AppText>
-          </AppText>
-        </Pressable>
-      }
-    >
+    <AuthScreen title="Welcome back!" subtitle="Log in to continue your eco-journey">
       <AuthInput
         label="Email"
         placeholder="Enter your email"
@@ -220,6 +202,20 @@ export default function Login() {
         onPrivacy={() => router.push(asHref("/legal/privacy"))}
         onTerms={() => router.push(asHref("/legal/terms"))}
       />
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Back to home"
+        onPress={() => router.replace(asHref("/"))}
+        style={{ minHeight: 44, justifyContent: "center", alignItems: "center" }}
+      >
+        <AppText variant="bodySm" style={{ color: authTokens.muted }}>
+          Not you?{" "}
+          <AppText variant="bodySm" style={{ color: authTokens.link }}>
+            Back to home
+          </AppText>
+        </AppText>
+      </Pressable>
     </AuthScreen>
   );
 }
