@@ -180,21 +180,43 @@ export default function Index() {
           accessibilityLabel="Get Started"
           onPress={() => router.push(asHref("/portal/org"))}
           style={({ pressed }) => ({
-            minHeight: 56,
-            borderRadius: tokens.radius.button,
-            backgroundColor: tokens.color.primary,
+            flexDirection: "row",
             alignItems: "center",
-            justifyContent: "center",
-            gap: 2,
-            marginBottom: tokens.space[3],
+            minHeight: 64,
+            borderRadius: 32,
+            backgroundColor: tokens.color.primary,
+            paddingHorizontal: tokens.space[2],
+            gap: tokens.space[3],
             opacity: pressed ? 0.9 : 1,
           })}
         >
-          <AppText variant="h3" style={{ color: tokens.color.onPrimary }}>Get Started</AppText>
-          <AppText variant="label" style={{ color: tokens.color.onPrimary, opacity: 0.85, fontSize: 9 }}>
-            Join organizations, businesses & agents already onboard
-          </AppText>
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: tokens.color.onPrimary,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <AppText style={{ fontSize: 18, color: tokens.color.primary }}>→</AppText>
+          </View>
+          <View style={{ gap: 1 }}>
+            <AppText variant="h3" style={{ color: tokens.color.onPrimary }}>Get Started</AppText>
+            <AppText variant="bodySm" style={{ color: tokens.color.onPrimary, opacity: 0.85 }}>
+              Join organizations, businesses & agents already onboard
+            </AppText>
+          </View>
         </Pressable>
+
+        <View style={{ alignItems: "center", gap: 2, marginTop: tokens.space[3], marginBottom: tokens.space[3] }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <AppText style={{ fontSize: 13, color: tokens.color.primary }}>🛡</AppText>
+            <AppText variant="bodySm" style={{ fontWeight: "600" }}>Trusted by Thousands</AppText>
+          </View>
+          <AppText variant="label" tone="muted" style={{ fontSize: 9 }}>Secure  •  Fast  •  Eco Friendly</AppText>
+        </View>
 
         {/* Portal rows — the actual navigation choice */}
         <View>
