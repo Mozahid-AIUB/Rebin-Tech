@@ -29,20 +29,20 @@ export default function Index() {
   return (
     <PortalThemeProvider portal="org">
       <Screen>
-        <View style={{ alignItems: "center", gap: tokens.space[3], marginBottom: tokens.space[3], paddingTop: tokens.space[2] }}>
-          <EWasteHero size={148} />
-          <View style={{ alignItems: "center", gap: tokens.space[1] }}>
+        <View style={{ alignItems: "center", gap: tokens.space[2], marginBottom: tokens.space[2] }}>
+          <EWasteHero size={92} />
+          <View style={{ alignItems: "center", gap: 2 }}>
             <AppText variant="label" tone="muted" style={{ letterSpacing: 2 }}>REBIN TECH</AppText>
-            <AppText variant="display" style={{ textAlign: "center" }}>
-              Every device{"\n"}has a next life.
+            <AppText variant="h1" style={{ textAlign: "center" }}>
+              Every device has a next life.
             </AppText>
-            <AppText variant="body" tone="muted" style={{ textAlign: "center", maxWidth: 280 }}>
-              Free removal, fair payouts, or dispatch work — choose the path that fits you.
+            <AppText variant="bodySm" tone="muted" style={{ textAlign: "center", maxWidth: 300 }}>
+              Free removal, fair payouts, or dispatch work.
             </AppText>
           </View>
         </View>
 
-        <View style={{ gap: tokens.space[3] }}>
+        <View style={{ gap: tokens.space[2] }}>
           {PORTAL_ORDER.map((key) => {
             const p = PORTAL_CONTENT[key];
             return (
@@ -51,23 +51,47 @@ export default function Index() {
                   accessibilityRole="button"
                   accessibilityLabel={`${p.title}. ${p.tagline}`}
                   onPress={() => router.push(asHref(`/portal/${key}`))}
+                  style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] })}
                 >
-                  <Card accentBorder style={{ gap: tokens.space[3] }}>
+                  <Card
+                    style={{
+                      gap: 6,
+                      paddingVertical: tokens.space[3],
+                      borderWidth: 1.5,
+                      borderColor: PORTAL_ACCENTS[key],
+                      shadowColor: PORTAL_ACCENTS[key],
+                      shadowOpacity: 0.1,
+                      shadowRadius: 10,
+                      shadowOffset: { width: 0, height: 3 },
+                      elevation: 2,
+                    }}
+                  >
                     <View style={{ flexDirection: "row", alignItems: "center", gap: tokens.space[3] }}>
-                      <IconTile size={56}>
-                        <AppText style={{ fontSize: 24, lineHeight: 28, color: PORTAL_ACCENTS[key] }}>
+                      <IconTile size={48} style={{ borderWidth: 1, borderColor: PORTAL_ACCENTS[key] }}>
+                        <AppText style={{ fontSize: 20, lineHeight: 24, color: PORTAL_ACCENTS[key] }}>
                           {PORTAL_GLYPH[key]}
                         </AppText>
                       </IconTile>
-                      <View style={{ flex: 1, gap: 2 }}>
-                        <AppText variant="h1">{p.title}</AppText>
-                        <AppText variant="h3" tone="accent">{p.tagline}</AppText>
+                      <View style={{ flex: 1, gap: 1 }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                          <AppText variant="h3">{p.title}</AppText>
+                          <AppText style={{ fontSize: 18, color: tokens.color.muted }}>›</AppText>
+                        </View>
+                        <AppText variant="bodySm" tone="accent">{p.tagline}</AppText>
                       </View>
                     </View>
-                    <View style={{ alignSelf: "flex-start", paddingHorizontal: tokens.space[2], paddingVertical: 6, borderRadius: tokens.radius.chip, borderWidth: 1, borderColor: PORTAL_ACCENTS[key] }}>
-                      <AppText variant="label" tone="accent">{p.badge}</AppText>
+                    <View
+                      style={{
+                        alignSelf: "flex-start",
+                        marginLeft: 64,
+                        paddingHorizontal: tokens.space[2],
+                        paddingVertical: 3,
+                        borderRadius: tokens.radius.chip,
+                        backgroundColor: PORTAL_ACCENTS[key],
+                      }}
+                    >
+                      <AppText variant="label" style={{ color: tokens.color.onPrimary, fontSize: 9 }}>{p.badge}</AppText>
                     </View>
-                    <AppText variant="bodySm" tone="muted">{p.description}</AppText>
                   </Card>
                 </Pressable>
               </PortalThemeProvider>
@@ -75,14 +99,18 @@ export default function Index() {
           })}
         </View>
 
-        <View style={{ height: 1, backgroundColor: tokens.color.divider, marginVertical: tokens.space[4] }} />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: tokens.space[2], marginVertical: tokens.space[3] }}>
+          <View style={{ flex: 1, height: 1, backgroundColor: tokens.color.divider }} />
+          <AppText variant="bodySm" tone="muted">or</AppText>
+          <View style={{ flex: 1, height: 1, backgroundColor: tokens.color.divider }} />
+        </View>
 
-        <View style={{ gap: tokens.space[2] }}>
+        <View style={{ gap: tokens.space[1] }}>
           <Pressable accessibilityRole="button" accessibilityLabel="Browse Price Catalog" onPress={() => router.push(asHref("/catalog"))} style={{ minHeight: 44, justifyContent: "center", alignItems: "center" }}>
-            <AppText tone="accent">Browse Price Catalog ($/lb rates)</AppText>
+            <AppText variant="bodySm" tone="accent">Browse Price Catalog ($/lb rates)</AppText>
           </Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel="Log In" onPress={() => router.push(asHref("/login"))} style={{ minHeight: 44, justifyContent: "center", alignItems: "center" }}>
-            <AppText tone="muted">Already have an account? <AppText tone="accent">Log In</AppText></AppText>
+            <AppText variant="bodySm" tone="muted">Already have an account? <AppText variant="bodySm" tone="accent">Log In</AppText></AppText>
           </Pressable>
         </View>
       </Screen>

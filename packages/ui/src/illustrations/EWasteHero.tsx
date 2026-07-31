@@ -1,13 +1,42 @@
+import { useEffect } from "react";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
+import Animated, {
+  Easing,
+  useAnimatedProps,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 import { tokens } from "../tokens";
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 /**
  * Original illustration for the Portal Select hero: an e-waste bin taking in
  * retired electronics, with a recycling mark and a small "next life" leaf —
  * built from the app's own tokens (not a stock asset) so it always matches
- * the current palette and scales cleanly at any density.
+ * the current palette and scales cleanly at any density. The leaf drifts
+ * gently to suggest "life" without competing for attention with the copy.
  */
 export function EWasteHero({ size = 160 }: { size?: number }) {
+  const bob = useSharedValue(0);
+
+  useEffect(() => {
+    bob.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
+      ),
+      -1,
+      false,
+    );
+  }, [bob]);
+
+  const leafProps = useAnimatedProps(() => ({
+    transform: [{ translateY: -bob.value * 4 }],
+  }));
+
   return (
     <Svg width={size} height={size} viewBox="0 0 160 160" fill="none">
       {/* soft halo */}
@@ -36,10 +65,11 @@ export function EWasteHero({ size = 160 }: { size?: number }) {
       />
       <Circle cx="80" cy="112" r="16" stroke={tokens.color.onPrimary} strokeWidth="2" opacity={0.35} fill="none" />
 
-      {/* a small leaf — the "next life" this device gets */}
-      <Path
+      {/* a small leaf — the "next life" this device gets, gently drifting */}
+      <AnimatedPath
         d="M118 40 C126 34 136 34 140 42 C132 44 126 50 122 58 C116 52 114 44 118 40 Z"
         fill={tokens.color.success}
+        animatedProps={leafProps}
       />
     </Svg>
   );

@@ -11,19 +11,33 @@
 // `react-native-reanimated` at `react-native-reanimated/mock`; that mock is
 // simply broken for this version combination under Jest).
 //
-// AuthScreen.tsx only uses `Animated.View` and the `FadeInDown` entrance
-// preset (`FadeInDown.duration(n).delay(n)`), purely for a mount-in fade —
-// no test asserts on animation timing or values. This mock provides a
-// minimal, faithful stand-in: `Animated.View` renders as a plain RN `View`
-// (dropping the `entering`/`exiting` props, which have no meaning without
-// the native animation driver), and `FadeInDown` is a chainable no-op
-// builder matching the same call shape used in AuthScreen.tsx.
+// AuthScreen.tsx uses `Animated.View` and the `FadeInDown` entrance preset
+// (`FadeInDown.duration(n).delay(n)`), purely for a mount-in fade. EWasteHero
+// (packages/ui/src/illustrations/EWasteHero.tsx) additionally uses
+// `Animated.createAnimatedComponent`, `useSharedValue`, `useAnimatedProps`,
+// `withRepeat`/`withSequence`/`withTiming`, and `Easing` to gently animate an
+// SVG path — again purely decorative motion with no test asserting on
+// timing/values. This mock provides minimal, faithful stand-ins for both
+// call shapes: `Animated.View` and `createAnimatedComponent(X)` both render
+// their wrapped component as a plain pass-through (dropping animation-only
+// props with no meaning without the native driver), the animation hooks
+// return inert values/no-ops, and `FadeInDown`/etc. are chainable no-op
+// builders matching the real API's call shape.
 const React = require("react");
 const { View } = require("react-native");
 
 const AnimatedView = React.forwardRef(function AnimatedView({ entering, exiting, layout, ...props }, ref) {
   return React.createElement(View, { ...props, ref });
 });
+
+function createAnimatedComponent(Component) {
+  return React.forwardRef(function AnimatedComponent(
+    { entering, exiting, layout, animatedProps, animatedStyle, ...props },
+    ref,
+  ) {
+    return React.createElement(Component, { ...props, ref });
+  });
+}
 
 function makeChainable() {
   const chain = {
@@ -37,8 +51,20 @@ function makeChainable() {
 
 module.exports = {
   __esModule: true,
-  default: { View: AnimatedView },
+  default: { View: AnimatedView, createAnimatedComponent },
+  createAnimatedComponent,
   FadeInDown: makeChainable(),
   FadeIn: makeChainable(),
   FadeOut: makeChainable(),
+  useSharedValue: (initial) => ({ value: initial }),
+  useAnimatedProps: (factory) => factory(),
+  useAnimatedStyle: (factory) => factory(),
+  withTiming: (toValue) => toValue,
+  withRepeat: (animation) => animation,
+  withSequence: (...animations) => animations[animations.length - 1],
+  Easing: {
+    inOut: (fn) => fn,
+    sin: (t) => t,
+    linear: (t) => t,
+  },
 };
