@@ -1,7 +1,8 @@
 import { Pressable, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
+import Svg, { Circle, Path, Rect } from "react-native-svg";
 import {
-  AppText, Card, EWasteHero, IconTile, PORTAL_ACCENTS, PortalThemeProvider, Screen, tokens,
+  AppText, EWasteHero, IconTile, PORTAL_ACCENTS, PortalThemeProvider, Screen, tokens,
 } from "@rebin/ui";
 import { PORTAL_CONTENT, PORTAL_ORDER } from "../src/config/portals";
 
@@ -18,11 +19,47 @@ function asHref(path: string): Href {
   return path as Href;
 }
 
-const PORTAL_GLYPH: Record<(typeof PORTAL_ORDER)[number], string> = {
-  org: "♻",
-  business: "$",
-  agent: "→",
-};
+type PortalKey = (typeof PORTAL_ORDER)[number];
+
+// Small, literal icons for *what's actually collected* from each audience —
+// office electronics, board-level scrap, and a dispatch vehicle — rather
+// than abstract glyphs, so the row itself answers "what do I bring you?"
+function PortalIcon({ portal, color, size = 26 }: { portal: PortalKey; color: string; size?: number }) {
+  if (portal === "org") {
+    // retired monitor
+    return (
+      <Svg width={size} height={size} viewBox="0 0 26 26" fill="none">
+        <Rect x="3" y="4" width="20" height="14" rx="2" stroke={color} strokeWidth="2" />
+        <Rect x="7" y="7" width="12" height="8" rx="1" fill={color} opacity={0.25} />
+        <Path d="M9 22h8M13 18v4" stroke={color} strokeWidth="2" strokeLinecap="round" />
+      </Svg>
+    );
+  }
+  if (portal === "business") {
+    // circuit board / component chip
+    return (
+      <Svg width={size} height={size} viewBox="0 0 26 26" fill="none">
+        <Rect x="6" y="6" width="14" height="14" rx="2" stroke={color} strokeWidth="2" />
+        <Rect x="10" y="10" width="6" height="6" rx="1" fill={color} opacity={0.3} />
+        <Path
+          d="M9 3v3M13 3v3M17 3v3M9 20v3M13 20v3M17 20v3M3 9h3M3 13h3M3 17h3M20 9h3M20 13h3M20 17h3"
+          stroke={color}
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+      </Svg>
+    );
+  }
+  // dispatch van
+  return (
+    <Svg width={size} height={size} viewBox="0 0 26 26" fill="none">
+      <Path d="M3 9h13v9H3z" stroke={color} strokeWidth="2" strokeLinejoin="round" />
+      <Path d="M16 12h4l3 3v3h-7z" stroke={color} strokeWidth="2" strokeLinejoin="round" />
+      <Circle cx="8" cy="20" r="2" stroke={color} strokeWidth="2" />
+      <Circle cx="19" cy="20" r="2" stroke={color} strokeWidth="2" />
+    </Svg>
+  );
+}
 
 export default function Index() {
   const router = useRouter();
@@ -42,8 +79,8 @@ export default function Index() {
           </View>
         </View>
 
-        <View style={{ gap: tokens.space[2] }}>
-          {PORTAL_ORDER.map((key) => {
+        <View>
+          {PORTAL_ORDER.map((key, i) => {
             const p = PORTAL_CONTENT[key];
             return (
               <PortalThemeProvider key={key} portal={key}>
@@ -51,48 +88,25 @@ export default function Index() {
                   accessibilityRole="button"
                   accessibilityLabel={`${p.title}. ${p.tagline}`}
                   onPress={() => router.push(asHref(`/portal/${key}`))}
-                  style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] })}
+                  style={({ pressed }) => ({
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: tokens.space[3],
+                    paddingVertical: tokens.space[3],
+                    borderTopWidth: i === 0 ? 0 : 1,
+                    borderTopColor: tokens.color.divider,
+                    opacity: pressed ? 0.6 : 1,
+                  })}
                 >
-                  <Card
-                    style={{
-                      gap: 6,
-                      paddingVertical: tokens.space[3],
-                      borderWidth: 1.5,
-                      borderColor: PORTAL_ACCENTS[key],
-                      shadowColor: PORTAL_ACCENTS[key],
-                      shadowOpacity: 0.1,
-                      shadowRadius: 10,
-                      shadowOffset: { width: 0, height: 3 },
-                      elevation: 2,
-                    }}
-                  >
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: tokens.space[3] }}>
-                      <IconTile size={48} style={{ borderWidth: 1, borderColor: PORTAL_ACCENTS[key] }}>
-                        <AppText style={{ fontSize: 20, lineHeight: 24, color: PORTAL_ACCENTS[key] }}>
-                          {PORTAL_GLYPH[key]}
-                        </AppText>
-                      </IconTile>
-                      <View style={{ flex: 1, gap: 1 }}>
-                        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                          <AppText variant="h3">{p.title}</AppText>
-                          <AppText style={{ fontSize: 18, color: tokens.color.muted }}>›</AppText>
-                        </View>
-                        <AppText variant="bodySm" tone="accent">{p.tagline}</AppText>
-                      </View>
-                    </View>
-                    <View
-                      style={{
-                        alignSelf: "flex-start",
-                        marginLeft: 64,
-                        paddingHorizontal: tokens.space[2],
-                        paddingVertical: 3,
-                        borderRadius: tokens.radius.chip,
-                        backgroundColor: PORTAL_ACCENTS[key],
-                      }}
-                    >
-                      <AppText variant="label" style={{ color: tokens.color.onPrimary, fontSize: 9 }}>{p.badge}</AppText>
-                    </View>
-                  </Card>
+                  <IconTile size={48}>
+                    <PortalIcon portal={key} color={PORTAL_ACCENTS[key]} />
+                  </IconTile>
+                  <View style={{ flex: 1, gap: 1 }}>
+                    <AppText variant="h3">{p.title}</AppText>
+                    <AppText variant="bodySm" tone="accent">{p.tagline}</AppText>
+                    <AppText variant="label" tone="muted" style={{ fontSize: 9 }}>{p.badge}</AppText>
+                  </View>
+                  <AppText style={{ fontSize: 18, color: tokens.color.muted }}>›</AppText>
                 </Pressable>
               </PortalThemeProvider>
             );
