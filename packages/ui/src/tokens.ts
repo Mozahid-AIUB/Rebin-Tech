@@ -42,11 +42,11 @@ export const authTokens = Object.freeze({
   surface: "#1D4A42",
   surfacePressed: "#245049",
   border: "#2F5B52",
-  primary: "#7FAF9E",
+  primary: "#5FC85A",
   onPrimary: "#0A2E27",
   text: "#FFFFFF",
   muted: "#A8C4BB",
-  link: "#C3DDD2",
+  link: "#8FE07E",
 });
 
 export const PORTAL_ACCENTS = Object.freeze({

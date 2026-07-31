@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Pressable, TextInput, View, type KeyboardTypeOptions } from "react-native";
 import { AppText } from "../atoms/AppText";
 import { authTokens } from "../tokens";
@@ -12,6 +12,7 @@ export function AuthInput({
   error,
   keyboardType,
   autoCapitalize = "none",
+  icon,
 }: {
   label: string;
   placeholder: string;
@@ -21,6 +22,9 @@ export function AuthInput({
   error?: string;
   keyboardType?: KeyboardTypeOptions;
   autoCapitalize?: "none" | "words";
+  /** Optional leading glyph (e.g. a mail/lock icon). Purely decorative -- the
+   * field's accessible name still comes from `label`, not the icon. */
+  icon?: ReactNode;
 }) {
   const [revealed, setRevealed] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -28,6 +32,16 @@ export function AuthInput({
   return (
     <View style={{ gap: 6 }}>
       <View style={{ flexDirection: "row", alignItems: "center" }}>
+        {icon ? (
+          <View
+            pointerEvents="none"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            style={{ position: "absolute", left: 16, zIndex: 1 }}
+          >
+            {icon}
+          </View>
+        ) : null}
         <TextInput
           accessibilityLabel={label}
           placeholder={placeholder}
@@ -44,6 +58,7 @@ export function AuthInput({
             flex: 1,
             minHeight: 56,
             paddingHorizontal: 18,
+            paddingLeft: icon ? 48 : 18,
             paddingRight: secure ? 52 : 18,
             borderRadius: 14,
             borderWidth: 1,

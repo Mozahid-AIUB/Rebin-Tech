@@ -28,16 +28,14 @@ export function SocialButton({
         justifyContent: "center",
         gap: 12,
         borderRadius: 14,
-        borderWidth: 1,
-        borderColor: authTokens.border,
-        backgroundColor: "transparent",
-        opacity: pressed ? 0.8 : 1,
+        backgroundColor: "#FFFFFF",
+        opacity: pressed ? 0.85 : 1,
       })}
     >
-      {loading ? <ActivityIndicator color={authTokens.text} /> : (
+      {loading ? <ActivityIndicator color={authTokens.onPrimary} /> : (
         <View>{provider === "google" ? <GoogleMark size={20} /> : <AppleMark size={20} />}</View>
       )}
-      <AppText variant="h3" style={{ color: authTokens.text, fontWeight: "500" }}>
+      <AppText variant="h3" style={{ color: authTokens.onPrimary, fontWeight: "500" }}>
         {LABELS[provider]}
       </AppText>
     </Pressable>

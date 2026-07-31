@@ -73,11 +73,17 @@ describe("SocialButton", () => {
     expect(screen.getByRole("button", { name: label })).toBeTruthy();
   });
 
-  it("renders outlined, not filled", async () => {
+  // NOTE: design change, human-directed. The plan doc's original ASCII
+  // spec called for an outlined/transparent social button (this test
+  // originally asserted exactly that), but a later, explicit design
+  // reference the user provided shows solid white-filled social buttons
+  // instead, and the user confirmed the new reference supersedes the
+  // doc's spec here. Assertion updated to match; SocialButton.tsx changed
+  // in the same commit.
+  it("renders filled white, not outlined", async () => {
     await render(<SocialButton provider="google" onPress={jest.fn()} />);
     expect(screen.getByRole("button", { name: "Continue with Google" })).toHaveStyle({
-      backgroundColor: "transparent",
-      borderColor: authTokens.border,
+      backgroundColor: "#FFFFFF",
     });
   });
 });
