@@ -47,6 +47,10 @@ export async function resolveRoles(userId: string): Promise<RoleAssignment[]> {
   }));
 }
 
+// Organization signup goes through an Edge Function because it must create the
+// auth user, the `organizations` row, the `organization_members` row, and the
+// `role_assignments` row in one transaction. Doing it client-side leaves
+// orphaned users when a later step fails.
 export async function signUpOrganization(input: OrgSignupInput): Promise<{ userId: string; orgId: string }> {
   const { data, error } = await supabase.functions.invoke<{ userId: string; orgId: string }>(
     "signup-organization",

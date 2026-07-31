@@ -44,4 +44,13 @@ export const useSessionStore = create<SessionState>((set) => ({
   setActiveIndex: (activeIndex) => set({ activeIndex }),
 }));
 
+/**
+ * Alias matching the brief's literal "Produces" interface name (task-8-brief.md
+ * line 18: `useSession(): {...}`). `useSessionStore` is the real implementation
+ * (kept as the primary export name for clarity that it's a Zustand store, not
+ * a bespoke hook) — this is a zero-behavior-change re-export so a consumer
+ * grepping for `useSession` per the spec finds it directly.
+ */
+export const useSession = useSessionStore;
+
 export type { SessionState };
