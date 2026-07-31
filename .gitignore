@@ -13,3 +13,4 @@ ios/
 .metro-health-check*
 npm-debug.*
 web-build/
+.claude/
