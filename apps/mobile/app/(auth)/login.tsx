@@ -19,9 +19,9 @@ function asHref(path: string): Href {
 }
 
 // Small, local decorative icons for this screen only (a leading mail/lock
-// glyph per field, and the two icons in the trust-badge card below). Kept
-// local rather than added to packages/ui since they're specific to this
-// screen's layout, not general-purpose primitives other screens need yet.
+// glyph per input field). Kept local rather than added to packages/ui since
+// they're specific to this screen's layout, not general-purpose primitives
+// other screens need yet.
 function MailIcon() {
   return (
     <Svg width={18} height={18} viewBox="0 0 18 18" fill="none">
@@ -41,26 +41,38 @@ function LockIcon() {
   );
 }
 
-function ShieldCheckIcon() {
+// Small local checkbox for "Remember me" -- no dark-forest checkbox exists
+// in packages/ui yet (Task 15 didn't build one), so this stays screen-local
+// rather than speculatively adding a new shared primitive for one use site.
+function RememberMeCheckbox({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
   return (
-    <Svg width={22} height={22} viewBox="0 0 22 22" fill="none">
-      <Path d="M11 2.5 L18.5 5.5 V10.5 C18.5 15 15.5 18 11 19.5 C6.5 18 3.5 15 3.5 10.5 V5.5 Z" fill="#FFFFFF" />
-      <Path d="M7.5 11 L10 13.5 L14.5 8.5" stroke={authTokens.primary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </Svg>
-  );
-}
-
-function GlobeLeafIcon() {
-  return (
-    <Svg width={30} height={30} viewBox="0 0 30 30" fill="none">
-      <Circle cx="14" cy="16" r="10" fill={authTokens.primary} opacity={0.25} />
-      <Circle cx="14" cy="16" r="10" stroke={authTokens.primary} strokeWidth="1.4" />
-      <Path d="M6 16 h16M14 6 c4 4 4 16 0 20" stroke={authTokens.primary} strokeWidth="1" opacity={0.6} />
-      <Path
-        d="M20 6 c4 -2 8 -1 9 3 c-4 1 -7 3 -9 6 c-3 -3 -3 -7 0 -9z"
-        fill={authTokens.link}
-      />
-    </Svg>
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityLabel="Remember me"
+      accessibilityState={{ checked }}
+      onPress={onToggle}
+      style={{ flexDirection: "row", alignItems: "center", gap: 8, minHeight: 44 }}
+    >
+      <View
+        style={{
+          width: 18,
+          height: 18,
+          borderRadius: 5,
+          borderWidth: 1.5,
+          borderColor: checked ? authTokens.primary : authTokens.border,
+          backgroundColor: checked ? authTokens.primary : "transparent",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {checked ? (
+          <Svg width={11} height={9} viewBox="0 0 11 9" fill="none">
+            <Path d="M1 4.5 L4 7.5 L10 1" stroke={authTokens.onPrimary} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </Svg>
+        ) : null}
+      </View>
+      <AppText variant="bodySm" style={{ color: authTokens.muted }}>Remember me</AppText>
+    </Pressable>
   );
 }
 
@@ -71,6 +83,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [socialNotice, setSocialNotice] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(true);
 
   // Real Google/Apple sign-in needs native SDK setup (OAuth client IDs,
   // Apple Sign In entitlements, a token-exchange endpoint) that Task 16
@@ -155,18 +168,27 @@ export default function Login() {
         </View>
       ) : null}
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Forgot password"
-        onPress={() => router.push(asHref("/forgot-password"))}
-        style={{ minHeight: 44, justifyContent: "center", alignItems: "flex-end" }}
-      >
-        <AppText variant="bodySm" style={{ color: authTokens.link }}>
-          Forgot your password?
-        </AppText>
-      </Pressable>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        {/* UI-only for now, same P2a-style pattern used elsewhere in this
+            plan (control is visible/wired to local state; no persistence
+            behind it yet -- a later task can add real "stay signed in"
+            behavior without redesigning this row). */}
+        <RememberMeCheckbox checked={rememberMe} onToggle={() => setRememberMe((v) => !v)} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Forgot password"
+          onPress={() => router.push(asHref("/forgot-password"))}
+          style={{ minHeight: 44, justifyContent: "center" }}
+        >
+          <AppText variant="bodySm" style={{ color: authTokens.link }}>
+            Forgot Password?
+          </AppText>
+        </Pressable>
+      </View>
 
-      <AuthDivider label="Or continue with" />
+      <AuthButton label="Log In" onPress={onSubmit} loading={isPending} />
+
+      <AuthDivider label="or" />
 
       <View style={{ gap: 12 }}>
         <SocialButton provider="google" onPress={() => onSocialPress("google")} />
@@ -178,8 +200,6 @@ export default function Login() {
           {socialNotice}
         </AppText>
       ) : null}
-
-      <AuthButton label="Log In" onPress={onSubmit} loading={isPending} />
 
       <Pressable
         accessibilityRole="button"
@@ -194,40 +214,6 @@ export default function Login() {
           </AppText>
         </AppText>
       </Pressable>
-
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 12,
-          padding: 14,
-          borderRadius: 16,
-          borderWidth: 1,
-          borderColor: authTokens.border,
-        }}
-      >
-        <View
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 12,
-            backgroundColor: authTokens.primary,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <ShieldCheckIcon />
-        </View>
-        <View style={{ flex: 1, gap: 2 }}>
-          <AppText variant="bodySm" style={{ color: authTokens.text, fontWeight: "700" }}>
-            Your data is safe with us.
-          </AppText>
-          <AppText variant="label" style={{ color: authTokens.muted, fontSize: 10, textTransform: "none", letterSpacing: 0 }}>
-            We protect your information and contribute to a cleaner planet.
-          </AppText>
-        </View>
-        <GlobeLeafIcon />
-      </View>
 
       <LegalCopy
         prefix="By continuing you accept our"
