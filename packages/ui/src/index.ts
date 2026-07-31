@@ -16,6 +16,7 @@ export * from "./molecules/Stepper";
 export * from "./organisms/Screen";
 export * from "./organisms/SectionHeader";
 export * from "./organisms/EmptyState";
+export * from "./illustrations/EWasteHero";
 export * from "./auth/AuthScreen";
 export * from "./auth/BotanicalBackdrop";
 export * from "./auth/AuthInput";

@@ -1,7 +1,7 @@
 import { Pressable, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import {
-  AppText, Card, IconTile, PORTAL_ACCENTS, PortalThemeProvider, Screen, tokens,
+  AppText, Card, EWasteHero, IconTile, PORTAL_ACCENTS, PortalThemeProvider, Screen, tokens,
 } from "@rebin/ui";
 import { PORTAL_CONTENT, PORTAL_ORDER } from "../src/config/portals";
 
@@ -30,20 +30,7 @@ export default function Index() {
     <PortalThemeProvider portal="org">
       <Screen>
         <View style={{ alignItems: "center", gap: tokens.space[3], marginBottom: tokens.space[3], paddingTop: tokens.space[2] }}>
-          <View
-            style={{
-              width: 64,
-              height: 64,
-              borderRadius: 32,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: tokens.color.primaryLight,
-              borderWidth: 1,
-              borderColor: tokens.color.border,
-            }}
-          >
-            <AppText style={{ fontSize: 30, lineHeight: 34, color: tokens.color.primary }}>♻</AppText>
-          </View>
+          <EWasteHero size={148} />
           <View style={{ alignItems: "center", gap: tokens.space[1] }}>
             <AppText variant="label" tone="muted" style={{ letterSpacing: 2 }}>REBIN TECH</AppText>
             <AppText variant="display" style={{ textAlign: "center" }}>
