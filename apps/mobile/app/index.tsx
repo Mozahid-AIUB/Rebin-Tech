@@ -18,49 +18,83 @@ function asHref(path: string): Href {
   return path as Href;
 }
 
+const PORTAL_GLYPH: Record<(typeof PORTAL_ORDER)[number], string> = {
+  org: "♻",
+  business: "$",
+  agent: "→",
+};
+
 export default function Index() {
   const router = useRouter();
   return (
     <PortalThemeProvider portal="org">
       <Screen>
-        <View style={{ gap: tokens.space[1], marginBottom: tokens.space[2] }}>
-          <AppText variant="label" tone="muted">REBIN TECH</AppText>
-          <AppText variant="display">Free, compliant{"\n"}e-waste recycling</AppText>
-          <AppText variant="body" tone="muted">Choose how you want to get started.</AppText>
+        <View style={{ alignItems: "center", gap: tokens.space[3], marginBottom: tokens.space[3], paddingTop: tokens.space[2] }}>
+          <View
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 32,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: tokens.color.primaryLight,
+              borderWidth: 1,
+              borderColor: tokens.color.border,
+            }}
+          >
+            <AppText style={{ fontSize: 30, lineHeight: 34, color: tokens.color.primary }}>♻</AppText>
+          </View>
+          <View style={{ alignItems: "center", gap: tokens.space[1] }}>
+            <AppText variant="label" tone="muted" style={{ letterSpacing: 2 }}>REBIN TECH</AppText>
+            <AppText variant="display" style={{ textAlign: "center" }}>
+              Every device{"\n"}has a next life.
+            </AppText>
+            <AppText variant="body" tone="muted" style={{ textAlign: "center", maxWidth: 280 }}>
+              Free removal, fair payouts, or dispatch work — choose the path that fits you.
+            </AppText>
+          </View>
         </View>
 
-        {PORTAL_ORDER.map((key) => {
-          const p = PORTAL_CONTENT[key];
-          return (
-            <PortalThemeProvider key={key} portal={key}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${p.title}. ${p.tagline}`}
-                onPress={() => router.push(asHref(`/portal/${key}`))}
-              >
-                <Card accentBorder style={{ gap: tokens.space[2] }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: tokens.space[2] }}>
-                    <IconTile />
-                    <View style={{ flex: 1, gap: 2 }}>
-                      <AppText variant="h1">{p.title}</AppText>
-                      <AppText variant="h3" tone="accent">{p.tagline}</AppText>
+        <View style={{ gap: tokens.space[3] }}>
+          {PORTAL_ORDER.map((key) => {
+            const p = PORTAL_CONTENT[key];
+            return (
+              <PortalThemeProvider key={key} portal={key}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${p.title}. ${p.tagline}`}
+                  onPress={() => router.push(asHref(`/portal/${key}`))}
+                >
+                  <Card accentBorder style={{ gap: tokens.space[3] }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: tokens.space[3] }}>
+                      <IconTile size={56}>
+                        <AppText style={{ fontSize: 24, lineHeight: 28, color: PORTAL_ACCENTS[key] }}>
+                          {PORTAL_GLYPH[key]}
+                        </AppText>
+                      </IconTile>
+                      <View style={{ flex: 1, gap: 2 }}>
+                        <AppText variant="h1">{p.title}</AppText>
+                        <AppText variant="h3" tone="accent">{p.tagline}</AppText>
+                      </View>
                     </View>
-                  </View>
-                  <View style={{ alignSelf: "flex-start", paddingHorizontal: tokens.space[2], paddingVertical: 6, borderRadius: tokens.radius.chip, borderWidth: 1, borderColor: PORTAL_ACCENTS[key] }}>
-                    <AppText variant="label" tone="accent">{p.badge}</AppText>
-                  </View>
-                  <AppText variant="bodySm" tone="muted">{p.description}</AppText>
-                </Card>
-              </Pressable>
-            </PortalThemeProvider>
-          );
-        })}
+                    <View style={{ alignSelf: "flex-start", paddingHorizontal: tokens.space[2], paddingVertical: 6, borderRadius: tokens.radius.chip, borderWidth: 1, borderColor: PORTAL_ACCENTS[key] }}>
+                      <AppText variant="label" tone="accent">{p.badge}</AppText>
+                    </View>
+                    <AppText variant="bodySm" tone="muted">{p.description}</AppText>
+                  </Card>
+                </Pressable>
+              </PortalThemeProvider>
+            );
+          })}
+        </View>
 
-        <View style={{ gap: tokens.space[1], marginTop: tokens.space[2] }}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Browse Price Catalog" onPress={() => router.push(asHref("/catalog"))} style={{ minHeight: 44, justifyContent: "center" }}>
+        <View style={{ height: 1, backgroundColor: tokens.color.divider, marginVertical: tokens.space[4] }} />
+
+        <View style={{ gap: tokens.space[2] }}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Browse Price Catalog" onPress={() => router.push(asHref("/catalog"))} style={{ minHeight: 44, justifyContent: "center", alignItems: "center" }}>
             <AppText tone="accent">Browse Price Catalog ($/lb rates)</AppText>
           </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel="Log In" onPress={() => router.push(asHref("/login"))} style={{ minHeight: 44, justifyContent: "center" }}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Log In" onPress={() => router.push(asHref("/login"))} style={{ minHeight: 44, justifyContent: "center", alignItems: "center" }}>
             <AppText tone="muted">Already have an account? <AppText tone="accent">Log In</AppText></AppText>
           </Pressable>
         </View>
