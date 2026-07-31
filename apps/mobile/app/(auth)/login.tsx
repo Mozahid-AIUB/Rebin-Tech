@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import { loginSchema } from "@rebin/shared";
-import { AppText, AuthButton, AuthInput, AuthScreen, authTokens } from "@rebin/ui";
+import { AppText, AuthButton, AuthInput, AuthScreen, LegalCopy, authTokens } from "@rebin/ui";
 import { useLogin } from "../../src/hooks/useLogin";
 
 // See RoleGuard.tsx's and the root _layout.tsx's own `asHref` for the
@@ -112,12 +112,18 @@ export default function Login() {
         accessibilityRole="button"
         accessibilityLabel="Forgot password"
         onPress={() => router.push(asHref("/forgot-password"))}
-        style={{ minHeight: 44, justifyContent: "center" }}
+        style={{ minHeight: 44, justifyContent: "center", alignItems: "flex-end" }}
       >
         <AppText variant="bodySm" style={{ color: authTokens.link }}>
           Forgot your password?
         </AppText>
       </Pressable>
+
+      <LegalCopy
+        prefix="By continuing you accept our"
+        onPrivacy={() => router.push(asHref("/legal/privacy"))}
+        onTerms={() => router.push(asHref("/legal/terms"))}
+      />
     </AuthScreen>
   );
 }
