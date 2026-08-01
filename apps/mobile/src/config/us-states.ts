@@ -26,3 +26,25 @@ export const ORG_TYPE_OPTIONS = [
   { value: "corporate_hq", label: "Corporate Headquarters" },
   { value: "other", label: "Other" },
 ] as const;
+
+export const SIGNUP_ROLE_OPTIONS = [
+  { value: "organization", label: "Organization" },
+  { value: "business", label: "Business owner" },
+  { value: "agent", label: "Field agent" },
+] as const;
+
+export const BUSINESS_TYPE_OPTIONS = [
+  { value: "repair_shop", label: "Repair Shop" },
+  { value: "electronics_retailer", label: "Electronics Retailer" },
+  { value: "scrap_dealer", label: "Scrap Dealer" },
+  { value: "it_reseller", label: "IT Reseller" },
+  { value: "refurbisher", label: "Refurbisher" },
+  { value: "other", label: "Other" },
+] as const;
+
+export const AGENT_VEHICLE_OPTIONS = [
+  { value: "car", label: "Car" },
+  { value: "van", label: "Van" },
+  { value: "box_truck", label: "Box Truck" },
+  { value: "none", label: "No vehicle yet" },
+] as const;

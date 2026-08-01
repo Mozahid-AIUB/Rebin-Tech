@@ -14,3 +14,7 @@ ios/
 npm-debug.*
 web-build/
 .claude/
+
+# Local Supabase dumps -- machine-specific snapshots, not source.
+# The reproducible account lives in supabase/seed.sql instead.
+supabase/backups/

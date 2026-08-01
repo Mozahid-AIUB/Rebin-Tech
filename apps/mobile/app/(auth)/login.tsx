@@ -3,7 +3,7 @@ import { Pressable, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 import { loginSchema } from "@rebin/shared";
-import { AppText, AuthButton, AuthDivider, AuthInput, AuthScreen, LegalCopy, SocialButton, authTokens } from "@rebin/ui";
+import { AppText, AuthButton, AuthDivider, AuthInput, AuthScreen, FONT, LegalCopy, SocialButton, authTokens } from "@rebin/ui";
 import { useLogin } from "../../src/hooks/useLogin";
 
 // See RoleGuard.tsx's and the root _layout.tsx's own `asHref` for the
@@ -150,7 +150,11 @@ export default function Login() {
         </View>
       ) : null}
 
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+      {/* Spacing here is deliberately uneven, not a uniform stack: the two
+          fields sit tight as one group, then each boundary (options row ->
+          CTA -> divider -> social) opens up a step. Even gaps everywhere give
+          the eye no grouping to latch onto. */}
+      <View style={{ marginTop: 2, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
         {/* UI-only for now, same P2a-style pattern used elsewhere in this
             plan (control is visible/wired to local state; no persistence
             behind it yet -- a later task can add real "stay signed in"
@@ -168,11 +172,15 @@ export default function Login() {
         </Pressable>
       </View>
 
-      <AuthButton label="Log In" onPress={onSubmit} loading={isPending} />
+      <View style={{ marginTop: 10 }}>
+        <AuthButton label="Log In" onPress={onSubmit} loading={isPending} />
+      </View>
 
-      <AuthDivider label="or" />
+      <View style={{ marginTop: 10 }}>
+        <AuthDivider label="or" />
+      </View>
 
-      <View style={{ gap: 12 }}>
+      <View style={{ gap: 10 }}>
         <SocialButton provider="google" onPress={() => onSocialPress("google")} />
         <SocialButton provider="apple" onPress={() => onSocialPress("apple")} />
       </View>
@@ -183,39 +191,37 @@ export default function Login() {
         </AppText>
       ) : null}
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Sign up"
-        onPress={() => router.push(asHref("/signup/organization"))}
-        style={{ minHeight: 44, justifyContent: "center", alignItems: "center" }}
-      >
-        <AppText variant="bodySm" style={{ color: authTokens.muted }}>
-          Don&apos;t have an account?{" "}
-          <AppText variant="bodySm" style={{ color: authTokens.link }}>
-            Sign up
+      {/* One footer, not three. This screen previously stacked three centered
+          link rows (sign up / legal / "Not you? Back to home"); the last was
+          also redundant -- the splash's own CTA is what lands you here, and the
+          stack back gesture already covers returning. Sign up is the only real
+          alternative action, so it gets the weight; the legal line is fine
+          print pinned underneath it. */}
+      <View style={{ marginTop: 14, gap: 10, alignItems: "center" }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Sign up"
+          // Now the role picker, not the organization form directly: which
+          // account type you're creating is the first real decision, and
+          // dropping a business owner or an agent straight into an
+          // organization form is how you get bad signups.
+          onPress={() => router.push(asHref("/signup"))}
+          style={{ minHeight: 44, justifyContent: "center", alignItems: "center" }}
+        >
+          <AppText variant="body" style={{ color: authTokens.muted }}>
+            Don&apos;t have an account?{" "}
+            <AppText variant="body" style={{ color: authTokens.link, fontFamily: FONT.semibold }}>
+              Sign up
+            </AppText>
           </AppText>
-        </AppText>
-      </Pressable>
+        </Pressable>
 
-      <LegalCopy
-        prefix="By continuing you accept our"
-        onPrivacy={() => router.push(asHref("/legal/privacy"))}
-        onTerms={() => router.push(asHref("/legal/terms"))}
-      />
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Back to home"
-        onPress={() => router.replace(asHref("/"))}
-        style={{ minHeight: 44, justifyContent: "center", alignItems: "center" }}
-      >
-        <AppText variant="bodySm" style={{ color: authTokens.muted }}>
-          Not you?{" "}
-          <AppText variant="bodySm" style={{ color: authTokens.link }}>
-            Back to home
-          </AppText>
-        </AppText>
-      </Pressable>
+        <LegalCopy
+          prefix="By continuing you accept our"
+          onPrivacy={() => router.push(asHref("/legal/privacy"))}
+          onTerms={() => router.push(asHref("/legal/terms"))}
+        />
+      </View>
     </AuthScreen>
   );
 }

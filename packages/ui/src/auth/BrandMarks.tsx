@@ -34,8 +34,8 @@ export function GoogleMark({ size }: { size: number }) {
   return (
     <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       <Svg width={size} height={size} viewBox="0 0 24 24">
-        <Circle cx={12} cy={12} r={9} fill="none" stroke="#8A8F98" strokeWidth={2.5} />
-        <Path d="M12 12 H19.5" stroke="#8A8F98" strokeWidth={2.5} strokeLinecap="round" />
+        <Circle cx={12} cy={12} r={9} fill="none" stroke="#CBD8D2" strokeWidth={2.5} />
+        <Path d="M12 12 H19.5" stroke="#CBD8D2" strokeWidth={2.5} strokeLinecap="round" />
       </Svg>
     </View>
   );
@@ -47,9 +47,9 @@ export function AppleMark({ size }: { size: number }) {
       <Svg width={size} height={size} viewBox="0 0 24 24">
         <Path
           d="M12 6.5 C10.3 6.5 9 7.9 9 9.6 C9 13.6 6.5 16.9 6.5 19.4 C6.5 20.8 7.6 21.9 9 21.9 C10 21.9 10.4 21.3 12 21.3 C13.6 21.3 14 21.9 15 21.9 C16.4 21.9 17.5 20.8 17.5 19.4 C17.5 16.9 15 13.6 15 9.6 C15 7.9 13.7 6.5 12 6.5 Z"
-          fill="#8A8F98"
+          fill="#CBD8D2"
         />
-        <Path d="M12 4.5 C12 5.6 11.3 6.5 10.3 6.5 C10.3 5.4 11 4.5 12 4.5 Z" fill="#8A8F98" />
+        <Path d="M12 4.5 C12 5.6 11.3 6.5 10.3 6.5 C10.3 5.4 11 4.5 12 4.5 Z" fill="#CBD8D2" />
       </Svg>
     </View>
   );

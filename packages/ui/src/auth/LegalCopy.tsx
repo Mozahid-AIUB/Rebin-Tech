@@ -1,5 +1,5 @@
 import { AppText } from "../atoms/AppText";
-import { authTokens } from "../tokens";
+import { authTokens, FONT } from "../tokens";
 
 export function LegalCopy({
   prefix,
@@ -10,13 +10,20 @@ export function LegalCopy({
   onPrivacy: () => void;
   onTerms: () => void;
 }) {
-  const link = { color: authTokens.link, textDecorationLine: "underline" as const };
+  // Fine print, styled as fine print: no underlines (three underlined runs in
+  // one centered 13px paragraph is the busiest block on an otherwise calm
+  // screen) and dropped to 11px/muted so it sits below the real footer link in
+  // the hierarchy instead of competing with it.
+  const link = { color: authTokens.muted, fontFamily: FONT.semibold, fontSize: 11 };
   return (
-    <AppText variant="bodySm" style={{ color: authTokens.muted, lineHeight: 19 }}>
+    <AppText
+      variant="bodySm"
+      style={{ color: authTokens.muted, opacity: 0.72, fontSize: 11, lineHeight: 17, textAlign: "center" }}
+    >
       {`${prefix} `}
-      <AppText variant="bodySm" style={link} onPress={onPrivacy} accessibilityRole="link">Privacy Policy</AppText>
+      <AppText style={link} onPress={onPrivacy} accessibilityRole="link">Privacy Policy</AppText>
       {" and "}
-      <AppText variant="bodySm" style={link} onPress={onTerms} accessibilityRole="link">Terms of Service</AppText>
+      <AppText style={link} onPress={onTerms} accessibilityRole="link">Terms of Service</AppText>
     </AppText>
   );
 }

@@ -18,6 +18,13 @@ export type RequestStatus = (typeof REQUEST_STATUSES)[number];
 export const ORG_TYPES = ["k12_school", "university", "hospital", "municipal_office", "corporate_hq", "other"] as const;
 export type OrgType = (typeof ORG_TYPES)[number];
 
+export const BUSINESS_TYPES = ["repair_shop", "electronics_retailer", "scrap_dealer", "it_reseller", "refurbisher", "other"] as const;
+export type BusinessType = (typeof BUSINESS_TYPES)[number];
+
+/** How an agent covers pickups. Drives routing, so it's a fixed set, not free text. */
+export const AGENT_VEHICLES = ["car", "van", "box_truck", "none"] as const;
+export type AgentVehicle = (typeof AGENT_VEHICLES)[number];
+
 export const DEVICE_CATEGORIES = ["computers_laptops", "monitors_displays", "server_gear", "copiers_printers", "batteries_ups"] as const;
 export type DeviceCategory = (typeof DEVICE_CATEGORIES)[number];
 

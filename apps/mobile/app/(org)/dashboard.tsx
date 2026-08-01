@@ -1,0 +1,114 @@
+import { View } from "react-native";
+import {
+  AppText,
+  Card,
+  EmptyState,
+  PillButton,
+  Screen,
+  SectionHeader,
+  StatusBadge,
+  tokens,
+} from "@rebin/ui";
+import { formatUsDate } from "@rebin/shared";
+import { useOrgDashboard } from "../../src/features/org-dashboard/useOrgDashboard";
+
+// NOTE ON SCOPE. The plan's S22 also specifies a four-stat row (Active
+// Requests · Devices Recycled · Certificates · Next Pickup) and a quick-access
+// grid (Requests · Team · Certificates · Catalog). Both are deliberately left
+// out of this first pass:
+//
+//   - "Devices Recycled" and "Certificates" have no data source at all. There
+//     is no certificates table, and no path for a request to reach 'completed'
+//     (no dispatch/assignment table, no status-transition RPC). Those tiles
+//     could only ever render 0 or a fabricated number.
+//   - The quick-access grid links to Requests/Team/Certificates/Catalog, none
+//     of which have screens yet, so every tile would be a dead tap.
+//
+// They come back with the features that produce them (roadmap steps 3-5).
+// What ships here is only what is genuinely backed by data today.
+
+// organizations.facility_timezone defaults to America/New_York and isn't in
+// the dashboard's read yet. Formatting in a fixed US zone keeps "Requested
+// 08/01/2026" stable for every viewer of the same org, rather than shifting
+// with the phone's clock; swap to the org's real zone when the request detail
+// screen (S29) starts reading it.
+const ORG_TZ = "America/New_York";
+
+function greeting(hour: number): string {
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+export default function OrgDashboard() {
+  const { loading, error, firstName, org, requests, reload } = useOrgDashboard();
+
+  return (
+    <Screen>
+      <View style={{ gap: 4 }}>
+        <AppText variant="display">
+          {firstName ? `${greeting(new Date().getHours())}, ${firstName}` : greeting(new Date().getHours())}
+        </AppText>
+        {org ? <AppText variant="body" tone="muted">{org.name}</AppText> : null}
+      </View>
+
+      {loading ? (
+        <AppText variant="body" tone="muted">Loading your dashboard…</AppText>
+      ) : error ? (
+        <Card variant="alt" style={{ gap: tokens.space[2] }}>
+          <AppText variant="h3">Couldn&apos;t load your dashboard</AppText>
+          <AppText variant="bodySm" tone="muted">{error}</AppText>
+          <PillButton label="Try again" variant="secondary" onPress={() => void reload()} />
+        </Card>
+      ) : (
+        <>
+          {/* Verification status is worth surfacing only while it is still
+              pending -- an "Active" badge on every visit is noise. */}
+          {org && org.status !== "active" ? (
+            <Card variant="alt" style={{ gap: tokens.space[1] }}>
+              <AppText variant="h3">Verification in review</AppText>
+              <AppText variant="bodySm" tone="muted">
+                You can explore the app now. Booking opens once your organization is approved.
+              </AppText>
+            </Card>
+          ) : null}
+
+          <Card accentBorder style={{ gap: tokens.space[2] }}>
+            <AppText variant="label" tone="accent">10+ DEVICE MINIMUM</AppText>
+            <AppText variant="h2">Schedule a free pickup</AppText>
+            <AppText variant="bodySm" tone="secondary">
+              Bulk e-waste removal from your loading dock, at no cost.
+            </AppText>
+            {/* Disabled rather than hidden: the CTA is the point of this
+                screen, and hiding it would misrepresent what the product does.
+                The wizard (S23-S28) is the next roadmap step. */}
+            <PillButton label="Schedule Free Pickup" disabled onPress={() => {}} />
+            <AppText variant="bodySm" tone="muted">Booking opens with the next release.</AppText>
+          </Card>
+
+          <SectionHeader title="Submitted requests" />
+          {requests.length === 0 ? (
+            <EmptyState
+              title="No pickups yet"
+              body="Schedule your first free removal and it will show up here."
+            />
+          ) : (
+            <View style={{ gap: tokens.space[2] }}>
+              {requests.map((request) => (
+                <Card key={request.id} style={{ gap: tokens.space[1] }}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                    <AppText variant="h3">{`${request.unitCount} devices`}</AppText>
+                    <StatusBadge status={request.status} />
+                  </View>
+                  <AppText variant="bodySm" tone="muted">
+                    {`Requested ${formatUsDate(request.createdAt, ORG_TZ)}`}
+                  </AppText>
+                </Card>
+              ))}
+            </View>
+          )}
+        </>
+      )}
+    </Screen>
+  );
+}

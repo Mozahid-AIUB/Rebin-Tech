@@ -22,6 +22,8 @@ export * from "./auth/BotanicalBackdrop";
 export * from "./auth/AuthInput";
 export * from "./auth/AuthButton";
 export * from "./auth/BrandMarks";
+export * from "./auth/RebinMark";
+export * from "./auth/RoleCard";
 export * from "./auth/SocialButton";
 export * from "./auth/AuthDivider";
 export * from "./auth/LegalCopy";

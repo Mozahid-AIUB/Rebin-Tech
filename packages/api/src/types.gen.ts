@@ -34,6 +34,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_profiles: {
+        Row: {
+          created_at: string
+          has_drivers_license: boolean
+          service_city: string
+          service_state: string
+          service_zip: string
+          user_id: string
+          vehicle: Database["public"]["Enums"]["agent_vehicle_enum"]
+        }
+        Insert: {
+          created_at?: string
+          has_drivers_license?: boolean
+          service_city: string
+          service_state: string
+          service_zip: string
+          user_id: string
+          vehicle: Database["public"]["Enums"]["agent_vehicle_enum"]
+        }
+        Update: {
+          created_at?: string
+          has_drivers_license?: boolean
+          service_city?: string
+          service_state?: string
+          service_zip?: string
+          user_id?: string
+          vehicle?: Database["public"]["Enums"]["agent_vehicle_enum"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_events: {
         Row: {
           action: string
@@ -71,6 +109,81 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      business_members: {
+        Row: {
+          business_id: string
+          member_role: Database["public"]["Enums"]["role_enum"]
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          member_role: Database["public"]["Enums"]["role_enum"]
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          member_role?: Database["public"]["Enums"]["role_enum"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_members_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      businesses: {
+        Row: {
+          business_type: Database["public"]["Enums"]["business_type_enum"]
+          city: string
+          created_at: string
+          ein: string | null
+          id: string
+          name: string
+          state: string
+          status: Database["public"]["Enums"]["account_status_enum"]
+          street: string
+          verified_at: string | null
+          zip: string
+        }
+        Insert: {
+          business_type: Database["public"]["Enums"]["business_type_enum"]
+          city: string
+          created_at?: string
+          ein?: string | null
+          id?: string
+          name: string
+          state: string
+          status?: Database["public"]["Enums"]["account_status_enum"]
+          street: string
+          verified_at?: string | null
+          zip: string
+        }
+        Update: {
+          business_type?: Database["public"]["Enums"]["business_type_enum"]
+          city?: string
+          created_at?: string
+          ein?: string | null
+          id?: string
+          name?: string
+          state?: string
+          status?: Database["public"]["Enums"]["account_status_enum"]
+          street?: string
+          verified_at?: string | null
+          zip?: string
+        }
+        Relationships: []
       }
       invitations: {
         Row: {
@@ -343,12 +456,61 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_business_with_owner: {
+        Args: {
+          p_business_name: string
+          p_business_type: Database["public"]["Enums"]["business_type_enum"]
+          p_city: string
+          p_ein: string
+          p_full_name: string
+          p_phone: string
+          p_state: string
+          p_street: string
+          p_user_id: string
+          p_zip: string
+        }
+        Returns: string
+      }
+      create_field_agent: {
+        Args: {
+          p_full_name: string
+          p_has_drivers_license: boolean
+          p_phone: string
+          p_service_city: string
+          p_service_state: string
+          p_service_zip: string
+          p_user_id: string
+          p_vehicle: Database["public"]["Enums"]["agent_vehicle_enum"]
+        }
+        Returns: string
+      }
+      create_organization_with_owner: {
+        Args: {
+          p_city: string
+          p_dock_access: boolean
+          p_full_name: string
+          p_org_name: string
+          p_org_type: Database["public"]["Enums"]["org_type_enum"]
+          p_phone: string
+          p_state: string
+          p_street: string
+          p_user_id: string
+          p_zip: string
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           p_role: Database["public"]["Enums"]["role_enum"]
           p_scope?: string
         }
         Returns: boolean
+      }
+      is_business_member: { Args: { p_business: string }; Returns: boolean }
+      is_org_member: { Args: { p_org: string }; Returns: boolean }
+      update_own_profile: {
+        Args: { p_avatar_url?: string; p_full_name: string; p_phone?: string }
+        Returns: undefined
       }
     }
     Enums: {
@@ -358,6 +520,14 @@ export type Database = {
         | "suspended"
         | "rejected"
         | "archived"
+      agent_vehicle_enum: "car" | "van" | "box_truck" | "none"
+      business_type_enum:
+        | "repair_shop"
+        | "electronics_retailer"
+        | "scrap_dealer"
+        | "it_reseller"
+        | "refurbisher"
+        | "other"
       device_category_enum:
         | "computers_laptops"
         | "monitors_displays"
@@ -533,6 +703,15 @@ export const Constants = {
         "suspended",
         "rejected",
         "archived",
+      ],
+      agent_vehicle_enum: ["car", "van", "box_truck", "none"],
+      business_type_enum: [
+        "repair_shop",
+        "electronics_retailer",
+        "scrap_dealer",
+        "it_reseller",
+        "refurbisher",
+        "other",
       ],
       device_category_enum: [
         "computers_laptops",

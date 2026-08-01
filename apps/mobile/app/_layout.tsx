@@ -1,7 +1,15 @@
 import { Redirect, Stack, usePathname, type Href } from "expo-router";
+import {
+  useFonts,
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+} from "@expo-google-fonts/plus-jakarta-sans";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useSessionStore } from "../src/store/session";
+import { useSessionBootstrap } from "../src/hooks/useSessionBootstrap";
 import { resolveInitialRoute } from "../src/components/RoleGuard";
 
 // Deferred from Task 9 (see task-9-report.md): RoleGuard.tsx and the three
@@ -44,6 +52,15 @@ function asHref(path: string): Href {
   return path as Href;
 }
 
+// A component rather than a hook call inside RootLayout only so the
+// subscription lives above the Stack without re-rendering it: this renders
+// null and never changes, so auth transitions update the store (and whoever
+// reads it) without remounting navigation.
+function SessionBootstrap() {
+  useSessionBootstrap();
+  return null;
+}
+
 function RootRedirect() {
   const { status, assignments } = useSessionStore();
   const pathname = usePathname();
@@ -75,8 +92,22 @@ function RootRedirect() {
 }
 
 export default function RootLayout() {
+  // The whole type scale (packages/ui/src/tokens.ts) names these families, so
+  // rendering before they resolve would flash a system-font frame and reflow
+  // every screen. `error` is treated as "loaded": if a face genuinely fails to
+  // decode, falling back to the system font is far better than a permanently
+  // blank app, and RN already falls back per-family on its own.
+  const [fontsLoaded, fontError] = useFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+  });
+  if (!fontsLoaded && !fontError) return null;
+
   return (
     <KeyboardProvider>
+      <SessionBootstrap />
       <SafeAreaProvider>
         <RootRedirect />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#F6F4ED" } }} />

@@ -73,17 +73,20 @@ describe("SocialButton", () => {
     expect(screen.getByRole("button", { name: label })).toBeTruthy();
   });
 
-  // NOTE: design change, human-directed. The plan doc's original ASCII
-  // spec called for an outlined/transparent social button (this test
-  // originally asserted exactly that), but a later, explicit design
-  // reference the user provided shows solid white-filled social buttons
-  // instead, and the user confirmed the new reference supersedes the
-  // doc's spec here. Assertion updated to match; SocialButton.tsx changed
-  // in the same commit.
-  it("renders filled white, not outlined", async () => {
+  // NOTE: design change, human-directed -- second reversal of this one
+  // assertion, so the history matters. The plan doc originally specified an
+  // outlined social button; a user-supplied reference image then moved it to
+  // solid white; a later design review reverted it to outlined because two
+  // white full-bleed blocks out-weighed the primary "Log In" CTA on the dark
+  // auth background. The current rule this test guards: social buttons are
+  // SECONDARY, so they sit on the auth surface with a border, never on a
+  // higher-contrast fill than the CTA above them.
+  it("renders outlined on the auth surface, not filled white", async () => {
     await render(<SocialButton provider="google" onPress={jest.fn()} />);
     expect(screen.getByRole("button", { name: "Continue with Google" })).toHaveStyle({
-      backgroundColor: "#FFFFFF",
+      backgroundColor: authTokens.surface,
+      borderWidth: 1,
+      borderColor: authTokens.border,
     });
   });
 });
