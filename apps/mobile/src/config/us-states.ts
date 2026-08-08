@@ -48,3 +48,18 @@ export const AGENT_VEHICLE_OPTIONS = [
   { value: "box_truck", label: "Box Truck" },
   { value: "none", label: "No vehicle yet" },
 ] as const;
+
+export const DEVICE_CATEGORY_OPTIONS = [
+  { value: "computers_laptops", label: "Computers & Laptops" },
+  { value: "monitors_displays", label: "Monitors & Displays" },
+  { value: "server_gear", label: "Server Gear" },
+  { value: "copiers_printers", label: "Copiers & Printers" },
+  { value: "batteries_ups", label: "Batteries & UPS Units" },
+] as const;
+
+export const TIME_WINDOW_OPTIONS = [
+  { value: "08:00-11:00", label: "8 – 11 AM" },
+  { value: "09:00-12:00", label: "9 AM – 12 PM" },
+  { value: "12:00-15:00", label: "12 – 3 PM" },
+  { value: "13:00-16:00", label: "1 – 4 PM" },
+] as const;

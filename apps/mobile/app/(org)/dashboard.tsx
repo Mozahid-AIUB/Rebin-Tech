@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { useRouter } from "expo-router";
 import {
   AppText,
   Card,
@@ -41,6 +42,7 @@ function greeting(hour: number): string {
 }
 
 export default function OrgDashboard() {
+  const router = useRouter();
   const { loading, error, firstName, org, requests, reload } = useOrgDashboard();
 
   return (
@@ -79,11 +81,24 @@ export default function OrgDashboard() {
             <AppText variant="bodySm" tone="secondary">
               Bulk e-waste removal from your loading dock, at no cost.
             </AppText>
-            {/* Disabled rather than hidden: the CTA is the point of this
-                screen, and hiding it would misrepresent what the product does.
-                The wizard (S23-S28) is the next roadmap step. */}
-            <PillButton label="Schedule Free Pickup" disabled onPress={() => {}} />
-            <AppText variant="bodySm" tone="muted">Booking opens with the next release.</AppText>
+            {/* The wizard UI (S23-S26 + review/confirm) is built at
+                request/new.tsx, but it doesn't submit to the API yet -- see
+                the note at the top of that file for what's left. Enabled here
+                so the flow is clickable end-to-end for review. */}
+            <PillButton label="Schedule Free Pickup" onPress={() => router.push("/(org)/request/new")} />
+          </Card>
+
+          {/* Visual placeholder only -- there's no budget/savings data source
+              yet (no completed-pickup or valuation records), same reason the
+              stat row above is deferred. Real numbers land with roadmap
+              step 4 (payouts/valuation). */}
+          <Card style={{ gap: tokens.space[2] }}>
+            <AppText variant="label" tone="accent">YOUR IMPACT</AppText>
+            <AppText variant="h2">Budget & savings</AppText>
+            <AppText variant="bodySm" tone="secondary">
+              Track what recycling with us saves your organization, once pickups start completing.
+            </AppText>
+            <AppText variant="bodySm" tone="muted">Coming with the next release.</AppText>
           </Card>
 
           <SectionHeader title="Submitted requests" />
