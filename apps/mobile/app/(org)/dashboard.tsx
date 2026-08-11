@@ -6,20 +6,16 @@ import {
   Card,
   EmptyState,
   PillButton,
-  QuickAccessRow,
-  QuickAccessTile,
   Screen,
   SectionHeader,
   StatRow,
   StatTile,
   tokens,
 } from "@rebin/ui";
-import { BuildingIcon, ListIcon } from "../../src/features/portal/TabIcons";
 import { RequestCard } from "../../src/features/org-dashboard/RequestCard";
 import { useOrgDashboard } from "../../src/features/org-dashboard/useOrgDashboard";
 
-// S22. Three stats and two shortcuts, which is what this portal can honestly
-// fill today.
+// S22. Three stats, the request list, and the one action this portal is for.
 //
 // The plan's other two tiles -- Devices Recycled and Certificates -- are still
 // absent, and for the same reason as before: no request can reach 'completed'
@@ -28,9 +24,15 @@ import { useOrgDashboard } from "../../src/features/org-dashboard/useOrgDashboar
 // derived from requests the org has already made, so they are real from the
 // first booking.
 //
-// Same rule for the shortcuts: only destinations that exist. Certificates and
-// Catalog would be dead taps, and Team is built but unlinked until an invited
-// colleague has a way to accept.
+// The plan's quick-access grid is also absent, and not only for missing
+// destinations. With three tabs and this portal's small screen set, every tile
+// it could hold is already one tap away: Requests is a tab, Organization sits
+// on the Me screen. A grid of shortcuts to places the navigation already
+// reaches is a second route to the same screen, which makes an app feel larger
+// than it is without making anything easier to find.
+//
+// It earns its place when there are destinations the tabs do not reach --
+// Certificates, Catalog, Team -- and enough of them to read as a grid.
 //
 // The CTA lives in the footer rather than a card at the top: booking is the
 // only thing this portal is for, and it should stay under the thumb while the
@@ -103,19 +105,6 @@ export default function OrgDashboard() {
               tone={stats.nextPickup ? "default" : "muted"}
             />
           </StatRow>
-
-          <QuickAccessRow>
-            <QuickAccessTile
-              label="Requests"
-              Icon={ListIcon}
-              onPress={() => router.push(asHref("/(org)/requests"))}
-            />
-            <QuickAccessTile
-              label="Organization"
-              Icon={BuildingIcon}
-              onPress={() => router.push(asHref("/(org)/settings"))}
-            />
-          </QuickAccessRow>
 
           <SectionHeader title="Submitted requests" />
           {requests.length === 0 ? (
