@@ -15,7 +15,8 @@ const TABS = [
 export default function BizLayout() {
   return (
     <RoleGuard portal="business">
-      <PortalTabs portal="business" tabs={TABS} />
+      {/* Pushed from a quote card or straight after a scan, not tabbed to. */}
+      <PortalTabs portal="business" tabs={TABS} hidden={["quote/[id]"]} />
     </RoleGuard>
   );
 }

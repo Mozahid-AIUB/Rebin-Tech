@@ -9,6 +9,34 @@ const IN_FLIGHT: readonly RequestStatus[] = [
   "in_transit",
 ];
 
+export type QuoteStats = {
+  openCount: number;
+  /** Cents still on the table -- what the vendor could take today. */
+  openValueCents: number;
+  acceptedValueCents: number;
+};
+
+/**
+ * The three numbers the business home can honestly show.
+ *
+ * Deliberately not "paid this month": accepting a quote is not being paid, and
+ * nothing pays anything until the payout flow exists. Reporting agreed money
+ * as received money is the kind of number a vendor plans around and then
+ * cannot find in their bank.
+ */
+export function summariseQuotes(
+  quotes: readonly { status: "offered" | "accepted" | "declined" | "expired"; totalCents: number }[],
+): QuoteStats {
+  const open = quotes.filter((q) => q.status === "offered");
+  return {
+    openCount: open.length,
+    openValueCents: open.reduce((sum, q) => sum + q.totalCents, 0),
+    acceptedValueCents: quotes
+      .filter((q) => q.status === "accepted")
+      .reduce((sum, q) => sum + q.totalCents, 0),
+  };
+}
+
 export type OrgStats = {
   activeCount: number;
   activeDevices: number;

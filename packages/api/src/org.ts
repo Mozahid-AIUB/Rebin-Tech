@@ -597,6 +597,123 @@ export async function appraisePhoto(
   return data;
 }
 
+export type QuoteStatus = "offered" | "accepted" | "declined" | "expired";
+
+export type QuoteRow = {
+  id: string;
+  status: QuoteStatus;
+  totalCents: number;
+  itemCount: number;
+  expiresAt: string;
+  createdAt: string;
+};
+
+export type QuoteLine = {
+  componentKey: string;
+  displayName: string;
+  grade: "working" | "broken" | "parts";
+  unit: "each" | "lb";
+  quantity: number;
+  unitPriceCents: number;
+  lineTotalCents: number;
+  confidence: number | null;
+  notes: string | null;
+};
+
+export type QuoteDetail = Omit<QuoteRow, "itemCount"> & {
+  catalogVersionId: string;
+  decidedAt: string | null;
+  items: QuoteLine[];
+};
+
+/**
+ * Turns a finished appraisal into an offer the vendor can come back to.
+ *
+ * Only the component key, grade and quantity are sent. Prices are read from
+ * the catalog inside `create_quote` (migration 0023) and the total recomputed
+ * there -- a client that could name its own price could name its own payout.
+ */
+export async function createQuote(
+  businessId: string,
+  items: {
+    componentKey: string;
+    grade: "working" | "broken" | "parts";
+    quantity: number;
+    confidence: number;
+    notes: string | null;
+  }[],
+): Promise<string> {
+  const { data, error } = await supabase.rpc("create_quote", {
+    p_business_id: businessId,
+    p_items: items as never,
+  });
+  if (error) throw asError(error.message);
+  return data as string;
+}
+
+export async function listQuotes(businessId: string): Promise<QuoteRow[]> {
+  const { data, error } = await supabase.rpc("list_quotes", { p_business_id: businessId });
+  if (error) throw asError(error.message);
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    status: row.status as QuoteStatus,
+    totalCents: row.total_cents,
+    itemCount: Number(row.item_count),
+    expiresAt: row.expires_at,
+    createdAt: row.created_at,
+  }));
+}
+
+export async function getQuote(quoteId: string): Promise<QuoteDetail | null> {
+  const [quote, items] = await Promise.all([
+    supabase
+      .from("quotes")
+      .select("id, status, total_cents, catalog_version_id, expires_at, decided_at, created_at")
+      .eq("id", quoteId)
+      .maybeSingle(),
+    supabase
+      .from("quote_items")
+      .select("component_key, display_name, grade, unit, quantity, unit_price_cents, line_total_cents, confidence, notes")
+      .eq("quote_id", quoteId),
+  ]);
+  if (quote.error) throw asError(quote.error.message);
+  if (items.error) throw asError(items.error.message);
+  if (!quote.data) return null;
+
+  const row = quote.data;
+  // Reported expired the moment it lapses, whether or not a write has caught
+  // up -- offering an Accept button that can only fail is worse than saying so.
+  const expired = row.status === "offered" && new Date(row.expires_at) <= new Date();
+  return {
+    id: row.id,
+    status: (expired ? "expired" : row.status) as QuoteStatus,
+    totalCents: row.total_cents,
+    catalogVersionId: row.catalog_version_id,
+    expiresAt: row.expires_at,
+    decidedAt: row.decided_at,
+    createdAt: row.created_at,
+    items: (items.data ?? []).map((i) => ({
+      componentKey: i.component_key,
+      displayName: i.display_name,
+      grade: i.grade as QuoteLine["grade"],
+      unit: i.unit as QuoteLine["unit"],
+      quantity: i.quantity,
+      unitPriceCents: i.unit_price_cents,
+      lineTotalCents: i.line_total_cents,
+      confidence: i.confidence,
+      notes: i.notes,
+    })),
+  };
+}
+
+export async function decideQuote(quoteId: string, accept: boolean): Promise<void> {
+  const { error } = await supabase.rpc("decide_quote", {
+    p_quote_id: quoteId,
+    p_accept: accept,
+  });
+  if (error) throw asError(error.message);
+}
+
 export async function getBusiness(businessId: string): Promise<BusinessSummary | null> {
   const { data, error } = await supabase
     .from("businesses")

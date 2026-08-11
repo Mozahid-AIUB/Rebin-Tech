@@ -1,4 +1,4 @@
-import { summarisePickupRequests } from "../org-stats";
+import { summarisePickupRequests, summariseQuotes } from "../org-stats";
 
 const REQUESTS = [
   { status: "pending" as const, unitCount: 25, windowStart: "2026-08-25T12:00:00.000Z" },
@@ -35,6 +35,40 @@ describe("summarisePickupRequests", () => {
       activeCount: 0,
       activeDevices: 0,
       nextPickup: null,
+    });
+  });
+});
+
+
+// The business home answers three questions at a glance: what is still on the
+// table, what it is worth, and what has actually been agreed.
+describe("summariseQuotes", () => {
+  const QUOTES = [
+    { status: "offered" as const, totalCents: 36000 },
+    { status: "offered" as const, totalCents: 4000 },
+    { status: "accepted" as const, totalCents: 25000 },
+    { status: "declined" as const, totalCents: 9000 },
+    { status: "expired" as const, totalCents: 7000 },
+  ];
+
+  it("counts only live offers as open", () => {
+    expect(summariseQuotes(QUOTES).openCount).toBe(2);
+  });
+
+  it("values only what is still on the table", () => {
+    // Declined and expired offers are not money anyone can still take.
+    expect(summariseQuotes(QUOTES).openValueCents).toBe(40000);
+  });
+
+  it("totals what has been agreed", () => {
+    expect(summariseQuotes(QUOTES).acceptedValueCents).toBe(25000);
+  });
+
+  it("is all zeroes before the first quote", () => {
+    expect(summariseQuotes([])).toEqual({
+      openCount: 0,
+      openValueCents: 0,
+      acceptedValueCents: 0,
     });
   });
 });

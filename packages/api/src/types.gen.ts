@@ -529,6 +529,117 @@ export type Database = {
         }
         Relationships: []
       }
+      quote_items: {
+        Row: {
+          component_key: string
+          confidence: number | null
+          display_name: string
+          grade: Database["public"]["Enums"]["price_grade_enum"]
+          id: string
+          line_total_cents: number
+          notes: string | null
+          quantity: number
+          quote_id: string
+          source: string
+          unit: Database["public"]["Enums"]["price_unit_enum"]
+          unit_price_cents: number
+        }
+        Insert: {
+          component_key: string
+          confidence?: number | null
+          display_name: string
+          grade: Database["public"]["Enums"]["price_grade_enum"]
+          id?: string
+          line_total_cents: number
+          notes?: string | null
+          quantity: number
+          quote_id: string
+          source?: string
+          unit: Database["public"]["Enums"]["price_unit_enum"]
+          unit_price_cents: number
+        }
+        Update: {
+          component_key?: string
+          confidence?: number | null
+          display_name?: string
+          grade?: Database["public"]["Enums"]["price_grade_enum"]
+          id?: string
+          line_total_cents?: number
+          notes?: string | null
+          quantity?: number
+          quote_id?: string
+          source?: string
+          unit?: Database["public"]["Enums"]["price_unit_enum"]
+          unit_price_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_items_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotes: {
+        Row: {
+          business_id: string
+          catalog_version_id: string
+          created_at: string
+          created_by: string
+          decided_at: string | null
+          expires_at: string
+          id: string
+          status: Database["public"]["Enums"]["quote_status_enum"]
+          total_cents: number
+        }
+        Insert: {
+          business_id: string
+          catalog_version_id: string
+          created_at?: string
+          created_by: string
+          decided_at?: string | null
+          expires_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["quote_status_enum"]
+          total_cents: number
+        }
+        Update: {
+          business_id?: string
+          catalog_version_id?: string
+          created_at?: string
+          created_by?: string
+          decided_at?: string | null
+          expires_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["quote_status_enum"]
+          total_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_catalog_version_id_fkey"
+            columns: ["catalog_version_id"]
+            isOneToOne: false
+            referencedRelation: "price_catalog_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_assignments: {
         Row: {
           granted_at: string
@@ -652,6 +763,10 @@ export type Database = {
         Returns: string
       }
       create_price_catalog_draft: { Args: { p_note?: string }; Returns: string }
+      create_quote: {
+        Args: { p_business_id: string; p_items: Json }
+        Returns: string
+      }
       current_price: {
         Args: {
           p_component_key: string
@@ -664,6 +779,10 @@ export type Database = {
           unit_price_cents: number
           version: number
         }[]
+      }
+      decide_quote: {
+        Args: { p_accept: boolean; p_quote_id: string }
+        Returns: undefined
       }
       has_role: {
         Args: {
@@ -701,6 +820,17 @@ export type Database = {
           joined_at: string
           member_role: Database["public"]["Enums"]["role_enum"]
           user_id: string
+        }[]
+      }
+      list_quotes: {
+        Args: { p_business_id: string }
+        Returns: {
+          created_at: string
+          expires_at: string
+          id: string
+          item_count: number
+          status: Database["public"]["Enums"]["quote_status_enum"]
+          total_cents: number
         }[]
       }
       publish_price_catalog: {
@@ -809,6 +939,7 @@ export type Database = {
         | "other"
       price_grade_enum: "working" | "broken" | "parts"
       price_unit_enum: "each" | "lb"
+      quote_status_enum: "offered" | "accepted" | "declined" | "expired"
       request_status_enum:
         | "pending"
         | "under_review"
@@ -998,6 +1129,7 @@ export const Constants = {
       ],
       price_grade_enum: ["working", "broken", "parts"],
       price_unit_enum: ["each", "lb"],
+      quote_status_enum: ["offered", "accepted", "declined", "expired"],
       request_status_enum: [
         "pending",
         "under_review",
