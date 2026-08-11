@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
+import { useRouter, type Href } from "expo-router";
 import {
   getAgentDetail,
   getBusinessDetail,
@@ -89,13 +90,18 @@ type Detail =
  * three signup flows genuinely collect different things (an agent has a
  * service area and a vehicle; an organization has a facility and dock access).
  *
- * Only the contact block is editable, through the `update_own_profile` RPC
- * (migration 0013). The organization/business/agent blocks are read-only on
- * purpose: those rows describe a tenant rather than this user, and changing a
- * verified address or EIN is a verification-affecting action that belongs with
- * support until there's an admin flow for it.
+ * The contact block is editable through the `update_own_profile` RPC
+ * (migration 0013). The organization block links out to its own editor
+ * (migration 0018's `update_own_organization`); the business and agent blocks
+ * stay read-only until they have equivalents, since those rows describe a
+ * tenant rather than this user.
  */
+function asHref(path: string): Href {
+  return path as Href;
+}
+
 export function MeScreen() {
+  const router = useRouter();
   const { userId, assignments, activeIndex } = useSessionStore();
   const { logout, pending } = useLogout();
   const active = assignments[activeIndex];
@@ -202,6 +208,13 @@ export function MeScreen() {
                 <Row label="Type" value={label(detail.org.orgType)} />
                 <Row label="Pickup address" value={formatAddress(detail.org.address)} />
                 <Row label="Loading dock" value={detail.org.dockAccess ? "Yes" : "No"} />
+                {/* Only the org portal has an editor so far; the business and
+                    agent equivalents come with their own settings screens. */}
+                <PillButton
+                  label="Edit organization"
+                  variant="secondary"
+                  onPress={() => router.push(asHref("/(org)/settings"))}
+                />
               </Card>
             </>
           ) : null}

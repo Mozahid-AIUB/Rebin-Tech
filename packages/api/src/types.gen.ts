@@ -559,6 +559,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_own_organization: {
+        Args: {
+          p_city: string
+          p_dock_access: boolean
+          p_facility_timezone?: string
+          p_name: string
+          p_org_id: string
+          p_org_type: Database["public"]["Enums"]["org_type_enum"]
+          p_state: string
+          p_street: string
+          p_zip: string
+        }
+        Returns: undefined
+      }
       update_own_profile: {
         Args: { p_avatar_url?: string; p_full_name: string; p_phone?: string }
         Returns: undefined

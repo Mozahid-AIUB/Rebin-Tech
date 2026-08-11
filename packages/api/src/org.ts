@@ -322,6 +322,39 @@ export async function reschedulePickupRequest(
   if (error) throw asError(error.message);
 }
 
+/**
+ * Edits the details an organization owns about itself.
+ *
+ * Through `update_own_organization` (migration 0018) rather than a table
+ * update: `status` and `verified_at` live on the same row, so a writable
+ * organizations policy would let an org verify itself. The RPC accepts only
+ * the customer-owned fields.
+ */
+export async function updateOwnOrganization(
+  orgId: string,
+  input: {
+    name: string;
+    orgType: string;
+    street: string;
+    city: string;
+    state: string;
+    zip: string;
+    dockAccess: boolean;
+  },
+): Promise<void> {
+  const { error } = await supabase.rpc("update_own_organization", {
+    p_org_id: orgId,
+    p_name: input.name,
+    p_org_type: input.orgType as never,
+    p_street: input.street,
+    p_city: input.city,
+    p_state: input.state,
+    p_zip: input.zip,
+    p_dock_access: input.dockAccess,
+  });
+  if (error) throw asError(error.message);
+}
+
 export async function getBusiness(businessId: string): Promise<BusinessSummary | null> {
   const { data, error } = await supabase
     .from("businesses")

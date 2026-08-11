@@ -4,7 +4,7 @@
 -- their owner and their own role checks are the only thing standing between a
 -- customer and their own approval. Each test below names the check it pins.
 begin;
-select plan(11);
+select plan(15);
 
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'owner@org-a.test'),
@@ -121,6 +121,38 @@ select is(
   (select status from pickup_requests where id = 'cccccccc-0000-0000-0000-000000000002'),
   'pending'::request_status_enum,
   'rescheduling a scheduled pickup returns it to the queue'
+);
+
+-- ---------------------------------------------------------------------------
+-- Org settings (0018). The point of the RPC is that it cannot reach `status`
+-- or `verified_at`, so a customer cannot approve or verify themselves.
+-- ---------------------------------------------------------------------------
+set local request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select throws_ok(
+  $$select update_own_organization('aaaaaaaa-0000-0000-0000-000000000001', 'Hijacked',
+      'hospital', '9 Nowhere', 'Boston', 'MA', '02108', false)$$,
+  '42501',
+  null,
+  'someone outside the org cannot edit its details'
+);
+
+set local request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select lives_ok(
+  $$select update_own_organization('aaaaaaaa-0000-0000-0000-000000000001', 'Org A Renamed',
+      'university', '7 New St', 'Cambridge', 'MA', '02139', true)$$,
+  'an org owner can edit their own organization'
+);
+select is(
+  (select name || '/' || city from organizations where id = 'aaaaaaaa-0000-0000-0000-000000000001'),
+  'Org A Renamed/Cambridge',
+  'the edit lands'
+);
+select throws_ok(
+  $$select update_own_organization('aaaaaaaa-0000-0000-0000-000000000001', 'Org A',
+      'hospital', '7 New St', 'Cambridge', 'MA', 'nope', true)$$,
+  '22023',
+  null,
+  'a malformed ZIP is refused'
 );
 
 select * from finish();
