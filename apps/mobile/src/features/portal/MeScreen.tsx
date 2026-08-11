@@ -215,11 +215,15 @@ export function MeScreen() {
                   variant="secondary"
                   onPress={() => router.push(asHref("/(org)/settings"))}
                 />
-                <PillButton
-                  label="Team"
-                  variant="secondary"
-                  onPress={() => router.push(asHref("/(org)/team"))}
-                />
+                {/* (org)/team exists and works -- listing, roles, removal and
+                    invites, all covered by tests -- but it is not linked yet.
+                    Inviting someone without an account hands the inviter a
+                    code, and nothing can redeem one: an invitee signing up
+                    creates their own organization rather than joining this
+                    one, so the loop needs a signup path of its own. Until
+                    that exists, an invite button would produce a code that
+                    goes nowhere. Restore this link with that path.
+                    Single-operator organizations don't need the screen yet. */}
               </Card>
             </>
           ) : null}
