@@ -12,6 +12,8 @@ export * from "./molecules/SelectField";
 export * from "./molecules/RadioTile";
 export * from "./molecules/ChipMultiSelect";
 export * from "./molecules/ChipSingleSelect";
+export * from "./molecules/StatTile";
+export * from "./molecules/QuickAccessTile";
 export * from "./molecules/ToggleRow";
 export * from "./molecules/Stepper";
 export * from "./organisms/Screen";

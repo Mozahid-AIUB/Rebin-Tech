@@ -1,31 +1,40 @@
 import { View } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
+import { formatUsDate, summarisePickupRequests } from "@rebin/shared";
 import {
   AppText,
   Card,
   EmptyState,
   PillButton,
+  QuickAccessRow,
+  QuickAccessTile,
   Screen,
   SectionHeader,
+  StatRow,
+  StatTile,
   tokens,
 } from "@rebin/ui";
+import { BuildingIcon, ListIcon } from "../../src/features/portal/TabIcons";
 import { RequestCard } from "../../src/features/org-dashboard/RequestCard";
 import { useOrgDashboard } from "../../src/features/org-dashboard/useOrgDashboard";
 
-// NOTE ON SCOPE. The plan's S22 also specifies a four-stat row (Active
-// Requests · Devices Recycled · Certificates · Next Pickup) and a quick-access
-// grid (Requests · Team · Certificates · Catalog). Both are deliberately left
-// out of this first pass:
+// S22. Three stats and two shortcuts, which is what this portal can honestly
+// fill today.
 //
-//   - "Devices Recycled" and "Certificates" have no data source at all. There
-//     is no certificates table, and no path for a request to reach 'completed'
-//     (no dispatch/assignment table, no status-transition RPC). Those tiles
-//     could only ever render 0 or a fabricated number.
-//   - The quick-access grid links to Requests/Team/Certificates/Catalog, none
-//     of which have screens yet, so every tile would be a dead tap.
+// The plan's other two tiles -- Devices Recycled and Certificates -- are still
+// absent, and for the same reason as before: no request can reach 'completed'
+// until the field agent portal exists, and there is no certificates table, so
+// both would be a permanent zero dressed as a statistic. The three here are
+// derived from requests the org has already made, so they are real from the
+// first booking.
 //
-// They come back with the features that produce them (roadmap steps 3-5).
-// What ships here is only what is genuinely backed by data today.
+// Same rule for the shortcuts: only destinations that exist. Certificates and
+// Catalog would be dead taps, and Team is built but unlinked until an invited
+// colleague has a way to accept.
+//
+// The CTA lives in the footer rather than a card at the top: booking is the
+// only thing this portal is for, and it should stay under the thumb while the
+// request list scrolls.
 
 // organizations.facility_timezone defaults to America/New_York and isn't in
 // the dashboard's read yet. Formatting in a fixed US zone keeps "Requested
@@ -40,12 +49,32 @@ function greeting(hour: number): string {
   return "Good evening";
 }
 
+// See login.tsx's own `asHref` for the identical reasoning: hand-authored
+// route names, never unvalidated input.
+function asHref(path: string): Href {
+  return path as Href;
+}
+
 export default function OrgDashboard() {
   const router = useRouter();
   const { loading, error, firstName, org, requests, reload } = useOrgDashboard();
+  const stats = summarisePickupRequests(requests);
 
   return (
-    <Screen>
+    <Screen
+      // The CTA sits in the footer rather than in a card up top. Booking a
+      // pickup is the only thing this portal exists to do, so it stays in
+      // reach while the request list scrolls instead of leaving the screen
+      // -- and a thumb reaches the bottom of a phone, not the middle.
+      footer={
+        <View style={{ gap: tokens.space[1] }}>
+          <PillButton label="Schedule Free Pickup" onPress={() => router.push("/(org)/request/new")} />
+          <AppText variant="bodySm" tone="muted" style={{ textAlign: "center" }}>
+            Free · 10 devices or more · collected from your dock
+          </AppText>
+        </View>
+      }
+    >
       <View style={{ gap: 4 }}>
         <AppText variant="display">
           {firstName ? `${greeting(new Date().getHours())}, ${firstName}` : greeting(new Date().getHours())}
@@ -63,31 +92,30 @@ export default function OrgDashboard() {
         </Card>
       ) : (
         <>
-          <Card accentBorder style={{ gap: tokens.space[2] }}>
-            <AppText variant="label" tone="accent">10+ DEVICE MINIMUM</AppText>
-            <AppText variant="h2">Schedule a free pickup</AppText>
-            <AppText variant="bodySm" tone="secondary">
-              Bulk e-waste removal from your loading dock, at no cost.
-            </AppText>
-            {/* The wizard UI (S23-S26 + review/confirm) is built at
-                request/new.tsx, but it doesn't submit to the API yet -- see
-                the note at the top of that file for what's left. Enabled here
-                so the flow is clickable end-to-end for review. */}
-            <PillButton label="Schedule Free Pickup" onPress={() => router.push("/(org)/request/new")} />
-          </Card>
+          <StatRow>
+            <StatTile value={String(stats.activeCount)} label="ACTIVE" tone="accent" />
+            <StatTile value={String(stats.activeDevices)} label="DEVICES" />
+            <StatTile
+              // An em dash rather than a date-shaped placeholder: "--" reads as
+              // "nothing booked", where "00/00/0000" reads as broken.
+              value={stats.nextPickup ? formatUsDate(stats.nextPickup, ORG_TZ).slice(0, 5) : "—"}
+              label="NEXT PICKUP"
+              tone={stats.nextPickup ? "default" : "muted"}
+            />
+          </StatRow>
 
-          {/* Visual placeholder only -- there's no budget/savings data source
-              yet (no completed-pickup or valuation records), same reason the
-              stat row above is deferred. Real numbers land with roadmap
-              step 4 (payouts/valuation). */}
-          <Card style={{ gap: tokens.space[2] }}>
-            <AppText variant="label" tone="accent">YOUR IMPACT</AppText>
-            <AppText variant="h2">Budget & savings</AppText>
-            <AppText variant="bodySm" tone="secondary">
-              Track what recycling with us saves your organization, once pickups start completing.
-            </AppText>
-            <AppText variant="bodySm" tone="muted">Coming with the next release.</AppText>
-          </Card>
+          <QuickAccessRow>
+            <QuickAccessTile
+              label="Requests"
+              Icon={ListIcon}
+              onPress={() => router.push(asHref("/(org)/requests"))}
+            />
+            <QuickAccessTile
+              label="Organization"
+              Icon={BuildingIcon}
+              onPress={() => router.push(asHref("/(org)/settings"))}
+            />
+          </QuickAccessRow>
 
           <SectionHeader title="Submitted requests" />
           {requests.length === 0 ? (

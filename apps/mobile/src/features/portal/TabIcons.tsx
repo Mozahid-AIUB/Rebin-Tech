@@ -34,6 +34,18 @@ export function ListIcon({ color }: Props) {
   );
 }
 
+/** The organization itself: a facility, not a person. */
+export function BuildingIcon({ color }: Props) {
+  return (
+    <Svg {...S}>
+      <Path d="M4.5 20.5V6.2a.7.7 0 0 1 .48-.66l7-2.33a.7.7 0 0 1 .92.66V20.5" stroke={color} {...STROKE} />
+      <Path d="M12.9 9.5h5.6a.7.7 0 0 1 .7.7v10.3" stroke={color} {...STROKE} />
+      <Path d="M3 20.5h18" stroke={color} {...STROKE} />
+      <Path d="M7.5 8.5v.01M7.5 12v.01M9.8 8.5v.01M9.8 12v.01M15.5 13v.01M15.5 16.5v.01" stroke={color} {...STROKE} />
+    </Svg>
+  );
+}
+
 /** Quotes / pricing. */
 export function TagIcon({ color }: Props) {
   return (
