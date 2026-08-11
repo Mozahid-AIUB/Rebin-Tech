@@ -10,37 +10,49 @@ import type { SignupRole } from "@rebin/shared";
 // What happens next genuinely differs by role, so the copy does too: telling a
 // field agent we're "verifying your organization" is the kind of leftover
 // wrong-audience copy that makes a product feel unfinished.
+//
+// These read as "here is what you can do" rather than "here is what we will
+// do to you" since migration 0017: accounts are active on creation, so there
+// is no approval to wait for and promising an approval email would be a lie.
 const NEXT_STEPS: Record<SignupRole, readonly [string, string, string]> = {
   organization: [
-    "We verify your organization details",
-    "You receive an approval email",
-    "Schedule your first free pickup",
+    "Tell us what you need cleared out",
+    "Pick a date and a dock time",
+    "We collect it — free, with a recycling record",
   ],
   business: [
-    "We verify your business details",
-    "You receive an approval email",
-    "List your first batch of stock",
+    "Scan or list the stock you want to sell",
+    "Get a quote against the live catalog",
+    "Ship it and get paid",
   ],
   agent: [
-    "We check your service area and vehicle",
-    "You receive an approval email",
-    "Your first pickups get assigned",
+    "Set your service area and vehicle",
+    "Pickups near you appear in your queue",
+    "Complete jobs and track your earnings",
   ],
 };
 
 const SUBTITLE: Record<SignupRole, string> = {
-  organization: "Your organization is queued for verification. We typically approve within one business day.",
-  business: "Your business is queued for verification. We typically approve within one business day.",
-  agent: "Your agent profile is queued for review. We typically approve within one business day.",
+  organization: "Your organization is set up and ready to book its first pickup.",
+  business: "Your business is set up and ready to sell its first batch.",
+  agent: "Your agent profile is set up. Jobs in your area will appear in your queue.",
 };
 
-export function SuccessStep({ role, onContinue }: { role: SignupRole; onContinue: () => void }) {
+export function SuccessStep({
+  role,
+  onContinue,
+  continuing = false,
+}: {
+  role: SignupRole;
+  onContinue: () => void;
+  continuing?: boolean;
+}) {
   const steps = NEXT_STEPS[role];
   return (
     <AuthScreen
-      title="Registration submitted"
+      title="You're all set"
       subtitle={SUBTITLE[role]}
-      footer={<AuthButton label="Continue" onPress={onContinue} />}
+      footer={<AuthButton label="Go to my dashboard" onPress={onContinue} loading={continuing} />}
     >
       <View
         style={{

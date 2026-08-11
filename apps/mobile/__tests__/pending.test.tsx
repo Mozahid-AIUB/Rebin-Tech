@@ -21,7 +21,11 @@ beforeEach(() => {
 });
 
 describe("S08 Pending", () => {
-  it("tells an organization its verification is in review", async () => {
+  // Accounts are active from creation (migration 0017), so this screen is no
+  // longer part of signup -- reaching it with a real role means the account
+  // was suspended or archived afterwards. Promising an approval "within one
+  // business day" would describe a queue nobody is working.
+  it("tells an organization its account is not active, without promising a review", async () => {
     useSessionStore.setState({
       status: "pending",
       userId: "u1",
@@ -29,11 +33,11 @@ describe("S08 Pending", () => {
       activeIndex: 0,
     });
     await render(<Pending />);
-    expect(screen.getByText("Verification in review")).toBeTruthy();
-    expect(screen.getByText(/one business day/i)).toBeTruthy();
+    expect(screen.getByText("Account not active")).toBeTruthy();
+    expect(screen.queryByText(/one business day/i)).toBeNull();
   });
 
-  it("prompts a business to finish payout setup with a CTA", async () => {
+  it("points a business at support rather than a payout setup that doesn't exist", async () => {
     useSessionStore.setState({
       status: "pending",
       userId: "u2",
@@ -41,8 +45,8 @@ describe("S08 Pending", () => {
       activeIndex: 0,
     });
     await render(<Pending />);
-    expect(screen.getByText("Finish your payout setup")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Continue setup" })).toBeTruthy();
+    expect(screen.getByText("Account not active")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Continue setup" })).toBeNull();
   });
 
   it("falls back to a no-access message when the account has no role", async () => {

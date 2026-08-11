@@ -10,15 +10,17 @@ function greeting(hour: number): string {
 
 /**
  * The shared frame every portal home shares: greeting, the account you're in,
- * a verification notice while one is pending, then portal-specific content.
+ * then portal-specific content.
  *
  * Extracted once the business and agent portals arrived rather than copying
  * the organization dashboard's header three times.
+ *
+ * It also carried a "Verification in review" notice until migration 0017 made
+ * signup grant access outright; there is no review queue left to report.
  */
 export function PortalHome({
   firstName,
   accountName,
-  pendingVerification,
   loading,
   error,
   onRetry,
@@ -26,7 +28,6 @@ export function PortalHome({
 }: {
   firstName: string | null;
   accountName: string | null;
-  pendingVerification: boolean;
   loading: boolean;
   error: string | null;
   onRetry: () => void;
@@ -50,19 +51,7 @@ export function PortalHome({
           <PillButton label="Try again" variant="secondary" onPress={onRetry} />
         </Card>
       ) : (
-        <>
-          {/* Only while it's still pending -- an "Active" badge on every visit
-              is noise. */}
-          {pendingVerification ? (
-            <Card variant="alt" style={{ gap: tokens.space[1] }}>
-              <AppText variant="h3">Verification in review</AppText>
-              <AppText variant="bodySm" tone="muted">
-                You can explore the app now. Full access opens once you&apos;re approved.
-              </AppText>
-            </Card>
-          ) : null}
-          {children}
-        </>
+        children
       )}
     </Screen>
   );

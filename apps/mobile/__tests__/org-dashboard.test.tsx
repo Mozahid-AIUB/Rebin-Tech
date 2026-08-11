@@ -88,13 +88,12 @@ describe("S22 Organization dashboard", () => {
     expect(mockPush).toHaveBeenCalledWith("/(org)/request/new");
   });
 
-  it("flags an organization still awaiting verification", async () => {
+  // Signup now grants access outright (migration 0017), so there is no review
+  // to report -- and a banner about one would describe a queue that no longer
+  // exists. Kept as a test rather than deleted so the notice cannot creep back
+  // in with a status the product no longer assigns.
+  it("says nothing about verification, whatever status the org carries", async () => {
     mockOrg.mockResolvedValue({ ...ACTIVE_ORG, status: "pending_verification" });
-    await renderDashboard();
-    await waitFor(() => expect(screen.getByText("Verification in review")).toBeTruthy());
-  });
-
-  it("stays quiet about verification once the org is active", async () => {
     await renderDashboard();
     await waitFor(() => expect(screen.getByText("No pickups yet")).toBeTruthy());
     expect(screen.queryByText("Verification in review")).toBeNull();

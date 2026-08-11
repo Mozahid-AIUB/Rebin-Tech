@@ -64,17 +64,6 @@ export default function OrgDashboard() {
         </Card>
       ) : (
         <>
-          {/* Verification status is worth surfacing only while it is still
-              pending -- an "Active" badge on every visit is noise. */}
-          {org && org.status !== "active" ? (
-            <Card variant="alt" style={{ gap: tokens.space[1] }}>
-              <AppText variant="h3">Verification in review</AppText>
-              <AppText variant="bodySm" tone="muted">
-                You can explore the app now. Booking opens once your organization is approved.
-              </AppText>
-            </Card>
-          ) : null}
-
           <Card accentBorder style={{ gap: tokens.space[2] }}>
             <AppText variant="label" tone="accent">10+ DEVICE MINIMUM</AppText>
             <AppText variant="h2">Schedule a free pickup</AppText>

@@ -45,7 +45,6 @@ export default function BizDashboard() {
     <PortalHome
       firstName={firstName}
       accountName={business?.name ?? null}
-      pendingVerification={Boolean(business && business.status !== "active")}
       loading={loading}
       error={error}
       onRetry={() => void load()}

@@ -19,20 +19,22 @@ function asHref(path: string): Href {
 // log-out escape hatch are the plan's, unchanged.
 type PendingCopy = { title: string; body: string; ctaLabel?: string; ctaRoute?: string };
 
+// Since migration 0017 an org/business/agent account is active the moment it
+// is created, so those three branches are only reachable if an account is
+// later suspended or archived -- never at signup. The copy says that instead
+// of promising an approval that no longer happens.
 const COPY = {
   org: {
-    title: "Verification in review",
-    body: "We're confirming your organization details. Approvals typically complete within one business day, and we'll email you the moment you're cleared.",
+    title: "Account not active",
+    body: "This organization's account isn't active right now. Contact Rebin Tech support and we'll sort it out.",
   },
   business: {
-    title: "Finish your payout setup",
-    body: "Your account is created. Complete secure payout onboarding so we can send funds when your scrap is settled.",
-    ctaLabel: "Continue setup",
-    ctaRoute: "/(biz)/payout-method",
+    title: "Account not active",
+    body: "This business account isn't active right now. Contact Rebin Tech support and we'll sort it out.",
   },
   agent: {
-    title: "Awaiting fleet approval",
-    body: "Your fleet manager needs to activate your account before jobs appear in your queue.",
+    title: "Account not active",
+    body: "Your agent account isn't active right now, so jobs won't appear in your queue. Contact your fleet lead or Rebin Tech support.",
   },
   none: {
     title: "No portal access yet",

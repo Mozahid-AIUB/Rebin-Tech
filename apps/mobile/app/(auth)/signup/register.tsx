@@ -10,7 +10,7 @@ import {
   type SignupFormInput,
   type SignupRole,
 } from "@rebin/shared";
-import { signUpAgent, signUpBusiness, signUpOrganization } from "@rebin/api";
+import { signIn, signUpAgent, signUpBusiness, signUpOrganization } from "@rebin/api";
 import { AppText, AuthButton, AuthInput, AuthScreen, authTokens } from "@rebin/ui";
 import {
   AGENT_VEHICLE_OPTIONS,
@@ -79,6 +79,7 @@ export default function SignupRegister() {
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [continuing, setContinuing] = useState(false);
 
   function set(key: string, value: unknown) {
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -124,8 +125,27 @@ export default function SignupRegister() {
     }
   }
 
+  // Signing in here rather than sending the user to /login: the account is
+  // usable the moment it exists (migration 0017), and asking someone to retype
+  // the password they chose thirty seconds ago is friction with nothing behind
+  // it. The root layout watches the session and routes to the right portal on
+  // its own, so there is no navigation to do afterwards.
+  async function onContinue() {
+    setContinuing(true);
+    setServerError(null);
+    try {
+      await signIn(String(values.email ?? ""), String(values.password ?? ""));
+    } catch {
+      // The account is registered either way -- falling back to the login
+      // screen is a working path, not an error worth alarming them with.
+      router.replace(asHref("/login"));
+    } finally {
+      setContinuing(false);
+    }
+  }
+
   if (done) {
-    return <SuccessStep role={role} onContinue={() => router.replace(asHref("/pending"))} />;
+    return <SuccessStep role={role} onContinue={() => void onContinue()} continuing={continuing} />;
   }
 
   const str = (k: string) => (values[k as keyof Values] as string | undefined) ?? "";
