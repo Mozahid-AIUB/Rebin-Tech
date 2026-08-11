@@ -1,21 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { listRecentPickupRequests, useSessionStore, type PickupRequestRow } from "@rebin/api";
-import { formatUsDate } from "@rebin/shared";
-import {
-  AppText,
-  Card,
-  EmptyState,
-  PillButton,
-  Screen,
-  StatusBadge,
-  tokens,
-} from "@rebin/ui";
-
-// Same fixed zone as the dashboard, for the same reason: organizations
-// .facility_timezone isn't in this read yet, and a date that shifts with the
-// viewer's phone clock is worse than one that's consistently US Eastern.
-const ORG_TZ = "America/New_York";
+import { AppText, Card, EmptyState, PillButton, Screen, tokens } from "@rebin/ui";
+import { RequestCard } from "../../src/features/org-dashboard/RequestCard";
 
 // The plan's S30 adds status filter chips, ID search and infinite scroll. Those
 // are worth building against a list long enough to need them -- with no way to
@@ -73,15 +60,7 @@ export default function OrgRequests() {
       ) : (
         <View style={{ gap: tokens.space[2] }}>
           {rows.map((row) => (
-            <Card key={row.id} style={{ gap: tokens.space[1] }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                <AppText variant="h3">{`${row.unitCount} devices`}</AppText>
-                <StatusBadge status={row.status} />
-              </View>
-              <AppText variant="bodySm" tone="muted">
-                {`Requested ${formatUsDate(row.createdAt, ORG_TZ)}`}
-              </AppText>
-            </Card>
+            <RequestCard key={row.id} request={row} />
           ))}
         </View>
       )}

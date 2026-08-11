@@ -453,9 +453,30 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      pending_accounts: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          kind: string | null
+          name: string | null
+          status: Database["public"]["Enums"]["account_status_enum"] | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      advance_pickup_request: {
+        Args: {
+          p_request_id: string
+          p_status: Database["public"]["Enums"]["request_status_enum"]
+        }
+        Returns: undefined
+      }
+      can_manage_request: { Args: { p_request_id: string }; Returns: boolean }
+      cancel_pickup_request: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
       create_business_with_owner: {
         Args: {
           p_business_name: string
@@ -508,6 +529,36 @@ export type Database = {
       }
       is_business_member: { Args: { p_business: string }; Returns: boolean }
       is_org_member: { Args: { p_org: string }; Returns: boolean }
+      is_platform_staff: { Args: never; Returns: boolean }
+      reschedule_pickup_request: {
+        Args: {
+          p_request_id: string
+          p_window_end: string
+          p_window_start: string
+        }
+        Returns: undefined
+      }
+      set_agent_status: {
+        Args: {
+          p_status: Database["public"]["Enums"]["account_status_enum"]
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      set_business_status: {
+        Args: {
+          p_business_id: string
+          p_status: Database["public"]["Enums"]["account_status_enum"]
+        }
+        Returns: undefined
+      }
+      set_organization_status: {
+        Args: {
+          p_org_id: string
+          p_status: Database["public"]["Enums"]["account_status_enum"]
+        }
+        Returns: undefined
+      }
       update_own_profile: {
         Args: { p_avatar_url?: string; p_full_name: string; p_phone?: string }
         Returns: undefined

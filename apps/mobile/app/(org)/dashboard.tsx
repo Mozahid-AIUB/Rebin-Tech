@@ -7,10 +7,9 @@ import {
   PillButton,
   Screen,
   SectionHeader,
-  StatusBadge,
   tokens,
 } from "@rebin/ui";
-import { formatUsDate } from "@rebin/shared";
+import { RequestCard } from "../../src/features/org-dashboard/RequestCard";
 import { useOrgDashboard } from "../../src/features/org-dashboard/useOrgDashboard";
 
 // NOTE ON SCOPE. The plan's S22 also specifies a four-stat row (Active
@@ -99,15 +98,7 @@ export default function OrgDashboard() {
           ) : (
             <View style={{ gap: tokens.space[2] }}>
               {requests.map((request) => (
-                <Card key={request.id} style={{ gap: tokens.space[1] }}>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                    <AppText variant="h3">{`${request.unitCount} devices`}</AppText>
-                    <StatusBadge status={request.status} />
-                  </View>
-                  <AppText variant="bodySm" tone="muted">
-                    {`Requested ${formatUsDate(request.createdAt, ORG_TZ)}`}
-                  </AppText>
-                </Card>
+                <RequestCard key={request.id} request={request} />
               ))}
             </View>
           )}

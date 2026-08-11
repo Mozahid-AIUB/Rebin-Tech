@@ -15,6 +15,18 @@ export type PickupRequestRow = {
   createdAt: string;
 };
 
+/** Everything S29 renders about one request. */
+export type PickupRequestDetail = PickupRequestRow & {
+  sizeTier: string;
+  categories: string[];
+  windowEnd: string;
+  timezone: string;
+  onSiteContactName: string;
+  onSiteContactPhone: string;
+  dockAddress: string;
+  instructions: string;
+};
+
 /**
  * Reads follow the same shape as resolveRoles: errors are rethrown as real
  * `Error`s. PostgREST hands back a plain object, and rethrowing it as-is makes
@@ -237,6 +249,57 @@ export async function createPickupRequest(
     .single();
   if (error) throw asError(error.message);
   return { id: data.id };
+}
+
+export async function getPickupRequest(requestId: string): Promise<PickupRequestDetail | null> {
+  const { data, error } = await supabase
+    .from("pickup_requests")
+    .select(
+      "id, status, size_tier, unit_count, categories, window_start, window_end, timezone, on_site_contact_name, on_site_contact_phone, dock_address, instructions, created_at",
+    )
+    .eq("id", requestId)
+    .maybeSingle();
+  if (error) throw asError(error.message);
+  if (!data) return null;
+  return {
+    id: data.id,
+    status: data.status as RequestStatus,
+    sizeTier: data.size_tier as string,
+    unitCount: data.unit_count,
+    categories: (data.categories ?? []) as string[],
+    windowStart: data.window_start,
+    windowEnd: data.window_end,
+    timezone: data.timezone,
+    onSiteContactName: data.on_site_contact_name,
+    onSiteContactPhone: data.on_site_contact_phone,
+    dockAddress: data.dock_address,
+    instructions: data.instructions ?? "",
+    createdAt: data.created_at,
+  };
+}
+
+/**
+ * Cancel and reschedule go through RPCs (migration 0016) rather than a table
+ * update: which transitions are legal is a business rule, and an UPDATE policy
+ * would hand the client the whole `status` column -- including 'completed',
+ * the state a recycling certificate is issued from.
+ */
+export async function cancelPickupRequest(requestId: string): Promise<void> {
+  const { error } = await supabase.rpc("cancel_pickup_request", { p_request_id: requestId });
+  if (error) throw asError(error.message);
+}
+
+export async function reschedulePickupRequest(
+  requestId: string,
+  windowStart: string,
+  windowEnd: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("reschedule_pickup_request", {
+    p_request_id: requestId,
+    p_window_start: windowStart,
+    p_window_end: windowEnd,
+  });
+  if (error) throw asError(error.message);
 }
 
 export async function getBusiness(businessId: string): Promise<BusinessSummary | null> {

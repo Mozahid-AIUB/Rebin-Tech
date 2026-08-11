@@ -15,8 +15,9 @@ const TABS = [
 export default function OrgLayout() {
   return (
     <RoleGuard portal="org">
-      {/* The booking wizard is pushed from the dashboard, not tabbed to. */}
-      <PortalTabs portal="org" tabs={TABS} hidden={["request/new"]} />
+      {/* Both are pushed -- the wizard from the dashboard's CTA, the detail
+          from a request card -- so neither belongs in the tab bar. */}
+      <PortalTabs portal="org" tabs={TABS} hidden={["request/new", "request/[id]"]} />
     </RoleGuard>
   );
 }
