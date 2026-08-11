@@ -714,6 +714,125 @@ export async function decideQuote(quoteId: string, accept: boolean): Promise<voi
   if (error) throw asError(error.message);
 }
 
+export type JobStatus = "claimed" | "en_route" | "on_site" | "collected" | "cancelled";
+
+export type AvailableJob = {
+  requestId: string;
+  orgName: string;
+  city: string;
+  state: string;
+  unitCount: number;
+  categories: string[];
+  windowStart: string;
+  windowEnd: string;
+  timezone: string;
+};
+
+export type MyJob = {
+  id: string;
+  requestId: string;
+  status: JobStatus;
+  orgName: string;
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+  unitCount: number;
+  windowStart: string;
+  windowEnd: string;
+  timezone: string;
+  claimedAt: string;
+  collectedAt: string | null;
+};
+
+export type AgentSummary = {
+  jobsCompleted: number;
+  devicesCollected: number;
+  jobsActive: number;
+};
+
+/** Scheduled pickups nobody has claimed yet. */
+export async function listAvailableJobs(): Promise<AvailableJob[]> {
+  const { data, error } = await supabase.rpc("list_available_jobs");
+  if (error) throw asError(error.message);
+  return (data ?? []).map((row) => ({
+    requestId: row.request_id,
+    orgName: row.org_name,
+    city: row.city,
+    state: row.state,
+    unitCount: row.unit_count,
+    categories: (row.categories ?? []) as string[],
+    windowStart: row.window_start,
+    windowEnd: row.window_end,
+    timezone: row.timezone,
+  }));
+}
+
+export async function listMyJobs(): Promise<MyJob[]> {
+  const { data, error } = await supabase.rpc("list_my_jobs");
+  if (error) throw asError(error.message);
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    requestId: row.request_id,
+    status: row.status as JobStatus,
+    orgName: row.org_name,
+    street: row.street,
+    city: row.city,
+    state: row.state,
+    zip: row.zip,
+    unitCount: row.unit_count,
+    windowStart: row.window_start,
+    windowEnd: row.window_end,
+    timezone: row.timezone,
+    claimedAt: row.claimed_at,
+    collectedAt: row.collected_at,
+  }));
+}
+
+/**
+ * Takes a job off the board.
+ *
+ * The unique index in migration 0024 is what actually stops two agents
+ * claiming the same pickup; this surfaces the collision as a sentence.
+ */
+export async function claimJob(requestId: string): Promise<string> {
+  const { data, error } = await supabase.rpc("claim_job", { p_request_id: requestId });
+  if (error) throw asError(error.message);
+  return data as string;
+}
+
+/**
+ * Moves a job to its next stage, and the customer's request with it.
+ *
+ * `actualUnits` is required to reach 'collected' -- the count is what the
+ * certificate and any later dispute rest on, so the RPC refuses without one.
+ */
+export async function advanceJob(
+  jobId: string,
+  status: JobStatus,
+  actualUnits?: number,
+  notes?: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("advance_job", {
+    p_job_id: jobId,
+    p_status: status,
+    p_actual_units: actualUnits ?? undefined,
+    p_notes: notes ?? undefined,
+  });
+  if (error) throw asError(error.message);
+}
+
+export async function getAgentSummary(): Promise<AgentSummary> {
+  const { data, error } = await supabase.rpc("my_agent_summary");
+  if (error) throw asError(error.message);
+  const row = (data ?? [])[0];
+  return {
+    jobsCompleted: Number(row?.jobs_completed ?? 0),
+    devicesCollected: Number(row?.devices_collected ?? 0),
+    jobsActive: Number(row?.jobs_active ?? 0),
+  };
+}
+
 export async function getBusiness(businessId: string): Promise<BusinessSummary | null> {
   const { data, error } = await supabase
     .from("businesses")

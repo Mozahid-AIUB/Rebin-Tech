@@ -229,6 +229,60 @@ export type Database = {
           },
         ]
       }
+      job_assignments: {
+        Row: {
+          actual_units: number | null
+          agent_id: string
+          arrived_at: string | null
+          claimed_at: string
+          collected_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          request_id: string
+          status: Database["public"]["Enums"]["job_status_enum"]
+        }
+        Insert: {
+          actual_units?: number | null
+          agent_id: string
+          arrived_at?: string | null
+          claimed_at?: string
+          collected_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          request_id: string
+          status?: Database["public"]["Enums"]["job_status_enum"]
+        }
+        Update: {
+          actual_units?: number | null
+          agent_id?: string
+          arrived_at?: string | null
+          claimed_at?: string
+          collected_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          request_id?: string
+          status?: Database["public"]["Enums"]["job_status_enum"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_assignments_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_assignments_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "pickup_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_members: {
         Row: {
           member_role: Database["public"]["Enums"]["role_enum"]
@@ -707,6 +761,15 @@ export type Database = {
         Args: { p_items: Json; p_request_id: string }
         Returns: number
       }
+      advance_job: {
+        Args: {
+          p_actual_units?: number
+          p_job_id: string
+          p_notes?: string
+          p_status: Database["public"]["Enums"]["job_status_enum"]
+        }
+        Returns: undefined
+      }
       advance_pickup_request: {
         Args: {
           p_request_id: string
@@ -719,6 +782,7 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: undefined
       }
+      claim_job: { Args: { p_request_id: string }; Returns: string }
       create_business_with_owner: {
         Args: {
           p_business_name: string
@@ -799,9 +863,44 @@ export type Database = {
         }
         Returns: Json
       }
+      is_assigned_agent: { Args: { p_request_id: string }; Returns: boolean }
       is_business_member: { Args: { p_business: string }; Returns: boolean }
+      is_field_agent: { Args: never; Returns: boolean }
       is_org_member: { Args: { p_org: string }; Returns: boolean }
       is_platform_staff: { Args: never; Returns: boolean }
+      list_available_jobs: {
+        Args: never
+        Returns: {
+          categories: Database["public"]["Enums"]["device_category_enum"][]
+          city: string
+          org_name: string
+          request_id: string
+          state: string
+          timezone: string
+          unit_count: number
+          window_end: string
+          window_start: string
+        }[]
+      }
+      list_my_jobs: {
+        Args: never
+        Returns: {
+          city: string
+          claimed_at: string
+          collected_at: string
+          id: string
+          org_name: string
+          request_id: string
+          state: string
+          status: Database["public"]["Enums"]["job_status_enum"]
+          street: string
+          timezone: string
+          unit_count: number
+          window_end: string
+          window_start: string
+          zip: string
+        }[]
+      }
       list_organization_invitations: {
         Args: { p_org_id: string }
         Returns: {
@@ -833,6 +932,15 @@ export type Database = {
           total_cents: number
         }[]
       }
+      my_agent_summary: {
+        Args: never
+        Returns: {
+          devices_collected: number
+          jobs_active: number
+          jobs_completed: number
+        }[]
+      }
+      owns_request: { Args: { p_request_id: string }; Returns: boolean }
       publish_price_catalog: {
         Args: { p_version_id: string }
         Returns: undefined
@@ -930,6 +1038,12 @@ export type Database = {
         | "server_gear"
         | "copiers_printers"
         | "batteries_ups"
+      job_status_enum:
+        | "claimed"
+        | "en_route"
+        | "on_site"
+        | "collected"
+        | "cancelled"
       org_type_enum:
         | "k12_school"
         | "university"
@@ -1118,6 +1232,13 @@ export const Constants = {
         "server_gear",
         "copiers_printers",
         "batteries_ups",
+      ],
+      job_status_enum: [
+        "claimed",
+        "en_route",
+        "on_site",
+        "collected",
+        "cancelled",
       ],
       org_type_enum: [
         "k12_school",

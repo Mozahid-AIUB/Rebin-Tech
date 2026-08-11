@@ -19,7 +19,8 @@ const TABS = [
 export default function AgentLayout() {
   return (
     <RoleGuard portal="agent">
-      <PortalTabs portal="agent" tabs={TABS} />
+      {/* Pushed from a job card or straight after claiming, not tabbed to. */}
+      <PortalTabs portal="agent" tabs={TABS} hidden={["job/[id]"]} />
     </RoleGuard>
   );
 }
