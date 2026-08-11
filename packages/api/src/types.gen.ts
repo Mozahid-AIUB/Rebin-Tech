@@ -307,6 +307,50 @@ export type Database = {
         }
         Relationships: []
       }
+      pickup_request_items: {
+        Row: {
+          category: Database["public"]["Enums"]["device_category_enum"]
+          confidence: number | null
+          created_at: string
+          id: string
+          make: string | null
+          model: string | null
+          request_id: string
+          serial: string | null
+          source: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["device_category_enum"]
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          make?: string | null
+          model?: string | null
+          request_id: string
+          serial?: string | null
+          source?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["device_category_enum"]
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          make?: string | null
+          model?: string | null
+          request_id?: string
+          serial?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pickup_request_items_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "pickup_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pickup_requests: {
         Row: {
           categories: Database["public"]["Enums"]["device_category_enum"][]
@@ -466,6 +510,10 @@ export type Database = {
     }
     Functions: {
       accept_org_invitation: { Args: { p_code: string }; Returns: string }
+      add_pickup_request_items: {
+        Args: { p_items: Json; p_request_id: string }
+        Returns: number
+      }
       advance_pickup_request: {
         Args: {
           p_request_id: string

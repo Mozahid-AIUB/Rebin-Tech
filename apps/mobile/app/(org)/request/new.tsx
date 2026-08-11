@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { View } from "react-native";
 import { useRouter } from "expo-router";
-import { createPickupRequest, useSessionStore } from "@rebin/api";
+import { addPickupRequestItems, createPickupRequest, useSessionStore } from "@rebin/api";
 import {
   MIN_PICKUP_UNITS,
   SIZE_TIERS,
@@ -9,6 +9,7 @@ import {
   nextPickupDates,
   pickupRequestSchema,
   type DeviceCategory,
+  type ScanItem,
   type SizeTier,
 } from "@rebin/shared";
 import {
@@ -24,6 +25,7 @@ import {
   tokens,
 } from "@rebin/ui";
 import { DEVICE_CATEGORY_OPTIONS, TIME_WINDOW_OPTIONS } from "../../../src/config/us-states";
+import { InventoryScanSheet } from "../../../src/features/scan/InventoryScanSheet";
 
 // S23-S27 of the plan. Two pieces are deliberately still missing:
 //   - S25 (AI camera inventory scan) belongs to phase P3 and has no backend.
@@ -68,6 +70,11 @@ export default function NewPickupRequest() {
   const [sizeTier, setSizeTier] = useState<SizeTier>("tier_10_30");
   const [unitCount, setUnitCount] = useState(String(DEFAULT_TIER.defaultCount));
   const [categories, setCategories] = useState<DeviceCategory[]>([]);
+  const [scanning, setScanning] = useState(false);
+  // Scanned devices, kept beside the form until the request exists to hang
+  // them off -- pickup_request_items needs a request_id, which only exists
+  // after the insert.
+  const [manifest, setManifest] = useState<ScanItem[]>([]);
   const [pickupDate, setPickupDate] = useState<string | null>(null);
   const [timeWindow, setTimeWindow] = useState<string | null>(null);
   const [contactName, setContactName] = useState("");
@@ -146,6 +153,34 @@ export default function NewPickupRequest() {
     setStep((s) => (Math.max(s - 1, 1) as Step));
   }
 
+  /**
+   * Folds a finished scan back into the form: every category seen gets ticked,
+   * and the count rises to at least what was scanned.
+   *
+   * Raised rather than replaced -- an org that scanned six of forty laptops
+   * still has forty, and overwriting 40 with 6 would silently shrink their
+   * booking.
+   */
+  function onScanDone(scanned: ScanItem[]) {
+    setScanning(false);
+    if (scanned.length === 0) return;
+
+    setManifest((prev) => {
+      const merged = [...prev, ...scanned];
+      const seen = new Set(merged.map((item) => item.deviceCategory));
+      setCategories((current) => Array.from(new Set([...current, ...seen])) as DeviceCategory[]);
+      const current = Number(unitCount);
+      if (Number.isNaN(current) || merged.length > current) {
+        setUnitCount(String(merged.length));
+        const tier = SIZE_TIERS.find(
+          (t) => merged.length >= t.min && (t.max === null || merged.length <= t.max),
+        );
+        if (tier) setSizeTier(tier.value);
+      }
+      return merged;
+    });
+  }
+
   async function submit() {
     if (!orgId || !pickupDate || !timeWindow) {
       setSubmitError("No organization is active for this account.");
@@ -172,7 +207,28 @@ export default function NewPickupRequest() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      await createPickupRequest(orgId, { ...parsed.data, timezone: ORG_TZ });
+      const { id } = await createPickupRequest(orgId, { ...parsed.data, timezone: ORG_TZ });
+
+      // Written after the request exists, because the items reference its id.
+      // A failure here must not lose the booking: the pickup is real either
+      // way, and the manifest can be rebuilt on site by the agent.
+      if (manifest.length > 0) {
+        try {
+          await addPickupRequestItems(
+            id,
+            manifest.map((item) => ({
+              category: item.deviceCategory,
+              make: item.make,
+              model: item.model,
+              serial: item.serial,
+              confidence: Math.round(item.confidence),
+              source: "scan" as const,
+            })),
+          );
+        } catch {
+          // Deliberately swallowed -- see above.
+        }
+      }
       setSubmitted(true);
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : "Couldn't submit your request.");
@@ -215,6 +271,12 @@ export default function NewPickupRequest() {
         </View>
       }
     >
+      <InventoryScanSheet
+        visible={scanning}
+        onClose={() => setScanning(false)}
+        onDone={onScanDone}
+      />
+
       <Stepper current={step} total={TOTAL_STEPS} labels={STEP_LABELS} />
 
       {step === 1 ? (
@@ -254,6 +316,29 @@ export default function NewPickupRequest() {
           {errors.categories ? (
             <AppText variant="bodySm" style={{ color: tokens.color.danger }}>{errors.categories}</AppText>
           ) : null}
+
+          {/* S25. Optional on purpose: an org that already knows it has forty
+              laptops should not have to photograph forty laptops. What the
+              scan adds is the asset tags, which is what turns a booking into
+              a compliance record. */}
+          <Card style={{ gap: tokens.space[2] }}>
+            <AppText variant="label" tone="accent">OPTIONAL</AppText>
+            <AppText variant="h3">Scan devices with the camera</AppText>
+            <AppText variant="bodySm" tone="secondary">
+              We&apos;ll read the make, model and asset tag, tick the right categories, and count
+              them for you.
+            </AppText>
+            <PillButton
+              label="Open camera"
+              variant="secondary"
+              onPress={() => setScanning(true)}
+            />
+            {manifest.length > 0 ? (
+              <AppText variant="bodySm" tone="accent">
+                {manifest.length === 1 ? "1 device scanned" : `${manifest.length} devices scanned`}
+              </AppText>
+            ) : null}
+          </Card>
         </View>
       ) : null}
 

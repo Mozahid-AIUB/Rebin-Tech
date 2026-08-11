@@ -449,6 +449,46 @@ export async function removeOrgMember(orgId: string, userId: string): Promise<vo
   if (error) throw asError(error.message);
 }
 
+/**
+ * Identifies the devices in a photo.
+ *
+ * Through the `scan-inventory` Edge Function, which holds GEMINI_API_KEY --
+ * calling Gemini from the app would ship a billable key inside every install.
+ *
+ * The response is re-parsed against scanResultSchema by the caller: Gemini is
+ * constrained by a responseSchema, but this is still a network boundary.
+ */
+export async function scanInventoryPhoto(
+  imageBase64: string,
+  mimeType = "image/jpeg",
+): Promise<unknown> {
+  const { data, error } = await supabase.functions.invoke("scan-inventory", {
+    body: { imageBase64, mimeType },
+  });
+  if (error) throw asError(error.message);
+  return data;
+}
+
+/** Writes the scanned manifest against a request (migration 0020). */
+export async function addPickupRequestItems(
+  requestId: string,
+  items: {
+    category: string;
+    make: string | null;
+    model: string | null;
+    serial: string | null;
+    confidence: number;
+    source: "scan" | "manual";
+  }[],
+): Promise<number> {
+  const { data, error } = await supabase.rpc("add_pickup_request_items", {
+    p_request_id: requestId,
+    p_items: items as never,
+  });
+  if (error) throw asError(error.message);
+  return (data as number) ?? 0;
+}
+
 export async function getBusiness(businessId: string): Promise<BusinessSummary | null> {
   const { data, error } = await supabase
     .from("businesses")
