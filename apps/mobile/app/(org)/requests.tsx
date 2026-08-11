@@ -1,20 +1,56 @@
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
-import { listRecentPickupRequests, useSessionStore, type PickupRequestRow } from "@rebin/api";
-import { AppText, Card, EmptyState, PillButton, Screen, tokens } from "@rebin/ui";
+import { listPickupRequests, useSessionStore, type PickupRequestRow } from "@rebin/api";
+import type { RequestStatus } from "@rebin/shared";
+import {
+  AppText,
+  Card,
+  ChipSingleSelect,
+  EmptyState,
+  FormField,
+  PillButton,
+  Screen,
+  tokens,
+} from "@rebin/ui";
 import { RequestCard } from "../../src/features/org-dashboard/RequestCard";
 
-// The plan's S30 adds status filter chips, ID search and infinite scroll. Those
-// are worth building against a list long enough to need them -- with no way to
-// create a request yet (the booking wizard is the next step), every org has
-// zero. Ships as a plain list; the controls come with the data.
+// S30's filter chips and ID search. Infinite scroll is not here: 50 rows is
+// more history than any org has, and paging is worth building against a list
+// long enough to need it rather than guessing at the interaction now.
 const PAGE_SIZE = 50;
+
+// Not every status: 'under_review', 'dispatched' and 'in_transit' are stages
+// the platform moves a request through, and a chip per stage would be a filter
+// bar longer than most orgs' entire history. These four are the states a
+// customer actually sorts by.
+const FILTERS = [
+  { value: "all", label: "All" },
+  { value: "pending", label: "Pending" },
+  { value: "scheduled", label: "Scheduled" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
+] as const;
+
+type Filter = (typeof FILTERS)[number]["value"];
+
+const EMPTY_COPY: Record<Filter, { title: string; body: string }> = {
+  all: {
+    title: "No requests yet",
+    body: "Every pickup you schedule will appear here with its current status.",
+  },
+  pending: { title: "No pending requests", body: "Nothing is waiting on us right now." },
+  scheduled: { title: "No scheduled requests", body: "Nothing is booked in at the moment." },
+  completed: { title: "No completed requests", body: "Finished pickups will collect here." },
+  cancelled: { title: "No cancelled requests", body: "Nothing has been called off." },
+};
 
 export default function OrgRequests() {
   const { assignments, activeIndex } = useSessionStore();
   const active = assignments[activeIndex];
   const orgId = active?.scopeType === "organization" ? active.scopeId : null;
 
+  const [filter, setFilter] = useState<Filter>("all");
+  const [search, setSearch] = useState("");
   const [rows, setRows] = useState<PickupRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,13 +64,19 @@ export default function OrgRequests() {
     setLoading(true);
     setError(null);
     try {
-      setRows(await listRecentPickupRequests(orgId, PAGE_SIZE));
+      setRows(
+        await listPickupRequests(orgId, {
+          status: filter === "all" ? undefined : (filter as RequestStatus),
+          idPrefix: search.trim() || undefined,
+          limit: PAGE_SIZE,
+        }),
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't load your requests.");
     } finally {
       setLoading(false);
     }
-  }, [orgId]);
+  }, [orgId, filter, search]);
 
   useEffect(() => {
     void load();
@@ -43,6 +85,21 @@ export default function OrgRequests() {
   return (
     <Screen>
       <AppText variant="display">Requests</AppText>
+
+      {/* Single-select: a request has one status, so two chips at once would
+          always return nothing. */}
+      <ChipSingleSelect
+        options={FILTERS}
+        value={filter}
+        onChange={(next) => setFilter(next as Filter)}
+      />
+
+      <FormField
+        label="Search by request ID"
+        value={search}
+        onChangeText={setSearch}
+        placeholder="First few characters"
+      />
 
       {loading ? (
         <AppText variant="body" tone="muted">Loading your requests…</AppText>
@@ -53,9 +110,15 @@ export default function OrgRequests() {
           <PillButton label="Try again" variant="secondary" onPress={() => void load()} />
         </Card>
       ) : rows.length === 0 ? (
+        // The copy names the filter, so an empty screen reads as "nothing
+        // matched" rather than "you have never booked a pickup".
         <EmptyState
-          title="No requests yet"
-          body="Every pickup you schedule will appear here with its current status."
+          title={search.trim() ? "Nothing matched that ID" : EMPTY_COPY[filter].title}
+          body={
+            search.trim()
+              ? "Check the first few characters and try again."
+              : EMPTY_COPY[filter].body
+          }
         />
       ) : (
         <View style={{ gap: tokens.space[2] }}>

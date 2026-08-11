@@ -182,21 +182,33 @@ export async function getOrganization(orgId: string): Promise<OrgSummary | null>
 }
 
 /**
- * Most recent pickup requests for one organization.
+ * Pickup requests for one organization, newest first.
  *
  * Ordered by created_at desc to match the `pickup_requests_org_idx` index
  * (org_id, created_at desc) rather than fighting it.
+ *
+ * Filtering happens here rather than over the returned array: narrowing a page
+ * of the newest 50 to "completed" would show the completed ones among those
+ * 50, not the org's completed pickups -- which is a different and wrong answer
+ * the moment an org has more history than one page.
  */
-export async function listRecentPickupRequests(
+export async function listPickupRequests(
   orgId: string,
-  limit = 5,
+  opts: { status?: RequestStatus; idPrefix?: string; limit?: number } = {},
 ): Promise<PickupRequestRow[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .from("pickup_requests")
     .select("id, status, unit_count, window_start, created_at")
-    .eq("org_id", orgId)
+    .eq("org_id", orgId);
+
+  if (opts.status) query = query.eq("status", opts.status);
+  // Requests are identified by the head of their uuid everywhere they're
+  // shown, so that is what a search box has to match.
+  if (opts.idPrefix) query = query.ilike("id", `${opts.idPrefix}%`);
+
+  const { data, error } = await query
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .limit(opts.limit ?? 50);
   if (error) throw asError(error.message);
 
   return (data ?? []).map((row) => ({
@@ -206,6 +218,14 @@ export async function listRecentPickupRequests(
     windowStart: row.window_start,
     createdAt: row.created_at,
   }));
+}
+
+/** The dashboard's short strip of recent activity. */
+export async function listRecentPickupRequests(
+  orgId: string,
+  limit = 5,
+): Promise<PickupRequestRow[]> {
+  return listPickupRequests(orgId, { limit });
 }
 
 /**
