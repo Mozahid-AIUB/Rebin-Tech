@@ -6,10 +6,16 @@
 // GEMINI_API_KEY lives here and only here. Shipping it in an EXPO_PUBLIC_* var
 // would hand every installed app a key that bills to this project.
 
-const MODEL = "gemini-2.5-flash";
+// Aliases, not pinned versions. The plan names gemini-2.5-flash, but Google
+// closed that model to new API keys -- this project's own key gets a 404 with
+// "no longer available to new users" -- and a pinned id will keep going stale
+// that way. The -latest aliases track whatever the current Flash and Pro are,
+// which is what this call actually wants: a fast vision model, and a stronger
+// one for the retry.
+const MODEL = "gemini-flash-latest";
 // A scan that comes back unsure gets one more look from the larger model
 // before the user is asked to type the device in by hand.
-const RETRY_MODEL = "gemini-2.5-pro";
+const RETRY_MODEL = "gemini-pro-latest";
 const CONFIDENCE_GATE = 70;
 
 const CATEGORIES = [
