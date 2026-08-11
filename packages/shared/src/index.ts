@@ -7,3 +7,4 @@ export * from "./schemas/org";
 export * from "./schemas/roles";
 export * from "./schemas/signup";
 export * from "./schemas/scan";
+export * from "./schemas/appraisal";

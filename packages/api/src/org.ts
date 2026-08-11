@@ -489,6 +489,114 @@ export async function addPickupRequestItems(
   return (data as number) ?? 0;
 }
 
+export type PriceItem = {
+  componentKey: string;
+  displayName: string;
+  category: string;
+  grade: "working" | "broken" | "parts";
+  unit: "each" | "lb";
+  unitPriceCents: number;
+};
+
+/**
+ * The live price list.
+ *
+ * Readable without signing in: the portal picker offers "Browse Price Catalog"
+ * before login (S02, S66), and RLS only ever exposes the published version --
+ * a draft is not an offer.
+ */
+export async function listCurrentPrices(): Promise<PriceItem[]> {
+  const { data, error } = await supabase
+    .from("price_items")
+    .select("component_key, display_name, category, grade, unit, unit_price_cents, price_catalog_versions!inner(status)")
+    .eq("price_catalog_versions.status", "active")
+    .order("category")
+    .order("display_name");
+  if (error) throw asError(error.message);
+  return (data ?? []).map((row) => ({
+    componentKey: row.component_key,
+    displayName: row.display_name,
+    category: row.category as string,
+    grade: row.grade as PriceItem["grade"],
+    unit: row.unit as PriceItem["unit"],
+    unitPriceCents: row.unit_price_cents,
+  }));
+}
+
+export type CurrentPrice = {
+  catalogVersionId: string;
+  version: number;
+  displayName: string;
+  unit: "each" | "lb";
+  unitPriceCents: number;
+};
+
+/**
+ * What one component is worth right now.
+ *
+ * Returns the catalog version alongside the number so a quote can pin the
+ * version it was priced against -- a price with no version behind it cannot be
+ * defended when the vendor accepts three days later.
+ */
+export async function getCurrentPrice(
+  componentKey: string,
+  grade: "working" | "broken" | "parts",
+): Promise<CurrentPrice | null> {
+  const { data, error } = await supabase.rpc("current_price", {
+    p_component_key: componentKey,
+    p_grade: grade,
+  });
+  if (error) throw asError(error.message);
+  const row = (data ?? [])[0];
+  if (!row) return null;
+  return {
+    catalogVersionId: row.catalog_version_id,
+    version: row.version,
+    displayName: row.display_name,
+    unit: row.unit as CurrentPrice["unit"],
+    unitPriceCents: row.unit_price_cents,
+  };
+}
+
+export type AppraisedLine = {
+  componentKey: string;
+  displayName: string;
+  grade: "working" | "broken" | "parts";
+  quantity: number;
+  confidence: number;
+  notes: string | null;
+  unit: "each" | "lb";
+  unitPriceCents: number;
+  lineTotalCents: number;
+};
+
+export type Appraisal = {
+  items: AppraisedLine[];
+  totalCents: number;
+  catalogVersionId: string | null;
+};
+
+/**
+ * Prices a photo of a lot the vendor wants to sell.
+ *
+ * The Edge Function tells the model which component keys the live catalog
+ * knows, then attaches the prices itself -- the model classifies, the catalog
+ * prices (plan §6). `catalogVersionId` comes back so an accepted quote can pin
+ * the rates it was made at; without it a vendor accepting three days later
+ * cannot be shown why they were offered what they were.
+ */
+export async function appraisePhoto(
+  imageBase64: string,
+  mimeType = "image/jpeg",
+): Promise<Appraisal> {
+  const { data, error } = await supabase.functions.invoke<Appraisal>("appraise", {
+    body: { imageBase64, mimeType },
+  });
+  if (error) throw asError(error.message);
+  if (!data) throw asError("The appraisal came back empty.");
+  return data;
+}
+
 export async function getBusiness(businessId: string): Promise<BusinessSummary | null> {
   const { data, error } = await supabase
     .from("businesses")

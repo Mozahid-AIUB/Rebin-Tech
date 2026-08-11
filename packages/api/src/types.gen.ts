@@ -420,6 +420,88 @@ export type Database = {
           },
         ]
       }
+      price_catalog_versions: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          published_at: string | null
+          published_by: string | null
+          status: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          status?: string
+          version: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          status?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_catalog_versions_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_items: {
+        Row: {
+          catalog_version_id: string
+          category: Database["public"]["Enums"]["device_category_enum"]
+          component_key: string
+          created_at: string
+          display_name: string
+          grade: Database["public"]["Enums"]["price_grade_enum"]
+          id: string
+          unit: Database["public"]["Enums"]["price_unit_enum"]
+          unit_price_cents: number
+        }
+        Insert: {
+          catalog_version_id: string
+          category: Database["public"]["Enums"]["device_category_enum"]
+          component_key: string
+          created_at?: string
+          display_name: string
+          grade: Database["public"]["Enums"]["price_grade_enum"]
+          id?: string
+          unit?: Database["public"]["Enums"]["price_unit_enum"]
+          unit_price_cents: number
+        }
+        Update: {
+          catalog_version_id?: string
+          category?: Database["public"]["Enums"]["device_category_enum"]
+          component_key?: string
+          created_at?: string
+          display_name?: string
+          grade?: Database["public"]["Enums"]["price_grade_enum"]
+          id?: string
+          unit?: Database["public"]["Enums"]["price_unit_enum"]
+          unit_price_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_items_catalog_version_id_fkey"
+            columns: ["catalog_version_id"]
+            isOneToOne: false
+            referencedRelation: "price_catalog_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -569,6 +651,20 @@ export type Database = {
         }
         Returns: string
       }
+      create_price_catalog_draft: { Args: { p_note?: string }; Returns: string }
+      current_price: {
+        Args: {
+          p_component_key: string
+          p_grade: Database["public"]["Enums"]["price_grade_enum"]
+        }
+        Returns: {
+          catalog_version_id: string
+          display_name: string
+          unit: Database["public"]["Enums"]["price_unit_enum"]
+          unit_price_cents: number
+          version: number
+        }[]
+      }
       has_role: {
         Args: {
           p_role: Database["public"]["Enums"]["role_enum"]
@@ -606,6 +702,10 @@ export type Database = {
           member_role: Database["public"]["Enums"]["role_enum"]
           user_id: string
         }[]
+      }
+      publish_price_catalog: {
+        Args: { p_version_id: string }
+        Returns: undefined
       }
       remove_org_member: {
         Args: { p_org_id: string; p_user_id: string }
@@ -645,6 +745,18 @@ export type Database = {
         Args: {
           p_org_id: string
           p_status: Database["public"]["Enums"]["account_status_enum"]
+        }
+        Returns: undefined
+      }
+      set_price_item: {
+        Args: {
+          p_category: Database["public"]["Enums"]["device_category_enum"]
+          p_component_key: string
+          p_display_name: string
+          p_grade: Database["public"]["Enums"]["price_grade_enum"]
+          p_unit: Database["public"]["Enums"]["price_unit_enum"]
+          p_unit_price_cents: number
+          p_version_id: string
         }
         Returns: undefined
       }
@@ -695,6 +807,8 @@ export type Database = {
         | "municipal_office"
         | "corporate_hq"
         | "other"
+      price_grade_enum: "working" | "broken" | "parts"
+      price_unit_enum: "each" | "lb"
       request_status_enum:
         | "pending"
         | "under_review"
@@ -882,6 +996,8 @@ export const Constants = {
         "corporate_hq",
         "other",
       ],
+      price_grade_enum: ["working", "broken", "parts"],
+      price_unit_enum: ["each", "lb"],
       request_status_enum: [
         "pending",
         "under_review",
