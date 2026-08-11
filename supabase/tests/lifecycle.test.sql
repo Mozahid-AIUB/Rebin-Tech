@@ -1,0 +1,127 @@
+-- Guards on the account-review (0015) and request-lifecycle (0016) RPCs.
+--
+-- These functions are security definer, so they run with the privileges of
+-- their owner and their own role checks are the only thing standing between a
+-- customer and their own approval. Each test below names the check it pins.
+begin;
+select plan(11);
+
+insert into auth.users (id, email) values
+  ('11111111-1111-1111-1111-111111111111', 'owner@org-a.test'),
+  ('22222222-2222-2222-2222-222222222222', 'stranger@org-b.test'),
+  ('33333333-3333-3333-3333-333333333333', 'ops@rebin.test');
+insert into profiles (id, full_name, status) values
+  ('11111111-1111-1111-1111-111111111111', 'Org Owner', 'pending_verification'),
+  ('22222222-2222-2222-2222-222222222222', 'Stranger',  'active'),
+  ('33333333-3333-3333-3333-333333333333', 'Ops Staff', 'active');
+insert into organizations (id, name, org_type, street, city, state, zip) values
+  ('aaaaaaaa-0000-0000-0000-000000000001', 'Org A', 'hospital', '1 A St', 'Boston', 'MA', '02108');
+insert into organization_members values
+  ('aaaaaaaa-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'org_owner');
+insert into role_assignments (user_id, role, scope_type, scope_id) values
+  ('11111111-1111-1111-1111-111111111111', 'org_owner', 'organization', 'aaaaaaaa-0000-0000-0000-000000000001'),
+  ('33333333-3333-3333-3333-333333333333', 'platform_ops', 'platform', null);
+insert into pickup_requests (id, org_id, created_by, size_tier, unit_count, categories, window_start, window_end, timezone, on_site_contact_name, on_site_contact_phone, dock_address) values
+  ('cccccccc-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'tier_10_30', 25, '{computers_laptops}', now(), now() + interval '3 hours', 'America/New_York', 'A Contact', '5550100000', 'Dock A');
+
+-- ---------------------------------------------------------------------------
+-- Account review: the whole point is that you cannot approve yourself.
+-- ---------------------------------------------------------------------------
+set local role authenticated;
+set local request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+
+select throws_ok(
+  $$select set_organization_status('aaaaaaaa-0000-0000-0000-000000000001', 'active')$$,
+  '42501',
+  null,
+  'an org owner cannot approve their own organization'
+);
+
+set local request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
+
+select lives_ok(
+  $$select set_organization_status('aaaaaaaa-0000-0000-0000-000000000001', 'active')$$,
+  'platform_ops can approve an organization'
+);
+select is(
+  (select status from organizations where id = 'aaaaaaaa-0000-0000-0000-000000000001'),
+  'active'::account_status_enum,
+  'approval moves the organization to active'
+);
+select isnt(
+  (select verified_at from organizations where id = 'aaaaaaaa-0000-0000-0000-000000000001'),
+  null,
+  'approval stamps verified_at'
+);
+select is(
+  (select status from profiles where id = '11111111-1111-1111-1111-111111111111'),
+  'active'::account_status_enum,
+  'the org member''s own profile follows the organization'
+);
+
+-- ---------------------------------------------------------------------------
+-- Request lifecycle.
+-- ---------------------------------------------------------------------------
+set local request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select throws_ok(
+  $$select cancel_pickup_request('cccccccc-0000-0000-0000-000000000001')$$,
+  '42501',
+  null,
+  'someone outside the org cannot cancel its pickup'
+);
+
+set local request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select throws_ok(
+  $$select advance_pickup_request('cccccccc-0000-0000-0000-000000000001', 'completed')$$,
+  '42501',
+  null,
+  'a customer cannot move their own request down the pipeline'
+);
+
+set local request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
+select throws_ok(
+  $$select advance_pickup_request('cccccccc-0000-0000-0000-000000000001', 'completed')$$,
+  '22023',
+  null,
+  'even ops cannot jump a pending request straight to completed'
+);
+select lives_ok(
+  $$select advance_pickup_request('cccccccc-0000-0000-0000-000000000001', 'under_review')$$,
+  'ops can move a pending request to under_review'
+);
+
+-- Once it is out for delivery, cancelling is a phone call, not a button.
+select advance_pickup_request('cccccccc-0000-0000-0000-000000000001', 'scheduled');
+select advance_pickup_request('cccccccc-0000-0000-0000-000000000001', 'dispatched');
+
+set local request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select throws_ok(
+  $$select cancel_pickup_request('cccccccc-0000-0000-0000-000000000001')$$,
+  '22023',
+  null,
+  'a dispatched pickup can no longer be cancelled'
+);
+
+-- ---------------------------------------------------------------------------
+-- Rescheduling puts a scheduled pickup back in the queue.
+-- ---------------------------------------------------------------------------
+insert into pickup_requests (id, org_id, created_by, size_tier, unit_count, categories, window_start, window_end, timezone, on_site_contact_name, on_site_contact_phone, dock_address) values
+  ('cccccccc-0000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'tier_10_30', 25, '{computers_laptops}', now(), now() + interval '3 hours', 'America/New_York', 'A Contact', '5550100000', 'Dock A');
+set local request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
+select advance_pickup_request('cccccccc-0000-0000-0000-000000000002', 'under_review');
+select advance_pickup_request('cccccccc-0000-0000-0000-000000000002', 'scheduled');
+
+set local request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select reschedule_pickup_request(
+  'cccccccc-0000-0000-0000-000000000002',
+  now() + interval '2 days',
+  now() + interval '2 days 3 hours'
+);
+select is(
+  (select status from pickup_requests where id = 'cccccccc-0000-0000-0000-000000000002'),
+  'pending'::request_status_enum,
+  'rescheduling a scheduled pickup returns it to the queue'
+);
+
+select * from finish();
+rollback;
