@@ -20,7 +20,7 @@ export default function OrgLayout() {
       <PortalTabs
         portal="org"
         tabs={TABS}
-        hidden={["request/new", "request/[id]", "settings"]}
+        hidden={["request/new", "request/[id]", "settings", "team"]}
       />
     </RoleGuard>
   );

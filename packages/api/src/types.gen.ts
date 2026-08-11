@@ -465,6 +465,7 @@ export type Database = {
       }
     }
     Functions: {
+      accept_org_invitation: { Args: { p_code: string }; Returns: string }
       advance_pickup_request: {
         Args: {
           p_request_id: string
@@ -527,9 +528,41 @@ export type Database = {
         }
         Returns: boolean
       }
+      invite_org_member: {
+        Args: {
+          p_email: string
+          p_org_id: string
+          p_role: Database["public"]["Enums"]["role_enum"]
+        }
+        Returns: Json
+      }
       is_business_member: { Args: { p_business: string }; Returns: boolean }
       is_org_member: { Args: { p_org: string }; Returns: boolean }
       is_platform_staff: { Args: never; Returns: boolean }
+      list_organization_invitations: {
+        Args: { p_org_id: string }
+        Returns: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          role: Database["public"]["Enums"]["role_enum"]
+        }[]
+      }
+      list_organization_members: {
+        Args: { p_org_id: string }
+        Returns: {
+          email: string
+          full_name: string
+          joined_at: string
+          member_role: Database["public"]["Enums"]["role_enum"]
+          user_id: string
+        }[]
+      }
+      remove_org_member: {
+        Args: { p_org_id: string; p_user_id: string }
+        Returns: undefined
+      }
       reschedule_pickup_request: {
         Args: {
           p_request_id: string
@@ -549,6 +582,14 @@ export type Database = {
         Args: {
           p_business_id: string
           p_status: Database["public"]["Enums"]["account_status_enum"]
+        }
+        Returns: undefined
+      }
+      set_org_member_role: {
+        Args: {
+          p_org_id: string
+          p_role: Database["public"]["Enums"]["role_enum"]
+          p_user_id: string
         }
         Returns: undefined
       }

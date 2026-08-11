@@ -355,6 +355,100 @@ export async function updateOwnOrganization(
   if (error) throw asError(error.message);
 }
 
+export type OrgMember = {
+  userId: string;
+  fullName: string;
+  email: string;
+  memberRole: string;
+  joinedAt: string;
+};
+
+export type OrgInvitation = {
+  id: string;
+  email: string;
+  role: string;
+  expiresAt: string;
+};
+
+/**
+ * The team, read through an RPC rather than a join.
+ *
+ * `profiles_self` (migration 0008) admits only your own row, so a plain
+ * PostgREST select returns one name however many colleagues you have. The
+ * function checks membership and then reads on your behalf.
+ */
+export async function listOrganizationMembers(orgId: string): Promise<OrgMember[]> {
+  const { data, error } = await supabase.rpc("list_organization_members", { p_org_id: orgId });
+  if (error) throw asError(error.message);
+  return (data ?? []).map((row) => ({
+    userId: row.user_id,
+    fullName: row.full_name,
+    email: row.email,
+    memberRole: row.member_role as string,
+    joinedAt: row.joined_at,
+  }));
+}
+
+export async function listOrganizationInvitations(orgId: string): Promise<OrgInvitation[]> {
+  const { data, error } = await supabase.rpc("list_organization_invitations", { p_org_id: orgId });
+  if (error) throw asError(error.message);
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    email: row.email,
+    role: row.role as string,
+    expiresAt: row.expires_at,
+  }));
+}
+
+/**
+ * Invites someone by email.
+ *
+ * Two outcomes by design (migration 0019): an address that already has an
+ * account joins immediately; an unknown one gets a code the inviter passes on
+ * themselves, because nothing here sends email yet. The code is returned once
+ * and never readable again -- only its hash is stored.
+ */
+export async function inviteOrgMember(
+  orgId: string,
+  email: string,
+  role: "org_admin" | "org_requester",
+): Promise<{ status: "added" | "invited"; code: string | null }> {
+  const { data, error } = await supabase.rpc("invite_org_member", {
+    p_org_id: orgId,
+    p_email: email,
+    p_role: role,
+  });
+  if (error) throw asError(error.message);
+  return data as { status: "added" | "invited"; code: string | null };
+}
+
+export async function acceptOrgInvitation(code: string): Promise<string> {
+  const { data, error } = await supabase.rpc("accept_org_invitation", { p_code: code });
+  if (error) throw asError(error.message);
+  return data as string;
+}
+
+export async function setOrgMemberRole(
+  orgId: string,
+  userId: string,
+  role: "org_admin" | "org_requester",
+): Promise<void> {
+  const { error } = await supabase.rpc("set_org_member_role", {
+    p_org_id: orgId,
+    p_user_id: userId,
+    p_role: role,
+  });
+  if (error) throw asError(error.message);
+}
+
+export async function removeOrgMember(orgId: string, userId: string): Promise<void> {
+  const { error } = await supabase.rpc("remove_org_member", {
+    p_org_id: orgId,
+    p_user_id: userId,
+  });
+  if (error) throw asError(error.message);
+}
+
 export async function getBusiness(businessId: string): Promise<BusinessSummary | null> {
   const { data, error } = await supabase
     .from("businesses")

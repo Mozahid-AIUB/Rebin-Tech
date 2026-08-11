@@ -215,6 +215,11 @@ export function MeScreen() {
                   variant="secondary"
                   onPress={() => router.push(asHref("/(org)/settings"))}
                 />
+                <PillButton
+                  label="Team"
+                  variant="secondary"
+                  onPress={() => router.push(asHref("/(org)/team"))}
+                />
               </Card>
             </>
           ) : null}
