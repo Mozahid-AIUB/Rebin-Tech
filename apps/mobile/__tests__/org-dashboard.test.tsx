@@ -20,8 +20,9 @@ jest.mock("@rebin/api", () => {
 });
 
 const mockReplace = jest.fn();
+const mockPush = jest.fn();
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ replace: mockReplace, push: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ replace: mockReplace, push: mockPush, back: jest.fn() }),
 }));
 
 const ACTIVE_ORG = { id: "o1", name: "Riverside Medical Center", status: "active" as const };
@@ -76,13 +77,15 @@ describe("S22 Organization dashboard", () => {
     expect(screen.queryByText("No pickups yet")).toBeNull();
   });
 
-  // The booking wizard (S23-S28) doesn't exist yet. The CTA stays visible but
-  // inert -- hiding it would misrepresent what the product is for.
-  it("shows the pickup CTA as disabled until booking ships", async () => {
+  // Was asserted as disabled while the booking wizard was unbuilt; now that
+  // request/new.tsx exists and submits, the CTA's job is to open it.
+  it("opens the booking wizard from the pickup CTA", async () => {
     await renderDashboard();
     await waitFor(() => expect(screen.getByText("No pickups yet")).toBeTruthy());
-    const cta = screen.getByRole("button", { name: "Schedule Free Pickup" });
-    expect(cta.props.accessibilityState).toMatchObject({ disabled: true });
+
+    await fireEvent.press(screen.getByRole("button", { name: "Schedule Free Pickup" }));
+
+    expect(mockPush).toHaveBeenCalledWith("/(org)/request/new");
   });
 
   it("flags an organization still awaiting verification", async () => {

@@ -18,3 +18,4 @@ web-build/
 # Local Supabase dumps -- machine-specific snapshots, not source.
 # The reproducible account lives in supabase/seed.sql instead.
 supabase/backups/
+.supabase-token

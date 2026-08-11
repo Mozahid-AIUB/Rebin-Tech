@@ -1,4 +1,4 @@
-import type { AccountStatus, RequestStatus } from "@rebin/shared";
+import type { AccountStatus, PickupRequestInput, RequestStatus } from "@rebin/shared";
 import { supabase } from "./client";
 
 export type OrgSummary = {
@@ -194,6 +194,49 @@ export async function listRecentPickupRequests(
     windowStart: row.window_start,
     createdAt: row.created_at,
   }));
+}
+
+/**
+ * Books a pickup for one organization.
+ *
+ * A plain insert rather than an RPC: unlike signup, there is nothing to do in
+ * a transaction here, and the `req_insert` policy in migration 0008 already
+ * enforces both halves of the rule (the row's created_by must be the caller,
+ * and the caller must belong to the org).
+ *
+ * `created_by` comes from the live session rather than a caller argument --
+ * the policy compares it against auth.uid(), so a passed-in id would only ever
+ * be a way to get the insert rejected.
+ */
+export async function createPickupRequest(
+  orgId: string,
+  input: PickupRequestInput & { timezone: string },
+): Promise<{ id: string }> {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw asError(sessionError.message);
+  const userId = sessionData.session?.user.id;
+  if (!userId) throw asError("Your session has expired. Sign in and try again.");
+
+  const { data, error } = await supabase
+    .from("pickup_requests")
+    .insert({
+      org_id: orgId,
+      created_by: userId,
+      size_tier: input.sizeTier,
+      unit_count: input.unitCount,
+      categories: input.categories,
+      window_start: input.windowStart,
+      window_end: input.windowEnd,
+      timezone: input.timezone,
+      on_site_contact_name: input.onSiteContactName,
+      on_site_contact_phone: input.onSiteContactPhone,
+      dock_address: input.dockAddress,
+      instructions: input.instructions,
+    })
+    .select("id")
+    .single();
+  if (error) throw asError(error.message);
+  return { id: data.id };
 }
 
 export async function getBusiness(businessId: string): Promise<BusinessSummary | null> {
