@@ -12,7 +12,10 @@ Deno.serve(async (req) => {
   const { data: created, error: authError } = await admin.auth.admin.createUser({
     email: body.email,
     password: body.password,
-    email_confirm: false,
+    // Confirmed at creation -- see signup-organization for why (GoTrue rejects
+    // a login when email_confirmed_at is null, and the app has no
+    // email-verification screen; access is gated on profiles.status).
+    email_confirm: true,
   });
   if (authError || !created.user) {
     return Response.json({ error: authError?.message ?? "User creation failed" }, { status: 400 });

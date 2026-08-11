@@ -22,7 +22,21 @@ export type PortalTab = {
  * the portal theme context, because the tab bar renders outside the
  * PortalThemeProvider that RoleGuard sets up around the screens.
  */
-export function PortalTabs({ portal, tabs }: { portal: PortalKey; tabs: readonly PortalTab[] }) {
+export function PortalTabs({
+  portal,
+  tabs,
+  hidden = [],
+}: {
+  portal: PortalKey;
+  tabs: readonly PortalTab[];
+  /**
+   * Routes that live in the portal's folder but must not get a tab button --
+   * `<Tabs>` discovers every route file in its group, so a pushed screen like
+   * the booking wizard shows up in the bar until it is declared with
+   * `href: null`.
+   */
+  hidden?: readonly string[];
+}) {
   const accent = PORTAL_ACCENTS[portal];
 
   return (
@@ -58,6 +72,9 @@ export function PortalTabs({ portal, tabs }: { portal: PortalKey; tabs: readonly
             tabBarIcon: ({ color }) => <tab.Icon color={color} />,
           }}
         />
+      ))}
+      {hidden.map((name) => (
+        <Tabs.Screen key={name} name={name} options={{ href: null }} />
       ))}
     </Tabs>
   );

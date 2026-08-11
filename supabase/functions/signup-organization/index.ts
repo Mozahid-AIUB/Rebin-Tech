@@ -10,7 +10,13 @@ Deno.serve(async (req) => {
   const { data: created, error: authError } = await admin.auth.admin.createUser({
     email: body.workEmail,
     password: body.password,
-    email_confirm: false,
+    // Confirmed at creation. GoTrue's password grant refuses a user whose
+    // email_confirmed_at is null -- signup returned 200 and then every login
+    // failed with "Email not confirmed", with nothing wrong visible in the
+    // row. There is no email-verification screen in the app either; access is
+    // gated on profiles.status / organizations.status, which start as
+    // 'pending_verification' and are cleared by a human.
+    email_confirm: true,
   });
   if (authError || !created.user) {
     return Response.json({ error: authError?.message ?? "User creation failed" }, { status: 400 });
