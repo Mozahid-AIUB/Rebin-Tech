@@ -1,6 +1,6 @@
 import { View } from "react-native";
 import { useRouter, type Href } from "expo-router";
-import { formatUsDate, summarisePickupRequests } from "@rebin/shared";
+import { formatUsDate } from "@rebin/shared";
 import {
   AppText,
   Card,
@@ -17,12 +17,12 @@ import { useOrgDashboard } from "../../src/features/org-dashboard/useOrgDashboar
 
 // S22. Three stats, the request list, and the one action this portal is for.
 //
-// The plan's other two tiles -- Devices Recycled and Certificates -- are still
-// absent, and for the same reason as before: no request can reach 'completed'
-// until the field agent portal exists, and there is no certificates table, so
-// both would be a permanent zero dressed as a statistic. The three here are
-// derived from requests the org has already made, so they are real from the
-// first booking.
+// "Devices recycled" is real as of the field agent portal: a request can now
+// reach 'completed', and the number counts what an agent put on the truck
+// rather than what was booked -- the two differ on most collections.
+//
+// Certificates is still the missing fourth tile. There is no certificates
+// table, so it would be the permanent zero this row exists to avoid.
 //
 // The plan's quick-access grid is also absent, and not only for missing
 // destinations. With three tabs and this portal's small screen set, every tile
@@ -59,8 +59,7 @@ function asHref(path: string): Href {
 
 export default function OrgDashboard() {
   const router = useRouter();
-  const { loading, error, firstName, org, requests, reload } = useOrgDashboard();
-  const stats = summarisePickupRequests(requests);
+  const { loading, error, firstName, org, requests, summary, reload } = useOrgDashboard();
 
   return (
     <Screen
@@ -95,14 +94,21 @@ export default function OrgDashboard() {
       ) : (
         <>
           <StatRow>
-            <StatTile value={String(stats.activeCount)} label="ACTIVE" tone="accent" />
-            <StatTile value={String(stats.activeDevices)} label="DEVICES" />
+            <StatTile value={String(summary?.activeCount ?? 0)} label="ACTIVE" tone="accent" />
+            <StatTile
+              // The payoff of the agent portal: this counts what agents put on
+              // the truck, so it stops being a permanent zero the first time a
+              // pickup is collected.
+              value={String(summary?.devicesRecycled ?? 0)}
+              label="RECYCLED"
+              tone={(summary?.devicesRecycled ?? 0) > 0 ? "default" : "muted"}
+            />
             <StatTile
               // An em dash rather than a date-shaped placeholder: "--" reads as
               // "nothing booked", where "00/00/0000" reads as broken.
-              value={stats.nextPickup ? formatUsDate(stats.nextPickup, ORG_TZ).slice(0, 5) : "—"}
+              value={summary?.nextPickup ? formatUsDate(summary.nextPickup, ORG_TZ).slice(0, 5) : "—"}
               label="NEXT PICKUP"
-              tone={stats.nextPickup ? "default" : "muted"}
+              tone={summary?.nextPickup ? "default" : "muted"}
             />
           </StatRow>
 

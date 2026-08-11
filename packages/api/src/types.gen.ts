@@ -940,6 +940,16 @@ export type Database = {
           jobs_completed: number
         }[]
       }
+      my_org_summary: {
+        Args: { p_org_id: string }
+        Returns: {
+          active_count: number
+          active_devices: number
+          completed_count: number
+          devices_recycled: number
+          next_pickup: string
+        }[]
+      }
       owns_request: { Args: { p_request_id: string }; Returns: boolean }
       publish_price_catalog: {
         Args: { p_version_id: string }

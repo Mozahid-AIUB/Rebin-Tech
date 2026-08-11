@@ -833,6 +833,34 @@ export async function getAgentSummary(): Promise<AgentSummary> {
   };
 }
 
+export type OrgSummary2 = {
+  activeCount: number;
+  activeDevices: number;
+  nextPickup: string | null;
+  completedCount: number;
+  devicesRecycled: number;
+};
+
+/**
+ * The organization's lifetime figures.
+ *
+ * Computed in the database rather than from the loaded page: "devices
+ * recycled" is a lifetime total, and reading it off the five most recent
+ * requests would undercount any org that has used the product for a while.
+ */
+export async function getOrgSummary(orgId: string): Promise<OrgSummary2> {
+  const { data, error } = await supabase.rpc("my_org_summary", { p_org_id: orgId });
+  if (error) throw asError(error.message);
+  const row = (data ?? [])[0];
+  return {
+    activeCount: Number(row?.active_count ?? 0),
+    activeDevices: Number(row?.active_devices ?? 0),
+    nextPickup: row?.next_pickup ?? null,
+    completedCount: Number(row?.completed_count ?? 0),
+    devicesRecycled: Number(row?.devices_recycled ?? 0),
+  };
+}
+
 export async function getBusiness(businessId: string): Promise<BusinessSummary | null> {
   const { data, error } = await supabase
     .from("businesses")

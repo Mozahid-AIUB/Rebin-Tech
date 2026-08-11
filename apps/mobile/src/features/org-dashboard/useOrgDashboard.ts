@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  getOrgSummary,
   getOrganization,
   getProfileName,
   listRecentPickupRequests,
   useSessionStore,
   type OrgSummary,
+  type OrgSummary2,
   type PickupRequestRow,
 } from "@rebin/api";
 
@@ -14,9 +16,11 @@ type State = {
   firstName: string | null;
   org: OrgSummary | null;
   requests: PickupRequestRow[];
+  /** Lifetime figures, computed in the database -- see getOrgSummary. */
+  summary: OrgSummary2 | null;
 };
 
-const INITIAL: State = { loading: true, error: null, firstName: null, org: null, requests: [] };
+const INITIAL: State = { loading: true, error: null, firstName: null, org: null, requests: [], summary: null };
 
 /** "Karim Rahman" -> "Karim". The greeting is first-name only. */
 function firstNameOf(fullName: string | null): string | null {
@@ -48,12 +52,13 @@ export function useOrgDashboard() {
 
     setState((prev) => ({ ...prev, loading: true, error: null }));
     try {
-      const [fullName, org, requests] = await Promise.all([
+      const [fullName, org, requests, summary] = await Promise.all([
         getProfileName(userId),
         getOrganization(orgId),
         listRecentPickupRequests(orgId),
+        getOrgSummary(orgId),
       ]);
-      setState({ loading: false, error: null, firstName: firstNameOf(fullName), org, requests });
+      setState({ loading: false, error: null, firstName: firstNameOf(fullName), org, requests, summary });
     } catch (e) {
       setState((prev) => ({
         ...prev,

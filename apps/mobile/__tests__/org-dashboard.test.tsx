@@ -6,6 +6,7 @@ import { useSessionStore } from "../src/store/session";
 const mockProfileName = jest.fn();
 const mockOrg = jest.fn();
 const mockRequests = jest.fn();
+const mockSummary = jest.fn();
 const mockSignOut = jest.fn();
 
 jest.mock("@rebin/api", () => {
@@ -15,6 +16,7 @@ jest.mock("@rebin/api", () => {
     getProfileName: (...a: unknown[]) => mockProfileName(...a),
     getOrganization: (...a: unknown[]) => mockOrg(...a),
     listRecentPickupRequests: (...a: unknown[]) => mockRequests(...a),
+    getOrgSummary: (...a: unknown[]) => mockSummary(...a),
     signOut: (...a: unknown[]) => mockSignOut(...a),
   };
 });
@@ -52,6 +54,13 @@ beforeEach(() => {
   mockProfileName.mockResolvedValue("Karim Rahman");
   mockOrg.mockResolvedValue(ACTIVE_ORG);
   mockRequests.mockResolvedValue([]);
+  mockSummary.mockResolvedValue({
+    activeCount: 0,
+    activeDevices: 0,
+    nextPickup: null,
+    completedCount: 0,
+    devicesRecycled: 0,
+  });
   mockSignOut.mockResolvedValue(undefined);
   signInAsOrgOwner();
 });
