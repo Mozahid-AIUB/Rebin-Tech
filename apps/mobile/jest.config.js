@@ -13,6 +13,9 @@ module.exports = {
   moduleNameMapper: {
     "^@react-native-async-storage/async-storage$":
       "@react-native-async-storage/async-storage/jest/async-storage-mock",
+    // Substituted at resolution: expo-haptics throws while being imported, so
+    // a jest.mock in setup runs too late. See __mocks__/expo-haptics.js.
+    "^expo-haptics$": "<rootDir>/__mocks__/expo-haptics.js",
   },
   // NOTE: the (?:\.pnpm/[^/]+/node_modules/)? prefix below is a deviation from the
   // brief's literal pattern, required because pnpm nests packages under
