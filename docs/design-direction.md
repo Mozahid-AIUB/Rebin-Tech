@@ -27,26 +27,34 @@ green to say recycling; everything else drawn from the materials.
 
 ---
 
-## 1 · Colour
+## 1 · Colour — from a circuit board
 
-Cream → steel. Gold → real copper. The same message, in metal.
+**Revised after self-critique. See §11 for what changed and why.**
 
-| Token | Hex | Role |
+The first draft said "steel, oxide, patina" and called it industrial. That was
+still a mood board, not the subject. The subject has an actual object at the
+centre of it, in every pickup and every quote: **a printed circuit board.**
+
+A board is already a complete palette, and it is the one this product is
+literally made of.
+
+| Token | Hex | Taken from |
 |---|---|---|
-| `ink` | `#141A17` | Text, dark surfaces. Graphite, never pure black. |
-| `steel` | `#EDEEEA` | App background. Cool where cream was warm. |
-| `surface` | `#FFFFFF` | Raised cards. |
-| `line` | `#DCDED8` | Hairlines, the workhorse of the data layer. |
-| `oxide` | `#2A5F45` | 🌿 Organization accent — oxidised green. |
-| `copper` | `#A65E2E` | 🟡 Business accent — actual copper, not gold. |
-| `patina` | `#1B6E62` | 🔷 Agent accent — copper's weathering. |
-| `signal` | `#D08A1E` | Warning. An instrument lamp, not a highlighter. |
+| `board` | `#0A3B2C` | Solder-mask green. The dark surface, and the agent's whole theme. |
+| `silk` | `#EDEFE9` | Silkscreen legend, off a stripped board. The light background. |
+| `ink` | `#111A15` | Text. Near-black with the board's green in it, never neutral. |
+| `copper` | `#B4703A` | Trace. 🔷 Agent accent — the metal being recovered. |
+| `gold` | `#C9A227` | Edge-connector contact. 🟡 Business accent — they are being paid. |
+| `flux` | `#D08A1E` | Rosin flux. Warning. |
 | `alarm` | `#B3423A` | Destructive. |
 
-The three portal accents stay three, because the portals genuinely are three
-products. They move from "green / gold / teal" to a copper oxidation story:
-fresh oxide, raw copper, patina. Related by chemistry rather than by hue
-rotation.
+The org accent is `board` itself: a hospital is handing over the boards.
+
+Why this beats the first draft: "oxidised green / raw copper / patina" is a
+copper-weathering story, which is a decent idea about metal in general. Board
+green, trace copper and contact gold is a story about **this object**, and it
+arrives at a green nobody picks for a recycling app by default — solder mask,
+not sustainability.
 
 The dark auth palette (`#0E3A32`) is the one part of the current design with a
 point of view. It stays, retuned to the new neutrals.
@@ -64,11 +72,17 @@ The largest single change, and the one that does most of the work.
 Plus Jakarta Sans goes. It is a good face and it is in every SaaS product
 shipped since 2021; it makes this app look like all of them.
 
-**Monospace for the data layer is the thesis.** This product's entire value is
-that `ABC123XYZ` was collected, graded `working`, and paid at `$120.00`. Those
-are records, not prose. Setting them in mono makes the app look like what it
-is — and it is the one typographic move nobody arrives at by default for a
-"recycling app".
+**Monospace for the data layer is the thesis**, and the board gives it a
+better reason than "records look like records".
+
+Every board this app collects already has type printed on it: reference
+designators (`R14`, `C7`, `U3`), part numbers, revision marks — condensed
+monospace on silkscreen, because that is what fits beside a component. The
+serials and asset tags the app captures are read off exactly that printing.
+
+So mono here is not a typographic mood. It is **the same lettering as the
+objects in the van**, which is why `ABC123XYZ` belongs in it and a sentence
+does not.
 
 Rules:
 - Every serial, asset tag, quote id, request id → mono.
@@ -89,13 +103,57 @@ Three surface levels instead:
 
 | Level | Treatment | Used for |
 |---|---|---|
-| Floating | Blur + hairline top border, large soft shadow | Footer CTA, tab bar, sheets |
-| Raised | White, radius 12, 1px `line`, small shadow | Actions, single objects |
-| Flat | No fill, hairline rules between rows | Data — manifests, quote lines, details |
+| Floating | Blur + large soft shadow | Footer CTA, tab bar, sheets |
+| Raised | White, radius 16, no border, small shadow | Actions, single objects |
+| Flat | No fill, no rules — separated by space | Data — manifests, quote lines, details |
 
-Radius 20 → 12. Less friendly, more instrument.
+**Rules are rationed, not spread.** The first draft put hairlines between every
+data row and dropped every radius to 12, which is how a design slides into the
+broadsheet look: thin rules everywhere, sharp corners, dense columns. That is a
+default, not a decision.
 
-## 4 · Signature — the collection docket
+Data rows are separated by **space** instead. The only rules in the app are
+`trace` rules (§4), and there are a handful of them.
+
+Radius: 20 → 16 on cards, and **0 on the docket alone**. The docket is square
+because a printed docket is square, not because square is the style.
+
+## 4 · Signature — the trace, and the docket it ends on
+
+Two moves, one idea. The board's own drawing convention becomes the app's
+structural device, and it terminates in the printed record the business runs
+on.
+
+### The trace
+
+A PCB routes connections as copper lines that turn at 45°, never at 90°,
+because a right-angled trace etches badly. That constraint is the most
+recognisable thing about the way a board looks.
+
+The app uses it wherever something genuinely **connects**:
+
+```
+   ●  Submitted            ← via (filled = reached)
+   │
+   │                       2px copper
+   ●  Under review
+   │
+   ╰──╮                    45° elbow where the route steps
+      │
+      ○  Scheduled         ← via (hollow = not yet)
+      │
+      ○  Collected
+```
+
+Used on the request timeline and the job stages, and nowhere else. It is not a
+divider and not an ornament: a trace draws a connection, and those screens are
+the only places one exists. A hairline under a heading would be decoration
+wearing the same costume.
+
+Section headings get a short copper trace stub with one elbow, four rules per
+screen at most.
+
+### The docket
 
 Quotes and completed jobs render as a printed collection docket rather than as
 a card of labelled fields.
@@ -219,6 +277,12 @@ It is a risk because it breaks the visual unity of the three portals. That is
 the trade: the agent portal should feel like a tool, not like the customer's
 app in a different colour.
 
+**The dark theme is board-coloured, not neutral.** Near-black plus one bright
+accent is its own well-worn default. The agent's background is `board`
+`#0A3B2C` — an unpopulated PCB — with `copper` for actions and `gold` reserved
+for money on a paid collection. A driver's screen at 5am looks like the thing
+in the back of the van, not like a generic dark-mode template.
+
 ## 9 · Build order
 
 1. `tokens.ts` — colour, type, radius, elevation. Changes every screen at once.
@@ -241,3 +305,36 @@ breaks was asserting on presentation, and is worth rewriting anyway.
 - **Multi-stop gradients.** The third AI-default look.
 - **A splash animation.** An agent opening this app at 6am to see their queue
   does not want to watch a logo assemble.
+
+---
+
+## 11 · Self-critique, and what changed
+
+The first draft of this document was reviewed against the three looks
+AI-generated design currently defaults to. One of them had caught it.
+
+**Default 3 — the broadsheet.** Hairline rules everywhere, radius dropped to
+zero, dense columns, monospace. The first draft prescribed hairlines between
+every data row, radius 20 → 12, and mono throughout, and called the result
+"industrial". It would have been the broadsheet default wearing a hard hat:
+arrived at by reflex, not chosen for this product.
+
+Fixed by rationing rules to the one device that means something (§4), keeping
+a soft radius on cards, and separating data rows with space.
+
+**Default 2 — near-black with one bright accent.** The agent dark theme was
+heading straight for it. Fixed by making that theme board green rather than
+neutral black, with copper and gold rather than an acid highlight.
+
+**Default 1 — cream, serif, terracotta.** Avoided from the start; it is what
+the app already looked like.
+
+The larger miss was not a default at all. The first draft reached for "steel,
+oxide, patina" — a general idea about industry — while the product has a
+specific object at the centre of every transaction that nobody had looked at.
+A circuit board is already a palette, a type convention and a drawing
+convention, and all three are truer than anything a mood board produces.
+
+The one accessory removed, in Chanel's sense: the metallic background texture
+from the first draft. With the trace as the signature, a texture behind it is
+a second voice saying the same thing more quietly.
