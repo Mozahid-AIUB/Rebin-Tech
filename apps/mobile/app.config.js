@@ -1,6 +1,15 @@
-import type { ExpoConfig } from "expo/config";
+// Plain JS rather than TypeScript on purpose.
+//
+// With app.config.ts, EAS reads the config through @expo/config, which
+// transpiles it by requiring `typescript` from its own location. Under pnpm's
+// strict node_modules that resolution fails, and the failure surfaces as
+// "Cannot read properties of undefined (reading 'CommonJS')" -- a message that
+// says nothing about the cause. No TypeScript, no transpile step, no problem.
+//
+// Nothing here needs types: it is a literal object, and Expo validates it.
 
-const config: ExpoConfig = {
+/** @type {import('expo/config').ExpoConfig} */
+const config = {
   name: "Rebin Tech",
   slug: "rebin-tech",
   scheme: "rebintech",
@@ -32,10 +41,10 @@ const config: ExpoConfig = {
   plugins: [
     "expo-router",
     [
-      // Without this the camera prompt shows iOS's generic wording, and on a
-      // release build the store rejects a camera app with no stated purpose.
-      // The copy says what the photo is for, because "allow camera access" is
-      // not a reason.
+      // Without this the camera prompt shows the platform's generic wording,
+      // and a release build is rejected for asking a camera app's question
+      // with no stated purpose. The copy says what the photo is for, because
+      // "allow camera access" is not a reason.
       "expo-image-picker",
       {
         photosPermission:
@@ -46,6 +55,16 @@ const config: ExpoConfig = {
     ],
   ],
   experiments: { typedRoutes: true },
+  owner: "mozahidislam",
+  extra: {
+    // Written here rather than left for `eas init` to insert: a dynamic config
+    // is not a file EAS can edit, so it has to be told.
+    eas: { projectId: "d7a7f1f0-dde3-4fe7-8790-9347317bde60" },
+  },
+  updates: {
+    url: "https://u.expo.dev/d7a7f1f0-dde3-4fe7-8790-9347317bde60",
+  },
+  runtimeVersion: { policy: "appVersion" },
 };
 
-export default config;
+module.exports = config;
