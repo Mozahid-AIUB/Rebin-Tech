@@ -128,7 +128,9 @@ describe("Appraisal scan", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Take a photo" }));
     await waitFor(() => expect(screen.getByText("Business laptop")).toBeTruthy());
 
-    await fireEvent.press(screen.getByRole("button", { name: "Use this quote" }));
+    // The button carries the total once there is one, so a vendor confirms a
+    // figure rather than a noun.
+    await fireEvent.press(screen.getByRole("button", { name: "Use this quote · $360.00" }));
 
     expect(onDone).toHaveBeenCalledWith(
       expect.objectContaining({

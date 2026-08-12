@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scanInventoryPhoto } from "@rebin/api";
 import { scanDisposition, scanResultSchema, type ScanItem } from "@rebin/shared";
 import { AppText, Card, EmptyState, PillButton, tokens } from "@rebin/ui";
@@ -36,6 +37,7 @@ export function InventoryScanSheet({
   onDone: (items: ScanItem[]) => void;
 }) {
   const [items, setItems] = useState<ScanItem[]>([]);
+  const insets = useSafeAreaInsets();
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -90,7 +92,7 @@ export function InventoryScanSheet({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: tokens.color.bg }}>
+      <View style={{ flex: 1, backgroundColor: tokens.color.bg, paddingTop: insets.top }}>
         <ScrollView contentContainerStyle={{ padding: tokens.space[4], gap: tokens.space[3] }}>
           <AppText variant="display">Scan devices</AppText>
           <AppText variant="bodySm" tone="secondary">
@@ -147,6 +149,9 @@ export function InventoryScanSheet({
         <View
           style={{
             padding: tokens.space[4],
+            // The system navigation bar sits under this one; without the inset
+            // the last button is half of one.
+            paddingBottom: insets.bottom + tokens.space[4],
             gap: tokens.space[2],
             borderTopWidth: 1,
             borderTopColor: tokens.color.divider,
@@ -154,7 +159,15 @@ export function InventoryScanSheet({
           }}
         >
           <PillButton
-            label={items.length === 1 ? "Add 1 device" : `Add ${items.length} devices`}
+            // "Add 0 devices" is a sentence about nothing. A disabled button
+            // should still say what it will do once it can.
+            label={
+              items.length === 0
+                ? "Add to the request"
+                : items.length === 1
+                  ? "Add 1 device"
+                  : `Add ${items.length} devices`
+            }
             disabled={items.length === 0}
             onPress={() => onDone(items)}
           />

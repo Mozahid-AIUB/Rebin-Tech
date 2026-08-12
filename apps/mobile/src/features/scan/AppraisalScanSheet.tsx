@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { appraisePhoto, type Appraisal, type AppraisedLine } from "@rebin/api";
 import { formatCents, scanDisposition } from "@rebin/shared";
 import { AppText, Card, EmptyState, PillButton, tokens } from "@rebin/ui";
@@ -22,6 +23,7 @@ export function AppraisalScanSheet({
 }) {
   const [lines, setLines] = useState<AppraisedLine[]>([]);
   const [catalogVersionId, setCatalogVersionId] = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,7 +73,7 @@ export function AppraisalScanSheet({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: tokens.color.bg }}>
+      <View style={{ flex: 1, backgroundColor: tokens.color.bg, paddingTop: insets.top }}>
         <ScrollView contentContainerStyle={{ padding: tokens.space[4], gap: tokens.space[3] }}>
           <AppText variant="display">Scan your stock</AppText>
           <AppText variant="bodySm" tone="secondary">
@@ -130,6 +132,9 @@ export function AppraisalScanSheet({
         <View
           style={{
             padding: tokens.space[4],
+            // The system navigation bar sits under this one; without the inset
+            // the last button is half of one.
+            paddingBottom: insets.bottom + tokens.space[4],
             gap: tokens.space[2],
             borderTopWidth: 1,
             borderTopColor: tokens.color.divider,
@@ -141,7 +146,7 @@ export function AppraisalScanSheet({
             <AppText variant="display">{formatCents(totalCents)}</AppText>
           </View>
           <PillButton
-            label="Use this quote"
+            label={lines.length === 0 ? "Use this quote" : `Use this quote · ${formatCents(totalCents)}`}
             disabled={lines.length === 0}
             onPress={() => onDone({ items: lines, totalCents, catalogVersionId })}
           />
