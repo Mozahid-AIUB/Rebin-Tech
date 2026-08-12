@@ -70,8 +70,14 @@ export default function OrgDashboard() {
       footer={
         <View style={{ gap: tokens.space[1] }}>
           <PillButton label="Schedule Free Pickup" onPress={() => router.push("/(org)/request/new")} />
+          {/* Not "free, 10 device minimum, from your dock" -- the wizard's
+              first step says all three, in the place where they matter.
+              Under the button, the useful thing to say is what the pickup is
+              actually for. Most of the world's e-waste is shipped somewhere
+              poorer and dumped; a certified domestic chain of custody is the
+              product, and it is a fact rather than a slogan. */}
           <AppText variant="bodySm" tone="muted" style={{ textAlign: "center" }}>
-            Free · 10 devices or more · collected from your dock
+            Recovered here, never buried elsewhere
           </AppText>
         </View>
       }
