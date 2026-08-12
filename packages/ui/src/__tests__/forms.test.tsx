@@ -132,3 +132,86 @@ describe("Stepper", () => {
     expect(screen.getByLabelText("Step 2 of 3: Categories")).toBeTruthy();
   });
 });
+
+describe("FormField feedback", () => {
+  // Nothing on screen says which field the keyboard is typing into unless the
+  // field says it. This is the assertion that keeps that true.
+  it("marks itself while focused", async () => {
+    await render(wrap(<FormField label="City" value="" onChangeText={jest.fn()} />));
+    const input = screen.getByLabelText("City");
+
+    await fireEvent(input, "focus");
+
+    expect(input).toHaveStyle({ borderWidth: 1.5 });
+  });
+
+  it("returns to rest when focus leaves", async () => {
+    await render(wrap(<FormField label="City" value="" onChangeText={jest.fn()} />));
+    const input = screen.getByLabelText("City");
+
+    await fireEvent(input, "focus");
+    await fireEvent(input, "blur");
+
+    expect(input).toHaveStyle({ borderWidth: 1 });
+  });
+
+  it("hands the return key to the next field when one follows", async () => {
+    const onSubmitEditing = jest.fn();
+    await render(
+      wrap(
+        <FormField
+          label="Name"
+          value=""
+          onChangeText={jest.fn()}
+          returnKeyType="next"
+          onSubmitEditing={onSubmitEditing}
+        />,
+      ),
+    );
+
+    await fireEvent(screen.getByLabelText("Name"), "submitEditing");
+
+    expect(onSubmitEditing).toHaveBeenCalled();
+  });
+
+  // A multiline field's return key belongs to the text, not to navigation.
+  //
+  // Asserted on the rendered props rather than by firing submitEditing:
+  // fireEvent walks up the tree looking for a handler and finds the one this
+  // test passed to FormField itself, so it would pass whatever the component
+  // did with it.
+  it("leaves the return key alone on a multiline field", async () => {
+    await render(
+      wrap(
+        <FormField
+          label="Notes"
+          value=""
+          onChangeText={jest.fn()}
+          multiline
+          returnKeyType="next"
+          onSubmitEditing={jest.fn()}
+        />,
+      ),
+    );
+
+    const input = screen.getByLabelText("Notes");
+    expect(input.props.onSubmitEditing).toBeUndefined();
+    expect(input.props.returnKeyType).toBeUndefined();
+  });
+
+  it("gives a single-line field the return key it was handed", async () => {
+    await render(
+      wrap(
+        <FormField
+          label="Street"
+          value=""
+          onChangeText={jest.fn()}
+          returnKeyType="next"
+          onSubmitEditing={jest.fn()}
+        />,
+      ),
+    );
+
+    expect(screen.getByLabelText("Street").props.returnKeyType).toBe("next");
+  });
+});

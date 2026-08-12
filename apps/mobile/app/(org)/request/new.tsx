@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { View } from "react-native";
+import { useMemo, useRef, useState } from "react";
+import { View, type TextInput } from "react-native";
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { addPickupRequestItems, createPickupRequest, useSessionStore } from "@rebin/api";
 import {
@@ -83,6 +84,11 @@ export default function NewPickupRequest() {
   const [instructions, setInstructions] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // The return key walks the contact fields in order rather than dismissing
+  // the keyboard between each one.
+  const phoneRef = useRef<TextInput>(null);
+  const dockRef = useRef<TextInput>(null);
+
   const selectedTier = useMemo(
     () => SIZE_TIERS.find((t) => t.value === sizeTier) ?? DEFAULT_TIER,
     [sizeTier],
@@ -138,9 +144,14 @@ export default function NewPickupRequest() {
   }
 
   function next() {
-    if (step === 1 && !validateStep1()) return;
-    if (step === 2 && !validateStep2()) return;
-    if (step === 3 && !validateStep3()) return;
+    // A refused step buzzes. On a phone the error text may be above the fold,
+    // and a button that appears to do nothing is worse than one that says no.
+    const ok =
+      step === 1 ? validateStep1() : step === 2 ? validateStep2() : step === 3 ? validateStep3() : true;
+    if (!ok) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
     setStep((s) => (Math.min(s + 1, TOTAL_STEPS) as Step));
   }
 
@@ -367,6 +378,8 @@ export default function NewPickupRequest() {
             autoComplete="name"
             textContentType="name"
             autoCapitalize="words"
+            returnKeyType="next"
+            onSubmitEditing={() => phoneRef.current?.focus()}
           />
           <FormField
             label="Contact phone"
@@ -377,6 +390,9 @@ export default function NewPickupRequest() {
             error={errors.contactPhone}
             autoComplete="tel"
             textContentType="telephoneNumber"
+            ref={phoneRef}
+            returnKeyType="next"
+            onSubmitEditing={() => dockRef.current?.focus()}
           />
           <FormField
             label="Facility dock address"
@@ -385,6 +401,8 @@ export default function NewPickupRequest() {
             error={errors.dockAddress}
             autoComplete="street-address"
             textContentType="fullStreetAddress"
+            ref={dockRef}
+            returnKeyType="done"
           />
           <FormField
             label="Dock access & special instructions (optional)"

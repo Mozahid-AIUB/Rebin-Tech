@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
-import { View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { View, type TextInput } from "react-native";
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { getOrganizationDetail, updateOwnOrganization, useSessionStore } from "@rebin/api";
 import {
@@ -62,6 +63,10 @@ export default function OrgSettings() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  const streetRef = useRef<TextInput>(null);
+  const cityRef = useRef<TextInput>(null);
+  const zipRef = useRef<TextInput>(null);
+
   const load = useCallback(async () => {
     if (!orgId) {
       setLoading(false);
@@ -96,7 +101,10 @@ export default function OrgSettings() {
     const next = validate({ name, street, city, state: state ?? "", zip });
     setErrors(next);
     setSaved(false);
-    if (Object.keys(next).length > 0) return;
+    if (Object.keys(next).length > 0) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
 
     setSaving(true);
     setSaveError(null);
@@ -157,6 +165,9 @@ export default function OrgSettings() {
         value={name}
         onChangeText={(v) => { setName(v); setSaved(false); }}
         error={errors.name}
+        autoCapitalize="words"
+        returnKeyType="next"
+        onSubmitEditing={() => streetRef.current?.focus()}
       />
       <SelectField
         label="Organization type"
@@ -173,6 +184,9 @@ export default function OrgSettings() {
         error={errors.street}
         autoComplete="street-address"
         textContentType="streetAddressLine1"
+        ref={streetRef}
+        returnKeyType="next"
+        onSubmitEditing={() => cityRef.current?.focus()}
       />
       <FormField
         label="City"
@@ -182,6 +196,9 @@ export default function OrgSettings() {
         autoComplete="postal-address-locality"
         textContentType="addressCity"
         autoCapitalize="words"
+        ref={cityRef}
+        returnKeyType="next"
+        onSubmitEditing={() => zipRef.current?.focus()}
       />
       <SelectField
         label="State"
@@ -198,6 +215,8 @@ export default function OrgSettings() {
         error={errors.zip}
         autoComplete="postal-code"
         textContentType="postalCode"
+        ref={zipRef}
+        returnKeyType="done"
       />
       <ToggleRow
         label="Loading dock"
