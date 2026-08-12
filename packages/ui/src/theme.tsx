@@ -1,5 +1,11 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import { PORTAL_ACCENTS, PORTAL_ACCENTS_SUBTLE, tokens, type PortalKey } from "./tokens";
+import {
+  PORTAL_ACCENTS,
+  PORTAL_ACCENTS_SUBTLE,
+  PORTAL_ON_ACCENT,
+  tokens,
+  type PortalKey,
+} from "./tokens";
 
 /**
  * A resolved surface palette, so a primitive never has to ask "am I on a dark
@@ -59,6 +65,8 @@ type PortalTheme = {
   portal: PortalKey;
   accent: string;
   accentSubtle: string;
+  /** Text that sits on the accent -- see PORTAL_ON_ACCENT for why it varies. */
+  onAccent: string;
   dark: boolean;
   scheme: Scheme;
 };
@@ -81,6 +89,7 @@ export function PortalThemeProvider({
       portal,
       accent: PORTAL_ACCENTS[portal],
       accentSubtle: PORTAL_ACCENTS_SUBTLE[portal],
+      onAccent: PORTAL_ON_ACCENT[portal],
       dark,
       scheme: dark ? DARK : LIGHT,
     }),

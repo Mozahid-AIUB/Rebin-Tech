@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react-native";
 import { Text } from "react-native";
-import { PortalThemeProvider, tokens, usePortalTheme } from "../index";
+import { PORTAL_ON_ACCENT, PortalThemeProvider, tokens, usePortalTheme } from "../index";
 
 function Probe() {
   const { portal, accent } = usePortalTheme();
@@ -23,6 +23,15 @@ describe("tokens", () => {
     expect(tokens.color.copper).toBe("#B4703A");
     expect(tokens.color.gold).toBe("#C9A227");
   });
+
+  // White on copper is roughly 4:1 and on contact gold barely 3:1 -- both fail
+  // for anything smaller than a heading. Dark text on a metal clears 5:1 and
+  // reads like an engraved plate rather than a muddy one.
+  it("puts dark text on the metals and white only on the board green", () => {
+    expect(PORTAL_ON_ACCENT.org).toBe("#FFFFFF");
+    expect(PORTAL_ON_ACCENT.business).not.toBe("#FFFFFF");
+    expect(PORTAL_ON_ACCENT.agent).not.toBe("#FFFFFF");
+  });
   it("exposes an 8-step spacing scale", () => {
     expect(tokens.space).toEqual([4, 8, 12, 16, 20, 24, 32, 48]);
   });
@@ -37,7 +46,9 @@ describe("PortalThemeProvider", () => {
     // rather than rotating a hue wheel.
     ["org", "#0A3B2C"],
     ["business", "#B08A1F"],
-    ["agent", "#B4703A"],
+    // Brighter than the trace copper it comes from: an accent on a dark screen
+    // has to carry its own luminance.
+    ["agent", "#C8823F"],
   ] as const)("provides the %s accent", async (portal, accent) => {
     // NOTE: deviation from the brief's literal test body — `render` is awaited
     // here. @testing-library/react-native@14.0.1 (installed; see package.json

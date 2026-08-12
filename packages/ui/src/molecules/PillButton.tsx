@@ -2,7 +2,7 @@ import { ActivityIndicator, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { AppText } from "../atoms/AppText";
 import { tokens } from "../tokens";
-import { usePortalTheme } from "../theme";
+import { usePortalTheme, useScheme } from "../theme";
 import { PressableScale } from "../motion";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
@@ -37,20 +37,23 @@ export function PillButton({
   fullWidth?: boolean;
   haptic?: "impact" | "success" | "none";
 }) {
-  const { accent } = usePortalTheme();
+  const { accent, onAccent, dark } = usePortalTheme();
+  const scheme = useScheme();
   const inert = disabled || loading;
 
   const bg: Record<Variant, string> = {
     primary: accent,
-    secondary: tokens.color.surfaceAlt,
+    secondary: scheme.surfaceAlt,
     ghost: "transparent",
     danger: tokens.color.danger,
   };
-  const fg: Record<Variant, "onPrimary" | "default" | "accent"> = {
-    primary: "onPrimary",
-    secondary: "default",
-    ghost: "accent",
-    danger: "onPrimary",
+  // The label's colour is resolved rather than toned, because "text on the
+  // accent" is not one colour across three portals -- see PORTAL_ON_ACCENT.
+  const fg: Record<Variant, string> = {
+    primary: onAccent,
+    secondary: scheme.text,
+    ghost: accent,
+    danger: "#FFFFFF",
   };
 
   function fire() {
@@ -77,15 +80,23 @@ export function PillButton({
         borderRadius: tokens.radius.button,
         backgroundColor: bg[variant],
         borderWidth: variant === "ghost" ? 1 : 0,
-        borderColor: accent,
-        opacity: inert ? 0.45 : 1,
+        // A ghost button's outline should read as a boundary, not as a second
+        // primary button competing with the real one above it.
+        borderColor: variant === "ghost" ? scheme.border : accent,
+        opacity: inert ? 0.4 : 1,
       }}
     >
       {loading ? (
-        <ActivityIndicator color={variant === "primary" || variant === "danger" ? "#FFF" : accent} />
+        <ActivityIndicator color={variant === "primary" ? onAccent : variant === "danger" ? "#FFF" : accent} />
       ) : null}
       <View>
-        <AppText variant="h3" tone={fg[variant]}>{label}</AppText>
+        {/* Slight positive tracking: a button label is read at a glance rather
+            than in a sentence, and letters set a touch apart hold their shape
+            at that speed. Left at the body face's default it looked cramped
+            inside a wide pill. */}
+        <AppText variant="h3" style={{ color: fg[variant], letterSpacing: 0.2 }}>
+          {label}
+        </AppText>
       </View>
     </PressableScale>
   );

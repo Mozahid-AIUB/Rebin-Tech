@@ -181,7 +181,23 @@ export const AUTH_ROLE_ACCENTS = Object.freeze({
 export const PORTAL_ACCENTS = Object.freeze({
   org: "#0A3B2C",
   business: "#B08A1F",
-  agent: "#B4703A",
+  // Brighter than the trace copper it comes from: an accent on a dark screen
+  // has to carry its own luminance, and #B4703A went muddy against #0D1512.
+  agent: "#C8823F",
+});
+
+/**
+ * What colour text sits on a portal's accent.
+ *
+ * White on copper is roughly 4:1 and white on contact gold barely 3:1 -- both
+ * fail for anything smaller than a heading, and both read muddy rather than
+ * rich. Dark text on a metal reads the way an engraved plate does, and clears
+ * 5:1. Only the org's solder-mask green is dark enough to want white.
+ */
+export const PORTAL_ON_ACCENT = Object.freeze({
+  org: "#FFFFFF",
+  business: "#1A1403",
+  agent: "#1C1109",
 });
 
 export const PORTAL_ACCENTS_SUBTLE = Object.freeze({
