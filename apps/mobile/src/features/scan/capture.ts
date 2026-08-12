@@ -1,5 +1,9 @@
 import * as ImagePicker from "expo-image-picker";
-import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
+import { SCAN_LONG_EDGE, resizeForScan } from "./resize";
+
+export { SCAN_LONG_EDGE };
+
+export type Capture = { base64: string; mimeType: string };
 
 /**
  * Takes a photo and returns it small enough to send.
@@ -9,18 +13,14 @@ import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
  * connection and considerably longer over a warehouse's -- long enough that
  * the person holding the phone concludes the button is broken and walks away.
  *
- * Resizing to 1024px on the long edge takes it to roughly 150KB. The model
- * reads a make, a model and an asset tag off that as well as it does off the
- * original: what it needs is a legible label, not megapixels.
+ * Resizing to 1024px on the long edge takes it to roughly 200KB. The model
+ * reads a make, a model and an asset tag off that as well as off the original:
+ * what it needs is a legible label, not megapixels.
  *
  * expo-image-picker cannot do this itself -- it has no resize option, which is
  * why the `imageDimensions` that used to sit in these call sites did nothing
  * at all.
  */
-export const SCAN_LONG_EDGE = 1024;
-
-export type Capture = { base64: string; mimeType: string };
-
 export async function capturePhotoForScan(): Promise<
   { ok: true; photo: Capture } | { ok: false; reason: "cancelled" | "permission" | "failed" }
 > {
@@ -28,27 +28,21 @@ export async function capturePhotoForScan(): Promise<
   if (!permission.granted) return { ok: false, reason: "permission" };
 
   const shot = await ImagePicker.launchCameraAsync({
-    // Not base64 here: the original is the thing that is too big, and asking
-    // for it doubles the memory before it is thrown away.
-    quality: 0.8,
+    // base64 is asked for as a fallback, not as the plan: resizeForScan
+    // returns a far smaller string when the native module is present, and this
+    // is what is left when it is not.
+    base64: true,
+    quality: 0.6,
   });
-  if (shot.canceled || !shot.assets?.[0]?.uri) return { ok: false, reason: "cancelled" };
+  const asset = shot.assets?.[0];
+  if (shot.canceled || !asset?.uri) return { ok: false, reason: "cancelled" };
 
-  try {
-    const context = ImageManipulator.manipulate(shot.assets[0].uri);
-    // Width only: the height follows the aspect ratio, so a portrait shot of a
-    // rack does not get squashed into a square.
-    context.resize({ width: SCAN_LONG_EDGE });
-    const image = await context.renderAsync();
-    const result = await image.saveAsync({
-      format: SaveFormat.JPEG,
-      compress: 0.7,
-      base64: true,
-    });
+  const resized = await resizeForScan(asset.uri);
+  if (resized) return { ok: true, photo: { base64: resized, mimeType: "image/jpeg" } };
 
-    if (!result.base64) return { ok: false, reason: "failed" };
-    return { ok: true, photo: { base64: result.base64, mimeType: "image/jpeg" } };
-  } catch {
-    return { ok: false, reason: "failed" };
+  // The full-size original. Slow, but a slow scan beats a dead button.
+  if (asset.base64) {
+    return { ok: true, photo: { base64: asset.base64, mimeType: asset.mimeType ?? "image/jpeg" } };
   }
+  return { ok: false, reason: "failed" };
 }
