@@ -8,14 +8,10 @@ jest.mock("@rebin/api", () => {
   return { ...actual, scanInventoryPhoto: (...a: unknown[]) => mockScan(...a) };
 });
 
-const mockLaunchCamera = jest.fn();
-jest.mock("expo-image-picker", () => ({
-  launchCameraAsync: (...a: unknown[]) => mockLaunchCamera(...a),
-  requestCameraPermissionsAsync: () => Promise.resolve({ granted: true }),
-  MediaTypeOptions: { Images: "Images" },
+const mockCapture = jest.fn();
+jest.mock("../src/features/scan/capture", () => ({
+  capturePhotoForScan: (...a: unknown[]) => mockCapture(...a),
 }));
-
-const PHOTO = { canceled: false, assets: [{ base64: "aGVsbG8=", mimeType: "image/jpeg" }] };
 
 function renderSheet(onDone = jest.fn()) {
   return render(
@@ -27,7 +23,7 @@ function renderSheet(onDone = jest.fn()) {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockLaunchCamera.mockResolvedValue(PHOTO);
+  mockCapture.mockResolvedValue({ ok: true, photo: { base64: "aGVsbG8=", mimeType: "image/jpeg" } });
   mockScan.mockResolvedValue({
     items: [
       {
@@ -109,7 +105,7 @@ describe("Inventory scan", () => {
   });
 
   it("does nothing when the camera is dismissed", async () => {
-    mockLaunchCamera.mockResolvedValue({ canceled: true, assets: null });
+    mockCapture.mockResolvedValue({ ok: false, reason: "cancelled" });
     await renderSheet();
 
     await fireEvent.press(screen.getByRole("button", { name: "Take a photo" }));

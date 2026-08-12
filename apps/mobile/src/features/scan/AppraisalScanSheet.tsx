@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
-import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { appraisePhoto, type Appraisal, type AppraisedLine } from "@rebin/api";
 import { formatCents, scanDisposition } from "@rebin/shared";
 import { AppText, Card, EmptyState, PillButton, tokens } from "@rebin/ui";
+import { capturePhotoForScan } from "./capture";
 
 // S35-S37. Same camera and the same "one still per subject" flow as the
 // organization's inventory sheet, with one decisive difference: every line
@@ -31,25 +31,19 @@ export function AppraisalScanSheet({
 
   async function onCapture() {
     setError(null);
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      setError("Camera access is off. Turn it on in Settings to scan your stock.");
+    const shot = await capturePhotoForScan();
+    if (!shot.ok) {
+      if (shot.reason === "permission") {
+        setError("Camera access is off. Turn it on in Settings to scan your stock.");
+      } else if (shot.reason === "failed") {
+        setError("Couldn't prepare that photo. Try again.");
+      }
       return;
     }
 
-    const photo = await ImagePicker.launchCameraAsync({
-      base64: true,
-      quality: 0.6,
-      imageDimensions: { width: 1024, height: 1024 },
-    } as ImagePicker.ImagePickerOptions);
-    if (photo.canceled || !photo.assets?.[0]?.base64) return;
-
     setScanning(true);
     try {
-      const result = await appraisePhoto(
-        photo.assets[0].base64,
-        photo.assets[0].mimeType ?? "image/jpeg",
-      );
+      const result = await appraisePhoto(shot.photo.base64, shot.photo.mimeType);
       if (result.items.length === 0) {
         setError("Nothing we buy showed up in that photo. Try another angle.");
         return;
@@ -82,6 +76,16 @@ export function AppraisalScanSheet({
           </AppText>
 
           <PillButton label="Take a photo" loading={scanning} onPress={() => void onCapture()} />
+
+          {/* A spinner inside a button is easy to miss while someone is
+              looking at the thing they just photographed. Reading a label off
+              a photo takes a couple of seconds even on a good connection, and
+              silence for that long reads as a broken button. */}
+          {scanning ? (
+            <AppText variant="bodySm" tone="accent" style={{ textAlign: "center" }}>
+              Reading the photo…
+            </AppText>
+          ) : null}
 
           {error ? (
             <AppText variant="bodySm" style={{ color: tokens.color.danger }}>{error}</AppText>

@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
-import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scanInventoryPhoto } from "@rebin/api";
 import { scanDisposition, scanResultSchema, type ScanItem } from "@rebin/shared";
 import { AppText, Card, EmptyState, PillButton, tokens } from "@rebin/ui";
 import { DEVICE_CATEGORY_OPTIONS } from "../../config/us-states";
+import { capturePhotoForScan } from "./capture";
 
 // S25, the optional inventory scan inside the booking wizard.
 //
@@ -43,28 +43,19 @@ export function InventoryScanSheet({
 
   async function onCapture() {
     setError(null);
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      setError("Camera access is off. Turn it on in Settings to scan devices.");
+    const shot = await capturePhotoForScan();
+    if (!shot.ok) {
+      if (shot.reason === "permission") {
+        setError("Camera access is off. Turn it on in Settings to scan devices.");
+      } else if (shot.reason === "failed") {
+        setError("Couldn't prepare that photo. Try again.");
+      }
       return;
     }
 
-    const photo = await ImagePicker.launchCameraAsync({
-      base64: true,
-      quality: 0.6,
-      // The model reads a label fine at this size, and a full-resolution phone
-      // photo is several megabytes to upload from a storeroom's signal.
-      imageDimensions: { width: 1024, height: 1024 },
-    } as ImagePicker.ImagePickerOptions);
-
-    if (photo.canceled || !photo.assets?.[0]?.base64) return;
-
     setScanning(true);
     try {
-      const raw = await scanInventoryPhoto(
-        photo.assets[0].base64,
-        photo.assets[0].mimeType ?? "image/jpeg",
-      );
+      const raw = await scanInventoryPhoto(shot.photo.base64, shot.photo.mimeType);
       // Parsed, not trusted: the Edge Function constrains Gemini with a
       // responseSchema, but this still arrived over a network.
       const parsed = scanResultSchema.safeParse(raw);
@@ -101,6 +92,16 @@ export function InventoryScanSheet({
           </AppText>
 
           <PillButton label="Take a photo" loading={scanning} onPress={() => void onCapture()} />
+
+          {/* A spinner inside a button is easy to miss while someone is
+              looking at the thing they just photographed. Reading a label off
+              a photo takes a couple of seconds even on a good connection, and
+              silence for that long reads as a broken button. */}
+          {scanning ? (
+            <AppText variant="bodySm" tone="accent" style={{ textAlign: "center" }}>
+              Reading the photo…
+            </AppText>
+          ) : null}
 
           {error ? (
             <AppText variant="bodySm" style={{ color: tokens.color.danger }}>{error}</AppText>

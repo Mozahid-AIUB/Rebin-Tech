@@ -8,13 +8,10 @@ jest.mock("@rebin/api", () => {
   return { ...actual, appraisePhoto: (...a: unknown[]) => mockAppraise(...a) };
 });
 
-const mockLaunchCamera = jest.fn();
-jest.mock("expo-image-picker", () => ({
-  launchCameraAsync: (...a: unknown[]) => mockLaunchCamera(...a),
-  requestCameraPermissionsAsync: () => Promise.resolve({ granted: true }),
+const mockCapture = jest.fn();
+jest.mock("../src/features/scan/capture", () => ({
+  capturePhotoForScan: (...a: unknown[]) => mockCapture(...a),
 }));
-
-const PHOTO = { canceled: false, assets: [{ base64: "aGVsbG8=", mimeType: "image/jpeg" }] };
 
 const APPRAISAL = {
   items: [
@@ -44,7 +41,7 @@ function renderSheet(onDone = jest.fn()) {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockLaunchCamera.mockResolvedValue(PHOTO);
+  mockCapture.mockResolvedValue({ ok: true, photo: { base64: "aGVsbG8=", mimeType: "image/jpeg" } });
   mockAppraise.mockResolvedValue(APPRAISAL);
 });
 
