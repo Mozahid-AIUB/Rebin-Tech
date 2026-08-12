@@ -1,5 +1,12 @@
 module.exports = {
   preset: "jest-expo",
+  moduleNameMapper: {
+    // expo-haptics throws while being imported under Jest ("Cannot read
+    // properties of null (reading 'match')") because the native side is
+    // absent, and it throws before any jest.mock in a setup file can run --
+    // so it has to be substituted at resolution. See __mocks__/expo-haptics.js.
+    "^expo-haptics$": "<rootDir>/__mocks__/expo-haptics.js",
+  },
   // NOTE: the (?:\.pnpm/[^/]+/node_modules/)? prefix below is a deviation from the
   // brief's literal pattern, required because pnpm nests packages under
   // node_modules/.pnpm/<key>/node_modules/<pkg>/... — the brief's pattern only

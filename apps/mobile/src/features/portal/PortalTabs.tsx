@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import type { ColorValue } from "react-native";
 import { Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
 import { PORTAL_ACCENTS, tokens, type PortalKey } from "@rebin/ui";
@@ -46,6 +47,11 @@ export function PortalTabs({
   const accent = PORTAL_ACCENTS[portal];
   // The agent portal runs on board green, so its chrome does too.
   const dark = portal === "agent";
+  // The bar is absolutely positioned so the list scrolls under its glass,
+  // which also means React Navigation stops insetting it for us: on a phone
+  // with gesture navigation it lands underneath the system bar and the labels
+  // are cut in half. This is that inset, put back by hand.
+  const insets = useSafeAreaInsets();
   const barTint = dark ? "rgba(6,41,30,0.78)" : "rgba(255,255,255,0.72)";
 
   return (
@@ -61,9 +67,9 @@ export function PortalTabs({
           borderTopWidth: 1,
           // Field agents work one-handed, often gloved: their bar is taller
           // and its targets bigger.
-          height: dark ? tokens.layout.tabBarDark : tokens.layout.tabBar,
+          height: (dark ? tokens.layout.tabBarDark : tokens.layout.tabBar) + insets.bottom,
           paddingTop: 6,
-          paddingBottom: dark ? 12 : 8,
+          paddingBottom: insets.bottom + (dark ? 12 : 8),
         },
         tabBarBackground: () => (
           <BlurView

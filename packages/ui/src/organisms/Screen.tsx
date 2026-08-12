@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Platform, ScrollView, View } from "react-native";
 import { BlurView } from "expo-blur";
+import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { tokens } from "../tokens";
 
@@ -49,6 +50,11 @@ export function Screen({
 
   return (
     <View style={{ flex: 1, backgroundColor: bg, paddingTop: insets.top }}>
+      {/* Set per screen rather than once at the root: the agent portal is
+          board-dark and the other two are not, so the clock and battery need
+          opposite treatments. Without this Android leaves them light, which
+          is invisible on silkscreen. */}
+      <StatusBar style={dark ? "light" : "dark"} />
       {scroll ? <ScrollView keyboardShouldPersistTaps="handled">{body}</ScrollView> : body}
 
       {footer ? (
