@@ -120,7 +120,7 @@ export default function AgentJobDetail() {
 
   if (loading) {
     return (
-      <Screen dark>
+      <Screen>
         <AppText variant="body" tone="muted">Loading this job…</AppText>
       </Screen>
     );
@@ -128,7 +128,7 @@ export default function AgentJobDetail() {
 
   if (error || !job) {
     return (
-      <Screen dark>
+      <Screen>
         <Card variant="alt" style={{ gap: tokens.space[2] }}>
           <AppText variant="h3">Couldn&apos;t load this job</AppText>
           <AppText variant="bodySm" tone="muted">{error ?? "It may have been reassigned."}</AppText>
@@ -145,7 +145,6 @@ export default function AgentJobDetail() {
 
   return (
     <Screen
-      dark
       footer={
         done ? (
           <PillButton label="Back to my jobs" variant="secondary" onPress={() => router.back()} />

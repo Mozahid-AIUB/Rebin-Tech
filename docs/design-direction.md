@@ -262,30 +262,43 @@ diverge deliberately.
 
 | | 🌿 Organization | 🟡 Business | 🔷 Agent |
 |---|---|---|---|
-| Accent | `oxide` | `copper` | `patina` |
-| Theme | Light | Light | **Dark** |
+| Accent | solder mask `#0A3B2C` | contact gold `#B08A1F` | trace copper `#C8823F` |
+| Theme | Light | Light | Light |
 | Emphasis | The record — dockets, certificates, proof | The number — money largest on screen | The next action — one thing, huge |
 | Density | Comfortable | Comfortable | Loose, one-handed |
 | Touch targets | 44pt | 44pt | **56pt** |
+| Tab bar | 62pt | 62pt | **70pt** |
 
-**Why the agent portal goes dark — the one real risk here.**
+**The agent portal was dark, and is not any more.**
 
-A field agent works outdoors, often before dawn or after dark at a loading
-dock, one-handed, sometimes gloved. A cream screen at night destroys night
-vision and glares under a sodium lamp. Driver and logistics apps are almost
-universally dark, and the reason is operational rather than fashionable. It
-also saves meaningful battery on the OLED phone a driver runs all day on a
-van charger.
+The argument for it was operational: a field agent works outdoors, often
+before dawn or at a loading dock after sunset, one-handed and sometimes
+gloved. A pale screen glares under a sodium lamp and destroys night vision,
+and it burns battery on the OLED phone a driver runs all day on a van charger.
+Driver and logistics apps are near-universally dark for those reasons.
 
-It is a risk because it breaks the visual unity of the three portals. That is
-the trade: the agent portal should feel like a tool, not like the customer's
-app in a different colour.
+The argument was sound and the outcome was still wrong. It made one portal
+look like a different company's product from the two it ships alongside, and
+that cost more than the night-vision case was worth. Reversed at the client's
+direction after seeing it on a device.
 
-**The dark theme is board-coloured, not neutral.** Near-black plus one bright
-accent is its own well-worn default. The agent's background is `board`
-`#0A3B2C` — an unpopulated PCB — with `copper` for actions and `gold` reserved
-for money on a paid collection. A driver's screen at 5am looks like the thing
-in the back of the van, not like a generic dark-mode template.
+What survives the reversal is everything that was actually about the job
+rather than about the light: the taller tab bar, the 56pt targets, the loose
+density, one action per screen. Copper is what marks the portal now.
+
+**The dark scheme is kept, and nothing selects it.** `DARK` in `theme.tsx` is
+still defined and still contrast-checked — board green `#0D1512`/`#18221D`
+rather than a neutral near-black, so it never looked like a generic dark-mode
+template. A night mode is a switch, not a rebuild. `dark` remains in the theme
+type and the primitives still branch on it for that reason.
+
+**A metal is a fill, not an ink.** Contact gold reads 2.8:1 against the
+silkscreen background and the agent's copper 2.7:1 — fine behind a button
+label, illegible as one. Each accent therefore has two values: `accent` for
+fills, borders and indicators, and `accentText` for anything set in it, deep
+enough to clear 4.5:1 while still reading as gold or copper. This was already
+wrong for the business portal before the agent joined it on white; going light
+is what exposed it.
 
 ## 9 · Build order
 
@@ -342,3 +355,29 @@ convention, and all three are truer than anything a mood board produces.
 The one accessory removed, in Chanel's sense: the metallic background texture
 from the first draft. With the trace as the signature, a texture behind it is
 a second voice saying the same thing more quietly.
+
+### What the device showed that the document could not
+
+Three things in this direction survived review here and failed on a phone.
+
+**The agent's dark theme** (§8). Defended at length above as the one real
+risk, reversed on sight. The night-shift reasoning was real; what the document
+could not show was how strange it looks to open two of a company's three apps
+and find the third belongs to someone else. A written rationale can be
+internally consistent and still lose to five seconds of looking.
+
+**The board-green-on-board-green first cut.** Solder mask behind, slightly
+lighter solder mask on cards — about five percent of lightness apart, which
+reads as one flat green wall, and shadows do nothing on a dark surface to
+rescue it. Elevation is a light-theme device; a dark theme separates with
+borders or with far more contrast than a palette swatch suggests.
+
+**Metals as type.** §1 chose copper and gold as accents without asking what
+an accent gets used *for*. Half its uses are text, and neither metal is
+legible as text on the silkscreen background. The fix (two values per accent,
+§8) is small; the lesson is that "accent colour" is not one job.
+
+The common thread: each was a decision about how something reads, argued from
+how it was reasoned about. Contrast is arithmetic and should have been
+computed, not eyeballed — the theme tests now assert the ratios so the next
+one fails in CI rather than on a phone.

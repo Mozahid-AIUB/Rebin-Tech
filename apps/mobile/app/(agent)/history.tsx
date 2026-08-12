@@ -44,7 +44,7 @@ export default function AgentHistory() {
   }, [load]);
 
   return (
-    <Screen dark>
+    <Screen>
       <AppText variant="display">History</AppText>
 
       {loading ? (

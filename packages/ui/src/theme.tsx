@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 import {
   PORTAL_ACCENTS,
   PORTAL_ACCENTS_SUBTLE,
+  PORTAL_ACCENT_TEXT,
   PORTAL_ON_ACCENT,
   tokens,
   type PortalKey,
@@ -63,8 +64,11 @@ const DARK: Scheme = {
 
 type PortalTheme = {
   portal: PortalKey;
+  /** The metal itself. Fills, borders, indicators -- anything but type. */
   accent: string;
   accentSubtle: string;
+  /** The metal, darkened until it can be read. See PORTAL_ACCENT_TEXT. */
+  accentText: string;
   /** Text that sits on the accent -- see PORTAL_ON_ACCENT for why it varies. */
   onAccent: string;
   dark: boolean;
@@ -80,15 +84,24 @@ export function PortalThemeProvider({
   portal: PortalKey;
   children: ReactNode;
 }) {
-  // The agent portal is dark by definition rather than by a prop: it is a
-  // property of who uses it, not of which screen is showing.
-  const dark = portal === "agent";
+  // Every portal runs light.
+  //
+  // The agent's ran on board green for a while, on the argument that a driver
+  // works outdoors before dawn and a pale screen glares under a sodium lamp.
+  // That argument still holds for a night mode; it did not hold for making one
+  // portal look like a different product from the two it shares a company
+  // with. Copper is what marks this portal now, which is enough.
+  //
+  // The DARK scheme below stays defined and contrast-checked, so a night mode
+  // is a switch rather than a rebuild.
+  const dark = false;
 
   const value = useMemo<PortalTheme>(
     () => ({
       portal,
       accent: PORTAL_ACCENTS[portal],
       accentSubtle: PORTAL_ACCENTS_SUBTLE[portal],
+      accentText: PORTAL_ACCENT_TEXT[portal],
       onAccent: PORTAL_ON_ACCENT[portal],
       dark,
       scheme: dark ? DARK : LIGHT,
@@ -113,6 +126,22 @@ export function usePortalTheme(): PortalTheme {
  */
 export function useScheme(): Scheme {
   return useContext(PortalThemeContext)?.scheme ?? LIGHT;
+}
+
+/**
+ * Which portal is showing, and what it looks like -- safe outside a provider.
+ *
+ * Screen uses this rather than taking props, so a screen cannot be dressed as
+ * the wrong portal by forgetting one. The fallback is the org's, which is what
+ * the handful of pre-auth screens built on Screen were already rendering.
+ */
+export function usePortalSurface(): { portal: PortalKey; dark: boolean; scheme: Scheme } {
+  const ctx = useContext(PortalThemeContext);
+  return {
+    portal: ctx?.portal ?? "org",
+    dark: ctx?.dark ?? false,
+    scheme: ctx?.scheme ?? LIGHT,
+  };
 }
 
 /** On a board-dark screen, copper reads better than the portal's own accent. */

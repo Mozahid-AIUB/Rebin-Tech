@@ -120,7 +120,7 @@ export default function AgentDispatch() {
   const openJobs = mine.filter((j) => OPEN.includes(j.status));
 
   return (
-    <Screen dark>
+    <Screen>
       <View style={{ gap: 4 }}>
         <AppText variant="display">
           {firstName ? `${greeting(new Date().getHours())}, ${firstName}` : greeting(new Date().getHours())}

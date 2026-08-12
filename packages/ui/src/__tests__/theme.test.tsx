@@ -1,10 +1,29 @@
 import { render, screen } from "@testing-library/react-native";
 import { Text } from "react-native";
-import { PORTAL_ON_ACCENT, PortalThemeProvider, tokens, usePortalTheme } from "../index";
+import {
+  AppText,
+  PORTAL_ACCENT_TEXT,
+  PORTAL_ON_ACCENT,
+  PortalThemeProvider,
+  tokens,
+  usePortalTheme,
+} from "../index";
 
 function Probe() {
   const { portal, accent } = usePortalTheme();
   return <Text testID="probe">{`${portal}:${accent}`}</Text>;
+}
+
+/** WCAG relative luminance, so contrast can be asserted rather than eyeballed. */
+function luminance(hex: string): number {
+  const channels = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+  const linear = channels.map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * linear[0]! + 0.7152 * linear[1]! + 0.0722 * linear[2]!;
+}
+
+function contrast(a: string, b: string): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
+  return (hi + 0.05) / (lo + 0.05);
 }
 
 describe("tokens", () => {
@@ -32,6 +51,24 @@ describe("tokens", () => {
     expect(PORTAL_ON_ACCENT.business).not.toBe("#FFFFFF");
     expect(PORTAL_ON_ACCENT.agent).not.toBe("#FFFFFF");
   });
+  // A metal is a fill colour, not an ink. Contact gold on the silkscreen
+  // background is 2.8:1 and the agent's copper 2.7:1 -- a label set in either
+  // is decoration that happens to contain words. The darkened metals are what
+  // gets used when an accent has to be *read*.
+  it.each(["org", "business", "agent"] as const)(
+    "gives %s an accent dark enough to set text in",
+    (portal) => {
+      expect(contrast(PORTAL_ACCENT_TEXT[portal], tokens.color.bg)).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(PORTAL_ACCENT_TEXT[portal], tokens.color.surface)).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+
+  // The point is a legible version of the same metal, not a fallback to ink.
+  it("keeps the text accents distinct from the body colour", () => {
+    expect(PORTAL_ACCENT_TEXT.business).not.toBe(tokens.color.text);
+    expect(PORTAL_ACCENT_TEXT.agent).not.toBe(tokens.color.text);
+  });
+
   it("exposes an 8-step spacing scale", () => {
     expect(tokens.space).toEqual([4, 8, 12, 16, 20, 24, 32, 48]);
   });
@@ -63,6 +100,36 @@ describe("PortalThemeProvider", () => {
       </PortalThemeProvider>,
     );
     expect(screen.getByTestId("probe")).toHaveTextContent(`${portal}:${accent}`);
+  });
+
+  // Every portal is light now, including the agent's. The dark scheme is kept
+  // for a future night mode but nothing selects it, so no screen should be
+  // resolving its text against a dark surface.
+  it.each(["org", "business", "agent"] as const)("renders %s on the light scheme", async (portal) => {
+    function SchemeProbe() {
+      const { dark, scheme } = usePortalTheme();
+      return <Text testID="probe">{`${dark}:${scheme.bg}`}</Text>;
+    }
+    await render(
+      <PortalThemeProvider portal={portal}>
+        <SchemeProbe />
+      </PortalThemeProvider>,
+    );
+    expect(screen.getByTestId("probe")).toHaveTextContent(`false:${tokens.color.bg}`);
+  });
+
+  // The distinction the accent colours draw: a button is filled with the metal,
+  // a label is set in the darkened one. Asking for accent *text* has to give
+  // the readable version or the contrast work above buys nothing.
+  it.each(["business", "agent"] as const)("sets %s accent text in the readable metal", async (portal) => {
+    await render(
+      <PortalThemeProvider portal={portal}>
+        <AppText tone="accent" testID="label">
+          AGREED PRICE
+        </AppText>
+      </PortalThemeProvider>,
+    );
+    expect(screen.getByTestId("label")).toHaveStyle({ color: PORTAL_ACCENT_TEXT[portal] });
   });
 
   it("throws when usePortalTheme is called outside a provider", async () => {

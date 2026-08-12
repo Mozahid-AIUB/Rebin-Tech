@@ -24,11 +24,14 @@ export function AppText({
   // theme.test.tsx's "throws outside a provider" case is unaffected.
   const portalTheme = useContext(PortalThemeContext);
   const scheme = portalTheme?.scheme;
-  // On board green the portal's own accent (that same green, for the org)
-  // would vanish, so a dark screen accents in copper.
+  // Accent *type* takes the darkened metal, not the fill one: contact gold and
+  // the agent's copper are both under 3:1 on the silkscreen background, which
+  // is a label you can see but not read. On a dark scheme that inverts -- the
+  // deepened metals disappear there, and the bright fill colour is the legible
+  // one -- so the dark branch keeps using the accent as-is.
   const accent = portalTheme?.dark
     ? tokens.color.copper
-    : portalTheme?.accent ?? tokens.color.primary;
+    : portalTheme?.accentText ?? tokens.color.primary;
   const colors: Record<Tone, string> = {
     default: scheme?.text ?? tokens.color.text,
     secondary: scheme?.textSecondary ?? tokens.color.textSecondary,

@@ -128,7 +128,13 @@ export const tokens = {
    * The agent's bar is taller because that portal is worked one-handed and
    * often gloved.
    */
-  layout: Object.freeze({ tabBar: 62, tabBarDark: 70 }),
+  // Per portal, because the tab bar floats: it occupies no layout space, so
+  // every screen reserves its height by hand and the two numbers have to be
+  // the same one. The agent's is taller -- that portal is worked one-handed,
+  // often gloved, standing at the back of a van.
+  layout: Object.freeze({
+    tabBar: Object.freeze({ org: 62, business: 62, agent: 70 }),
+  }),
 
   /** Motion. Durations stay short: a field agent taps and moves. */
   motion: Object.freeze({
@@ -181,9 +187,29 @@ export const AUTH_ROLE_ACCENTS = Object.freeze({
 export const PORTAL_ACCENTS = Object.freeze({
   org: "#0A3B2C",
   business: "#B08A1F",
-  // Brighter than the trace copper it comes from: an accent on a dark screen
-  // has to carry its own luminance, and #B4703A went muddy against #0D1512.
+  // Brighter than the trace copper it comes from, so it holds its own against
+  // the silkscreen background instead of sinking into it.
   agent: "#C8823F",
+});
+
+/**
+ * The same three accents, darkened until they can be read as text.
+ *
+ * A metal is a fill colour. Contact gold on the silkscreen background is
+ * 2.8:1 and the agent's copper 2.7:1 -- fine behind a button label, nowhere
+ * near enough for a label set *in* it, which is what "AGREED PRICE" above a
+ * figure actually is. Rather than give those labels up to plain ink and lose
+ * the portal's colour where it does the most work, each metal has a deepened
+ * version that clears 4.5:1 and still reads as gold or copper rather than
+ * brown.
+ *
+ * The org's solder-mask green is already dark enough, so it is unchanged --
+ * the pair exists so call sites need not care which portal they are in.
+ */
+export const PORTAL_ACCENT_TEXT = Object.freeze({
+  org: "#0A3B2C",
+  business: "#7A5D12",
+  agent: "#8A5228",
 });
 
 /**

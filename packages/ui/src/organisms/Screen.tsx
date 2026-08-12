@@ -9,7 +9,7 @@ import {
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { tokens } from "../tokens";
-import { useScheme } from "../theme";
+import { usePortalSurface } from "../theme";
 
 /**
  * Every screen's frame: the scroll area, the floating footer, and the status
@@ -24,21 +24,20 @@ export function Screen({
   children,
   footer,
   scroll = true,
-  /** Board-dark, for the agent portal. */
-  dark = false,
 }: {
   children: ReactNode;
   footer?: ReactNode;
   scroll?: boolean;
-  dark?: boolean;
 }) {
   const insets = useSafeAreaInsets();
-  const scheme = useScheme();
-  const bg = dark ? scheme.bg : tokens.color.bg;
+  // Read rather than passed in: which portal a screen belongs to is already
+  // known from the provider above it, and a `dark` prop each screen had to
+  // remember to set was one forgotten prop away from a mismatched frame.
+  const { portal, dark, scheme } = usePortalSurface();
   // The tab bar floats (PortalTabs positions it absolutely), which means it
   // occupies no layout space and a footer pinned to bottom: 0 lands underneath
-  // it. This is the clearance.
-  const barHeight = (dark ? tokens.layout.tabBarDark : tokens.layout.tabBar) + insets.bottom;
+  // it. This is the clearance, off the same token the bar sizes itself from.
+  const barHeight = tokens.layout.tabBar[portal] + insets.bottom;
 
   // Drives the footer up with the keyboard rather than leaving it buried.
   // `height` is negative while the keyboard is open, and it tracks the real
@@ -65,11 +64,10 @@ export function Screen({
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: bg, paddingTop: insets.top }}>
-      {/* Set per screen rather than once at the root: the agent portal is
-          board-dark and the other two are not, so the clock and battery need
-          opposite treatments. Left unset, Android draws them light, which is
-          invisible on silkscreen. */}
+    <View style={{ flex: 1, backgroundColor: scheme.bg, paddingTop: insets.top }}>
+      {/* Set per screen rather than once at the root, so it still follows if a
+          scheme ever varies again. Left unset, Android draws the clock and
+          battery light, which is invisible on silkscreen. */}
       <StatusBar style={dark ? "light" : "dark"} />
 
       {scroll ? (

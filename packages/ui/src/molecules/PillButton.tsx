@@ -37,7 +37,7 @@ export function PillButton({
   fullWidth?: boolean;
   haptic?: "impact" | "success" | "none";
 }) {
-  const { accent, onAccent, dark } = usePortalTheme();
+  const { accent, accentText, onAccent } = usePortalTheme();
   const scheme = useScheme();
   const inert = disabled || loading;
 
@@ -52,7 +52,9 @@ export function PillButton({
   const fg: Record<Variant, string> = {
     primary: onAccent,
     secondary: scheme.text,
-    ghost: accent,
+    // A ghost button is a label on the page background, so it is set in the
+    // ink metal rather than the fill one -- the same reason accent type is.
+    ghost: accentText,
     danger: "#FFFFFF",
   };
 
@@ -87,7 +89,7 @@ export function PillButton({
       }}
     >
       {loading ? (
-        <ActivityIndicator color={variant === "primary" ? onAccent : variant === "danger" ? "#FFF" : accent} />
+        <ActivityIndicator color={variant === "primary" ? onAccent : variant === "danger" ? "#FFF" : accentText} />
       ) : null}
       <View>
         {/* Slight positive tracking: a button label is read at a glance rather
