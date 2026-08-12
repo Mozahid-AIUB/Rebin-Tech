@@ -13,6 +13,7 @@ import {
   IBMPlexMono_500Medium,
   IBMPlexMono_600SemiBold,
 } from "@expo-google-fonts/ibm-plex-mono";
+import { tokens } from "@rebin/ui";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useSessionStore } from "../src/store/session";
@@ -119,7 +120,7 @@ export default function RootLayout() {
       <SessionBootstrap />
       <SafeAreaProvider>
         <RootRedirect />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#F6F4ED" } }} />
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: tokens.color.bg } }} />
       </SafeAreaProvider>
     </KeyboardProvider>
   );

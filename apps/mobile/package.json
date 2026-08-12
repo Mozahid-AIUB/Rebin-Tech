@@ -6,7 +6,6 @@
     "@expo-google-fonts/ibm-plex-mono": "^0.4.1",
     "@expo-google-fonts/ibm-plex-sans": "^0.4.1",
     "@expo-google-fonts/ibm-plex-sans-condensed": "^0.4.1",
-    "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@rebin/api": "workspace:*",
     "@rebin/shared": "workspace:*",
     "@rebin/ui": "workspace:*",
