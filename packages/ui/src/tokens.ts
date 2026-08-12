@@ -121,6 +121,15 @@ export const tokens = {
     figureLg: { fontFamily: FONT.monoBold, fontSize: 26, letterSpacing: -0.6, lineHeight: 30 },
   }),
 
+  /**
+   * The tab bar floats, so its height is not layout space -- anything else
+   * pinned to the bottom of a screen has to clear it deliberately.
+   *
+   * The agent's bar is taller because that portal is worked one-handed and
+   * often gloved.
+   */
+  layout: Object.freeze({ tabBar: 62, tabBarDark: 70 }),
+
   /** Motion. Durations stay short: a field agent taps and moves. */
   motion: Object.freeze({
     instant: 120,

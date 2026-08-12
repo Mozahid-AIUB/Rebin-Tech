@@ -29,6 +29,10 @@ export function Screen({
 }) {
   const insets = useSafeAreaInsets();
   const bg = dark ? tokens.color.board : tokens.color.bg;
+  // The tab bar floats (PortalTabs sets position: absolute so the list scrolls
+  // under its glass), which means it occupies no layout space and a footer
+  // pinned to bottom: 0 lands underneath it. This is the clearance.
+  const barHeight = (dark ? tokens.layout.tabBarDark : tokens.layout.tabBar) + insets.bottom;
 
   const body = (
     <View
@@ -36,7 +40,7 @@ export function Screen({
         padding: tokens.space[4],
         gap: tokens.space[4],
         // Enough clearance that the last row is never trapped under the glass.
-        paddingBottom: footer ? tokens.space[7] * 2 : tokens.space[7],
+        paddingBottom: footer ? tokens.space[7] * 2 + barHeight : tokens.space[7] + barHeight,
       }}
     >
       {children}
@@ -53,7 +57,7 @@ export function Screen({
             position: "absolute",
             left: 0,
             right: 0,
-            bottom: 0,
+            bottom: barHeight,
             ...tokens.elevation.floating,
           }}
         >
@@ -63,7 +67,8 @@ export function Screen({
             style={{
               paddingHorizontal: tokens.space[4],
               paddingTop: tokens.space[3],
-              paddingBottom: insets.bottom + tokens.space[3],
+              // The safe area belongs to the tab bar below, not to this.
+              paddingBottom: tokens.space[3],
               // Blur alone leaves text on a busy list hard to read, so the
               // glass sits on a wash of the background rather than on nothing.
               backgroundColor: dark ? "rgba(6,41,30,0.72)" : "rgba(237,239,233,0.72)",

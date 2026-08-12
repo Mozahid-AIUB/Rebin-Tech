@@ -61,7 +61,7 @@ export function PortalTabs({
           borderTopWidth: 1,
           // Field agents work one-handed, often gloved: their bar is taller
           // and its targets bigger.
-          height: dark ? 70 : 62,
+          height: dark ? tokens.layout.tabBarDark : tokens.layout.tabBar,
           paddingTop: 6,
           paddingBottom: dark ? 12 : 8,
         },
