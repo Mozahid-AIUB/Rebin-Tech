@@ -1,8 +1,7 @@
 import type { ComponentType } from "react";
 import type { ColorValue } from "react-native";
-import { Platform } from "react-native";
+import { Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
 import { PORTAL_ACCENTS, tokens, type PortalKey } from "@rebin/ui";
 
@@ -52,7 +51,6 @@ export function PortalTabs({
   // with gesture navigation it lands underneath the system bar and the labels
   // are cut in half. This is that inset, put back by hand.
   const insets = useSafeAreaInsets();
-  const barTint = dark ? "rgba(6,41,30,0.78)" : "rgba(255,255,255,0.72)";
 
   return (
     <Tabs
@@ -60,9 +58,28 @@ export function PortalTabs({
         headerShown: false,
         tabBarActiveTintColor: dark ? tokens.color.copper : accent,
         tabBarInactiveTintColor: dark ? "#8FA89A" : tokens.color.muted,
+        // No ripple. Android draws a dark circle that spills past the icon and
+        // reads as a smudge rather than as feedback -- the tint change on the
+        // icon and label already says which tab was hit.
+        tabBarButton: ({ children, onPress, accessibilityState, testID }) => (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={accessibilityState}
+            testID={testID}
+            onPress={onPress}
+            android_ripple={null}
+            style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+          >
+            {children}
+          </Pressable>
+        ),
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: barTint,
+          // Opaque, unlike the footer above it. The footer's glass sits over a
+          // list that is meant to be seen moving; a tab bar is navigation, and
+          // a label competing with whatever scrolls behind it is a label you
+          // cannot read.
+          backgroundColor: dark ? tokens.color.boardDeep : tokens.color.surface,
           borderTopColor: dark ? "rgba(180,112,58,0.22)" : tokens.color.divider,
           borderTopWidth: 1,
           // Field agents work one-handed, often gloved: their bar is taller
@@ -71,13 +88,6 @@ export function PortalTabs({
           paddingTop: 6,
           paddingBottom: insets.bottom + (dark ? 12 : 8),
         },
-        tabBarBackground: () => (
-          <BlurView
-            intensity={Platform.OS === "android" ? 40 : 60}
-            tint={dark ? "dark" : "light"}
-            style={{ position: "absolute", inset: 0 }}
-          />
-        ),
         tabBarLabelStyle: {
           fontFamily: tokens.type.label.fontFamily,
           fontSize: 11,

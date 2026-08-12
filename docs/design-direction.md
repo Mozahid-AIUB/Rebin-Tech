@@ -240,10 +240,14 @@ confirmation through a glove, in a warehouse where the phone cannot be heard.
 ## 7 · Glass
 
 Translucency is current again, and it is meaningful **only where content passes
-underneath**. Two surfaces qualify:
+underneath**. One surface qualifies:
 
 - The footer CTA, which floats over a scrolling list.
-- The tab bar.
+
+The tab bar had it too, and lost it on a real phone. A footer's glass sits over
+a list that is *meant* to be seen moving — that is the effect. A tab bar is
+navigation, and a label competing with whatever happens to scroll behind it is
+a label you cannot read. It is opaque.
 
 Cards do not get glass. There is nothing behind a card but flat background, so
 blurring it is ornament — and ornament is exactly what reads as cheap.
