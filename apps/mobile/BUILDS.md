@@ -45,6 +45,22 @@ from `apps/mobile/.env` at bundle time rather than being baked into the APK.
 Switching between the local Supabase stack and the cloud is still an edit to
 that file and a restart — the build does not need redoing.
 
+## Why the dev APK targets arm64 only
+
+A default Android build packs four CPU architectures into one APK, and a dev
+build already carries the dev client and an unstripped Hermes on top of that --
+which lands at 200MB+. Android needs roughly double the APK size free to
+install, so a 200MB file wants half a gigabyte of headroom and fails with a
+bare "App not installed" when it does not have it.
+
+`-PreactNativeArchitectures=arm64-v8a` drops it to around 100MB. Every Android
+phone shipped since roughly 2017 is arm64; the ones that are not cannot run
+this app usefully anyway.
+
+The `production` profile deliberately keeps all architectures: Play splits an
+AAB per device itself, so the size cost there is zero and excluding an
+architecture would only shrink the audience.
+
 ## Monorepo note
 
 This is a pnpm workspace. If EAS fails to resolve `@rebin/ui`, `@rebin/api` or
