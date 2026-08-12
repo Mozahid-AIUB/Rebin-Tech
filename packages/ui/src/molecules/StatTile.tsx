@@ -1,48 +1,64 @@
+import type { ReactNode } from "react";
 import { View } from "react-native";
 import { AppText } from "../atoms/AppText";
 import { tokens } from "../tokens";
+import { Enter, useCountUp } from "../motion";
+import { useScheme } from "../theme";
 
 /**
- * One number and what it means, sized for a row of three or four.
+ * One number and what it means.
  *
- * The value is the loud part and the label the quiet one, because a glance at
- * this row should answer "how much" before "of what" -- the reverse reads as a
- * form.
+ * The value is set in mono, because these are counts and sums read off records
+ * — and mono keeps a column of them aligned, which a proportional face cannot.
+ *
+ * When the value is numeric it counts up on arrival. A figure that climbs
+ * registers; one that is simply present does not.
  */
 export function StatTile({
   value,
   label,
   tone = "default",
+  /** Position in the row, for the stagger. */
+  index = 0,
+  /** Prefixed to the counted number, e.g. "$". */
+  prefix = "",
 }: {
-  value: string;
+  value: string | number;
   label: string;
-  tone?: "default" | "accent" | "muted";
+  tone?: "default" | "accent" | "muted" | "copper";
+  index?: number;
+  prefix?: string;
 }) {
+  const scheme = useScheme();
+  const numeric = typeof value === "number";
+  const counted = useCountUp(numeric ? value : 0, numeric);
+  const shown = numeric ? `${prefix}${counted.toLocaleString("en-US")}` : String(value);
+
   return (
-    <View
-      accessibilityRole="text"
-      accessibilityLabel={`${label}: ${value}`}
-      style={{
-        flex: 1,
-        gap: 2,
-        paddingVertical: tokens.space[3],
-        paddingHorizontal: tokens.space[2],
-        borderRadius: tokens.radius.card,
-        borderWidth: 1,
-        borderColor: tokens.color.border,
-        backgroundColor: tokens.color.surface,
-        alignItems: "center",
-      }}
-    >
-      <AppText variant="h2" tone={tone === "muted" ? "muted" : tone}>{value}</AppText>
-      <AppText variant="label" tone="muted" style={{ textAlign: "center" }}>{label}</AppText>
-    </View>
+    <Enter index={index} style={{ flex: 1 }}>
+      <View
+        accessibilityRole="text"
+        accessibilityLabel={`${label}: ${numeric ? `${prefix}${value}` : value}`}
+        style={{
+          flex: 1,
+          gap: 3,
+          paddingVertical: tokens.space[3],
+          paddingHorizontal: tokens.space[2],
+          borderRadius: tokens.radius.card,
+          backgroundColor: scheme.surface,
+          alignItems: "center",
+          ...tokens.elevation.raised,
+        }}
+      >
+        <AppText variant="figureLg" tone={tone === "muted" ? "muted" : tone}>{shown}</AppText>
+        <AppText variant="label" tone="muted" style={{ textAlign: "center", fontSize: 10 }}>
+          {label}
+        </AppText>
+      </View>
+    </Enter>
   );
 }
 
-/** A row of stat tiles that share the width evenly. */
-export function StatRow({ children }: { children: React.ReactNode }) {
-  return (
-    <View style={{ flexDirection: "row", gap: tokens.space[1] }}>{children}</View>
-  );
+export function StatRow({ children }: { children: ReactNode }) {
+  return <View style={{ flexDirection: "row", gap: tokens.space[1] }}>{children}</View>;
 }

@@ -120,7 +120,7 @@ export default function AgentDispatch() {
   const openJobs = mine.filter((j) => OPEN.includes(j.status));
 
   return (
-    <Screen>
+    <Screen dark>
       <View style={{ gap: 4 }}>
         <AppText variant="display">
           {firstName ? `${greeting(new Date().getHours())}, ${firstName}` : greeting(new Date().getHours())}
@@ -133,8 +133,8 @@ export default function AgentDispatch() {
       ) : (
         <>
           <StatRow>
-            <StatTile value={String(summary?.jobsActive ?? 0)} label="IN HAND" tone="accent" />
-            <StatTile value={String(summary?.jobsCompleted ?? 0)} label="COMPLETED" />
+            <StatTile value={summary?.jobsActive ?? 0} label="IN HAND" tone="accent" index={0} />
+            <StatTile value={summary?.jobsCompleted ?? 0} label="COMPLETED" index={1} />
             <StatTile
               value={
                 (summary?.collectedValueCents ?? 0) > 0
@@ -142,6 +142,7 @@ export default function AgentDispatch() {
                   : String(summary?.devicesCollected ?? 0)
               }
               label={(summary?.collectedValueCents ?? 0) > 0 ? "PAID OUT" : "DEVICES"}
+              index={2}
               tone={(summary?.devicesCollected ?? 0) > 0 ? "default" : "muted"}
             />
           </StatRow>

@@ -4,7 +4,7 @@ import { tokens } from "../tokens";
 import { PortalThemeContext } from "../theme";
 
 type Variant = keyof typeof tokens.type;
-type Tone = "default" | "secondary" | "muted" | "accent" | "onPrimary";
+type Tone = "default" | "secondary" | "muted" | "accent" | "copper" | "onPrimary";
 
 export function AppText({
   variant = "body",
@@ -23,12 +23,20 @@ export function AppText({
   // unchanged. usePortalTheme() itself still throws for direct callers, so
   // theme.test.tsx's "throws outside a provider" case is unaffected.
   const portalTheme = useContext(PortalThemeContext);
-  const accent = portalTheme?.accent ?? tokens.color.primary;
+  const scheme = portalTheme?.scheme;
+  // On board green the portal's own accent (that same green, for the org)
+  // would vanish, so a dark screen accents in copper.
+  const accent = portalTheme?.dark
+    ? tokens.color.copper
+    : portalTheme?.accent ?? tokens.color.primary;
   const colors: Record<Tone, string> = {
-    default: tokens.color.text,
-    secondary: tokens.color.textSecondary,
-    muted: tokens.color.muted,
+    default: scheme?.text ?? tokens.color.text,
+    secondary: scheme?.textSecondary ?? tokens.color.textSecondary,
+    muted: scheme?.muted ?? tokens.color.muted,
     accent,
+    // The trace metal. Used for the data layer's own marks, which belong to
+    // the board rather than to whichever portal is showing them.
+    copper: tokens.color.copper,
     onPrimary: tokens.color.onPrimary,
   };
   return <Text {...rest} style={[tokens.type[variant] as TextStyle, { color: colors[tone] }, style]} />;

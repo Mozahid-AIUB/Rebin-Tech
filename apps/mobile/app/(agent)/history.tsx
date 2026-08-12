@@ -44,7 +44,7 @@ export default function AgentHistory() {
   }, [load]);
 
   return (
-    <Screen>
+    <Screen dark>
       <AppText variant="display">History</AppText>
 
       {loading ? (
@@ -58,8 +58,8 @@ export default function AgentHistory() {
       ) : (
         <>
           <StatRow>
-            <StatTile value={String(summary?.jobsCompleted ?? 0)} label="JOBS DONE" tone="accent" />
-            <StatTile value={String(summary?.devicesCollected ?? 0)} label="DEVICES" />
+            <StatTile value={summary?.jobsCompleted ?? 0} label="JOBS DONE" tone="accent" index={0} />
+            <StatTile value={summary?.devicesCollected ?? 0} label="DEVICES" index={1} />
           </StatRow>
 
           <SectionHeader title="Completed jobs" />

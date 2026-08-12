@@ -22,8 +22,10 @@ import {
   Screen,
   SectionHeader,
   SelectField,
-  StatusBadge,
+  Stamp,
+  Trace,
   tokens,
+  type TraceStep,
 } from "@rebin/ui";
 import { DEVICE_CATEGORY_OPTIONS, TIME_WINDOW_OPTIONS } from "../../../src/config/us-states";
 
@@ -52,49 +54,45 @@ function labelForCategory(value: string): string {
   return DEVICE_CATEGORY_OPTIONS.find((o) => o.value === value)?.label ?? value;
 }
 
-function Timeline({ status }: { status: RequestStatus }) {
+/** How far along the pickup is, drawn as a routed trace. */
+function traceSteps(status: RequestStatus): TraceStep[] {
   const currentIndex = TIMELINE.findIndex((s) => s.status === status);
   const cancelled = status === "cancelled";
-
-  return (
-    <View style={{ gap: tokens.space[2] }}>
-      {TIMELINE.map((step, i) => {
-        // A cancelled request keeps the stages it actually reached; everything
-        // after is neither done nor coming.
-        const done = !cancelled && i <= currentIndex;
-        const state = done ? "done" : "upcoming";
-        return (
-          <View
-            key={step.status}
-            accessibilityLabel={`${step.label}, ${state}`}
-            style={{ flexDirection: "row", alignItems: "center", gap: tokens.space[2] }}
-          >
-            <View
-              style={{
-                width: 12,
-                height: 12,
-                borderRadius: 6,
-                borderWidth: 2,
-                borderColor: done ? tokens.color.primary : tokens.color.border,
-                backgroundColor: done ? tokens.color.primary : "transparent",
-              }}
-            />
-            <AppText variant="bodySm" tone={done ? "default" : "muted"}>{step.label}</AppText>
-          </View>
-        );
-      })}
-    </View>
-  );
+  return TIMELINE.map((step, i) => ({
+    label: step.label,
+    reached: !cancelled && i <= currentIndex,
+  }));
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+/** A detail row. Flat -- no rule, no fill; space does the separating. */
+function Field({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
     <View style={{ gap: 2 }}>
       <AppText variant="label" tone="muted">{label}</AppText>
-      <AppText variant="body">{value}</AppText>
+      <AppText variant={mono ? "data" : "body"}>{value}</AppText>
     </View>
   );
 }
+
+const STAMP_TONE: Record<RequestStatus, "pending" | "active" | "done" | "dead"> = {
+  pending: "pending",
+  under_review: "pending",
+  scheduled: "active",
+  dispatched: "active",
+  in_transit: "active",
+  completed: "done",
+  cancelled: "dead",
+};
+
+const STAMP_LABEL: Record<RequestStatus, string> = {
+  pending: "Pending",
+  under_review: "Under review",
+  scheduled: "Scheduled",
+  dispatched: "Dispatched",
+  in_transit: "In transit",
+  completed: "Collected",
+  cancelled: "Cancelled",
+};
 
 export default function RequestDetail() {
   const router = useRouter();
@@ -198,7 +196,11 @@ export default function RequestDetail() {
     <Screen>
       <View style={{ gap: tokens.space[1] }}>
         <AppText variant="display">{`${request.unitCount} devices`}</AppText>
-        <StatusBadge status={request.status} />
+        <Stamp
+          label={STAMP_LABEL[request.status]}
+          tone={STAMP_TONE[request.status]}
+          animate={request.status === "completed"}
+        />
         <AppText variant="bodySm" tone="muted">
           {`Requested ${formatUsDate(request.createdAt, request.timezone)}`}
         </AppText>
@@ -206,7 +208,7 @@ export default function RequestDetail() {
 
       <SectionHeader title="Progress" />
       <Card>
-        <Timeline status={request.status} />
+        <Trace steps={traceSteps(request.status)} />
       </Card>
 
       <SectionHeader title="Details" />
@@ -219,9 +221,10 @@ export default function RequestDetail() {
             request.timezone,
           )}`}
         />
+        <Field label="REQUEST" value={request.id.slice(0, 8).toUpperCase()} mono />
         <Field label="CATEGORIES" value={request.categories.map(labelForCategory).join(", ")} />
         <Field label="ON-SITE CONTACT" value={request.onSiteContactName} />
-        <Field label="CONTACT PHONE" value={request.onSiteContactPhone} />
+        <Field label="CONTACT PHONE" value={request.onSiteContactPhone} mono />
         <Field label="DOCK ADDRESS" value={request.dockAddress} />
         {request.instructions ? (
           <Field label="INSTRUCTIONS" value={request.instructions} />

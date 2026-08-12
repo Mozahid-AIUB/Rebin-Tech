@@ -40,7 +40,7 @@ describe("StatusBadge", () => {
   });
   it("colors completed with the success token", async () => {
     await render(wrap(<StatusBadge status="completed" />));
-    expect(screen.getByText("Completed")).toHaveStyle({ color: "#2E7D4F" });
+    expect(screen.getByText("Completed")).toHaveStyle({ color: "#1F6B47" });
   });
 });
 
@@ -66,9 +66,11 @@ describe("PillButton", () => {
     expect(onPress).not.toHaveBeenCalled();
   });
 
+  // The business accent is contact gold -- the metal on a board's edge
+  // connector -- because that portal is where a vendor gets paid.
   it("uses the portal accent as its primary background", async () => {
     await render(wrap(<PillButton label="Pay" onPress={jest.fn()} />));
-    expect(screen.getByRole("button", { name: "Pay" })).toHaveStyle({ backgroundColor: "#B8862F" });
+    expect(screen.getByRole("button", { name: "Pay" })).toHaveStyle({ backgroundColor: "#B08A1F" });
   });
 
   it("meets the 44pt minimum hit target", async () => {
@@ -86,8 +88,8 @@ describe("Card", () => {
     await render(wrap(<Card testID="c"><MoneyText cents={0} /></Card>));
     expect(screen.getByTestId("c")).toHaveStyle({ backgroundColor: "#FFFFFF" });
   });
-  it("uses the mint tint for the alt variant", async () => {
+  it("uses the recessed tint for the alt variant", async () => {
     await render(wrap(<Card testID="c" variant="alt"><MoneyText cents={0} /></Card>));
-    expect(screen.getByTestId("c")).toHaveStyle({ backgroundColor: "#EFF3EC" });
+    expect(screen.getByTestId("c")).toHaveStyle({ backgroundColor: "#E4E8E0" });
   });
 });

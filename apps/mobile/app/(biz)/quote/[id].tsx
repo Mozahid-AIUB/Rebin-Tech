@@ -6,9 +6,10 @@ import { formatCents, formatUsDate, scanDisposition } from "@rebin/shared";
 import {
   AppText,
   Card,
+  Docket,
+  DocketLine,
   PillButton,
   Screen,
-  SectionHeader,
   tokens,
 } from "@rebin/ui";
 
@@ -25,6 +26,13 @@ const STATUS_LINE: Record<QuoteDetail["status"], string> = {
   accepted: "You accepted this offer",
   declined: "You declined this offer",
   expired: "This offer expired",
+};
+
+const STAMP: Record<QuoteDetail["status"], { label: string; tone: "pending" | "active" | "done" | "dead" }> = {
+  offered: { label: "Open", tone: "active" },
+  accepted: { label: "Accepted", tone: "done" },
+  declined: { label: "Declined", tone: "dead" },
+  expired: { label: "Expired", tone: "dead" },
 };
 
 export default function QuoteDetailScreen() {
@@ -125,28 +133,30 @@ export default function QuoteDetailScreen() {
         </AppText>
       </View>
 
-      <SectionHeader title="What we're buying" />
-      {quote.items.map((line, index) => (
-        <Card key={`${line.componentKey}-${line.grade}-${index}`} style={{ gap: tokens.space[1] }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <AppText variant="h3">{line.displayName}</AppText>
-            <AppText variant="h3" tone="accent">{formatCents(line.lineTotalCents)}</AppText>
-          </View>
-          <AppText variant="bodySm" tone="muted">
-            {`${line.quantity} × ${formatCents(line.unitPriceCents)} · ${line.grade}`}
-          </AppText>
-          {line.notes ? (
-            <AppText variant="bodySm" tone="secondary">{line.notes}</AppText>
-          ) : null}
-          {/* Still worth flagging after the fact: if a grade is disputed on
-              collection, this is the line that was uncertain. */}
-          {line.confidence !== null && scanDisposition(line.confidence) !== "auto" ? (
-            <AppText variant="label" style={{ color: tokens.color.warning }}>
-              Graded with low confidence
-            </AppText>
-          ) : null}
-        </Card>
-      ))}
+      <Docket
+        title="Rebin · collection docket"
+        reference={`QT-${quote.id.slice(0, 8).toUpperCase()}`}
+        date={formatUsDate(quote.createdAt, TZ)}
+        totalLabel="TOTAL"
+        total={formatCents(quote.totalCents)}
+        stampLabel={STAMP[quote.status].label}
+        stampTone={STAMP[quote.status].tone}
+        stampAnimate={quote.status === "accepted"}
+      >
+        {quote.items.map((line, index) => (
+          <DocketLine
+            key={`${line.componentKey}-${line.grade}-${index}`}
+            quantity={line.quantity}
+            name={line.displayName}
+            qualifier={line.grade}
+            // The note is what the model saw. On a docket it stands where a
+            // serial would, because it is the same thing: evidence for the
+            // line above it.
+            serial={line.notes}
+            amount={formatCents(line.lineTotalCents)}
+          />
+        ))}
+      </Docket>
 
       {actionError ? (
         <AppText variant="bodySm" style={{ color: tokens.color.danger }}>{actionError}</AppText>

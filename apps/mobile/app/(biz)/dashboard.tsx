@@ -160,11 +160,13 @@ export default function BizDashboard() {
       ) : (
         <>
           <StatRow>
-            <StatTile value={String(stats.openCount)} label="OPEN OFFERS" tone="accent" />
-            <StatTile value={formatCents(stats.openValueCents)} label="ON THE TABLE" />
+            <StatTile value={stats.openCount} label="OPEN OFFERS" tone="accent" index={0} />
+            <StatTile value={stats.openValueCents / 100} prefix="$" label="ON THE TABLE" index={1} />
             <StatTile
-              value={formatCents(stats.acceptedValueCents)}
+              value={stats.acceptedValueCents / 100}
+              prefix="$"
               label="ACCEPTED"
+              index={2}
               tone={stats.acceptedValueCents > 0 ? "default" : "muted"}
             />
           </StatRow>

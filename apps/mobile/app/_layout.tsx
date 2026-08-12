@@ -1,11 +1,18 @@
 import { Redirect, Stack, usePathname, type Href } from "expo-router";
+// Three families, three jobs (docs/design-direction.md §2): condensed for
+// headings, sans for sentences, mono for the serials and money that are read
+// off a board's own silkscreen.
+import { useFonts } from "expo-font";
+import { IBMPlexSansCondensed_700Bold } from "@expo-google-fonts/ibm-plex-sans-condensed";
 import {
-  useFonts,
-  PlusJakartaSans_400Regular,
-  PlusJakartaSans_500Medium,
-  PlusJakartaSans_600SemiBold,
-  PlusJakartaSans_700Bold,
-} from "@expo-google-fonts/plus-jakarta-sans";
+  IBMPlexSans_400Regular,
+  IBMPlexSans_500Medium,
+  IBMPlexSans_600SemiBold,
+} from "@expo-google-fonts/ibm-plex-sans";
+import {
+  IBMPlexMono_500Medium,
+  IBMPlexMono_600SemiBold,
+} from "@expo-google-fonts/ibm-plex-mono";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useSessionStore } from "../src/store/session";
@@ -98,10 +105,12 @@ export default function RootLayout() {
   // decode, falling back to the system font is far better than a permanently
   // blank app, and RN already falls back per-family on its own.
   const [fontsLoaded, fontError] = useFonts({
-    PlusJakartaSans_400Regular,
-    PlusJakartaSans_500Medium,
-    PlusJakartaSans_600SemiBold,
-    PlusJakartaSans_700Bold,
+    IBMPlexSansCondensed_700Bold,
+    IBMPlexSans_400Regular,
+    IBMPlexSans_500Medium,
+    IBMPlexSans_600SemiBold,
+    IBMPlexMono_500Medium,
+    IBMPlexMono_600SemiBold,
   });
   if (!fontsLoaded && !fontError) return null;
 

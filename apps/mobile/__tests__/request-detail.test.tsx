@@ -108,11 +108,14 @@ describe("Pickup request detail", () => {
     mockGet.mockResolvedValue({ ...REQUEST, status: "scheduled" });
     await renderDetail();
 
-    // "Scheduled" appears twice by design -- once as the status badge, once as
-    // the timeline step -- so this asserts on the timeline's own labels.
-    await waitFor(() => expect(screen.getByLabelText("Submitted, done")).toBeTruthy());
-    expect(screen.getByLabelText("Scheduled, done")).toBeTruthy();
-    expect(screen.getByLabelText("Agent dispatched, upcoming")).toBeTruthy();
-    expect(screen.getByLabelText("Completed, upcoming")).toBeTruthy();
+    // The stages are drawn as a copper trace now (packages/ui Trace), with the
+    // vias filled up to the stage reached. The labels are the assertion --
+    // the SVG route is presentation.
+    await waitFor(() => expect(screen.getByText("Submitted")).toBeTruthy());
+    expect(screen.getByText("Agent dispatched")).toBeTruthy();
+    expect(screen.getByText("Scheduled")).toBeTruthy();
+    // The stamp is set in caps, the way a pressed stamp is, so it reads as a
+    // separate mark from the stage of the same name.
+    expect(screen.getByText("SCHEDULED")).toBeTruthy();
   });
 });

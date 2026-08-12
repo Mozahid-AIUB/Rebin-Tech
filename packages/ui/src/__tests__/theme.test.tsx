@@ -8,11 +8,20 @@ function Probe() {
 }
 
 describe("tokens", () => {
-  it("uses the exact cream background from the spec", () => {
-    expect(tokens.color.bg).toBe("#F6F4ED");
+  // The palette is taken from a circuit board rather than an eco mood board
+  // (docs/design-direction.md §1): silkscreen off-white, solder-mask green,
+  // trace copper, contact gold. Pinned because the direction names these exact
+  // values, and drifting off them is how a considered palette becomes a
+  // roughly-green one.
+  it("uses silkscreen off-white for the background, not cream", () => {
+    expect(tokens.color.bg).toBe("#EDEFE9");
   });
-  it("uses the exact forest-green primary", () => {
-    expect(tokens.color.primary).toBe("#2E6B4F");
+  it("uses solder-mask green as the primary", () => {
+    expect(tokens.color.primary).toBe("#0A3B2C");
+  });
+  it("keeps the board's own metals", () => {
+    expect(tokens.color.copper).toBe("#B4703A");
+    expect(tokens.color.gold).toBe("#C9A227");
   });
   it("exposes an 8-step spacing scale", () => {
     expect(tokens.space).toEqual([4, 8, 12, 16, 20, 24, 32, 48]);
@@ -24,9 +33,11 @@ describe("tokens", () => {
 
 describe("PortalThemeProvider", () => {
   it.each([
-    ["org", "#2E6B4F"],
-    ["business", "#B8862F"],
-    ["agent", "#1F7A6B"],
+    // Solder mask, contact gold, trace copper -- the accents follow the object
+    // rather than rotating a hue wheel.
+    ["org", "#0A3B2C"],
+    ["business", "#B08A1F"],
+    ["agent", "#B4703A"],
   ] as const)("provides the %s accent", async (portal, accent) => {
     // NOTE: deviation from the brief's literal test body — `render` is awaited
     // here. @testing-library/react-native@14.0.1 (installed; see package.json

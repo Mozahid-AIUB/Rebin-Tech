@@ -67,6 +67,12 @@ module.exports = {
   withTiming: (toValue) => toValue,
   withRepeat: (animation) => animation,
   withSequence: (...animations) => animations[animations.length - 1],
+  // Added with the motion layer (packages/ui/src/motion.tsx). Under Jest there
+  // is no accessibility service to ask, and "motion is on" is the branch the
+  // components' real behaviour lives in.
+  withSpring: (toValue) => toValue,
+  withDelay: (_delay, animation) => animation,
+  useReducedMotion: () => false,
   Easing: {
     inOut: (fn) => fn,
     sin: (t) => t,

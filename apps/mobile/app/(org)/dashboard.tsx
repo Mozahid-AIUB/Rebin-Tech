@@ -94,13 +94,14 @@ export default function OrgDashboard() {
       ) : (
         <>
           <StatRow>
-            <StatTile value={String(summary?.activeCount ?? 0)} label="ACTIVE" tone="accent" />
+            <StatTile value={summary?.activeCount ?? 0} label="ACTIVE" tone="accent" index={0} />
             <StatTile
               // The payoff of the agent portal: this counts what agents put on
               // the truck, so it stops being a permanent zero the first time a
               // pickup is collected.
-              value={String(summary?.devicesRecycled ?? 0)}
+              value={summary?.devicesRecycled ?? 0}
               label="RECYCLED"
+              index={1}
               tone={(summary?.devicesRecycled ?? 0) > 0 ? "default" : "muted"}
             />
             <StatTile
@@ -109,6 +110,7 @@ export default function OrgDashboard() {
               value={summary?.nextPickup ? formatUsDate(summary.nextPickup, ORG_TZ).slice(0, 5) : "—"}
               label="NEXT PICKUP"
               tone={summary?.nextPickup ? "default" : "muted"}
+              index={2}
             />
           </StatRow>
 

@@ -1,97 +1,184 @@
-/** Registered family names for the app typeface (see tokens.type below). */
+/**
+ * Registered family names for the app typefaces.
+ *
+ * Three roles, deliberately (see docs/design-direction.md §2):
+ *   display — IBM Plex Sans Condensed Bold, for headings
+ *   body    — IBM Plex Sans, for sentences
+ *   data    — IBM Plex Mono, for serials, ids, money and counts
+ *
+ * The mono is not a mood. Every board this app collects already carries
+ * condensed monospace on its silkscreen -- reference designators, part
+ * numbers, revision marks -- and the serials the app captures are read off
+ * exactly that printing. Setting them in mono is setting them in the lettering
+ * they came from.
+ *
+ * The strings must match the export names of the @expo-google-fonts packages
+ * exactly: React Native resolves a loaded font by that registered name, and a
+ * typo silently falls back to the system face rather than erroring.
+ */
 export const FONT = Object.freeze({
-  regular: "PlusJakartaSans_400Regular",
-  medium: "PlusJakartaSans_500Medium",
-  semibold: "PlusJakartaSans_600SemiBold",
-  bold: "PlusJakartaSans_700Bold",
+  display: "IBMPlexSansCondensed_700Bold",
+  regular: "IBMPlexSans_400Regular",
+  medium: "IBMPlexSans_500Medium",
+  semibold: "IBMPlexSans_600SemiBold",
+  mono: "IBMPlexMono_500Medium",
+  monoBold: "IBMPlexMono_600SemiBold",
 });
 
+/**
+ * The palette is a circuit board.
+ *
+ * Not a metaphor: a board is the object at the centre of every pickup and
+ * every quote this app handles, and it already carries a complete palette --
+ * solder mask, trace copper, contact gold, silkscreen white. It also arrives
+ * at a green nobody picks for a recycling app by default, because it is solder
+ * mask rather than sustainability.
+ */
 export const tokens = {
   color: Object.freeze({
-    bg: "#F6F4ED",
+    // Surfaces
+    bg: "#EDEFE9",          // silkscreen, off a stripped board
     surface: "#FFFFFF",
-    surfaceAlt: "#EFF3EC",
-    surfaceWarm: "#FBF1E8",
-    border: "#E4E1D7",
-    divider: "#EDEAE1",
+    surfaceAlt: "#E4E8E0",
+    surfaceWarm: "#F6F0E4",
+    board: "#0A3B2C",       // solder mask -- dark surfaces, agent theme
+    boardDeep: "#06291E",
+    border: "#D9DDD4",
+    divider: "#E2E5DC",
 
-    text: "#16241C",
-    textSecondary: "#46564C",
-    muted: "#7A867E",
+    // Type. Near-black with the board's green in it, never neutral grey.
+    text: "#111A15",
+    textSecondary: "#3D4B43",
+    muted: "#727E76",
     onPrimary: "#FFFFFF",
 
-    primary: "#2E6B4F",
-    primaryDark: "#1F4D38",
-    primaryLight: "#E6F1E9",
-    primarySubtle: "#F2F7F3",
+    // The board's own metals.
+    primary: "#0A3B2C",     // org: the board itself
+    primaryDark: "#06291E",
+    primaryLight: "#DCE6DF",
+    primarySubtle: "#E9EFEA",
+    copper: "#B4703A",      // trace: the metal being recovered
+    copperSubtle: "#F3E7DC",
+    gold: "#C9A227",        // edge connector: money
+    goldSubtle: "#F7EFD5",
 
-    success: "#2E7D4F",
-    warning: "#C08A2E",
-    danger: "#C0453B",
-    info: "#3E6B8A",
+    success: "#1F6B47",
+    warning: "#D08A1E",     // rosin flux
+    danger: "#B3423A",
+    info: "#2F6076",
   }),
+
   space: Object.freeze([4, 8, 12, 16, 20, 24, 32, 48] as const),
-  radius: Object.freeze({ card: 20, button: 14, chip: 10, input: 12, sheet: 24 }),
+
+  // 16 on cards, 0 on the docket alone -- a printed docket is square because
+  // paper is, not because square is the style. Dropping every radius to zero
+  // is how a design slides into the broadsheet look.
+  radius: Object.freeze({ card: 16, button: 12, chip: 8, input: 10, sheet: 24, docket: 0 }),
+
+  /**
+   * Three levels, so a booking CTA and a read-only address block stop having
+   * identical weight.
+   */
+  elevation: Object.freeze({
+    flat: {},
+    raised: {
+      shadowColor: "#0A3B2C",
+      shadowOpacity: 0.06,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
+    },
+    floating: {
+      shadowColor: "#0A3B2C",
+      shadowOpacity: 0.12,
+      shadowRadius: 24,
+      shadowOffset: { width: 0, height: -4 },
+      elevation: 12,
+    },
+  }),
+
   type: Object.freeze({
-    // Plus Jakarta Sans, loaded once in apps/mobile/app/_layout.tsx. The family
-    // strings must match the export names of @expo-google-fonts/plus-jakarta-sans
-    // exactly -- RN resolves a loaded font by that registered name, and a typo
-    // silently falls back to the system face rather than erroring.
+    // fontWeight is deliberately NOT set alongside fontFamily: with static
+    // (non-variable) fonts the weight is baked into the family name, and
+    // passing both makes Android synthesize a faux-bold over an already-bold
+    // face.
     //
-    // fontWeight is deliberately NOT set alongside fontFamily: with a static
-    // (non-variable) font, the weight is baked into the family name, and
-    // passing both makes Android synthesize a faux-bold on top of an already
-    // -bold face. Weight now lives in the family choice alone.
-    display: { fontFamily: FONT.bold, fontSize: 32, letterSpacing: -0.8, lineHeight: 38 },
-    h1: { fontFamily: FONT.bold, fontSize: 26, letterSpacing: -0.5, lineHeight: 32 },
-    h2: { fontFamily: FONT.semibold, fontSize: 20, letterSpacing: -0.3, lineHeight: 26 },
-    h3: { fontFamily: FONT.semibold, fontSize: 17, letterSpacing: -0.2, lineHeight: 22 },
+    // Condensed buys width, so display runs larger than it did at the same
+    // measure.
+    display: { fontFamily: FONT.display, fontSize: 34, letterSpacing: -0.4, lineHeight: 38 },
+    h1: { fontFamily: FONT.display, fontSize: 27, letterSpacing: -0.3, lineHeight: 32 },
+    h2: { fontFamily: FONT.semibold, fontSize: 20, letterSpacing: -0.2, lineHeight: 26 },
+    h3: { fontFamily: FONT.semibold, fontSize: 17, letterSpacing: -0.1, lineHeight: 22 },
     body: { fontFamily: FONT.regular, fontSize: 15, lineHeight: 22 },
     bodySm: { fontFamily: FONT.regular, fontSize: 13, lineHeight: 19 },
-    label: { fontFamily: FONT.semibold, fontSize: 11, letterSpacing: 0.9, textTransform: "uppercase" },
+    label: { fontFamily: FONT.semibold, fontSize: 11, letterSpacing: 1, textTransform: "uppercase" },
+
+    /** Serials, asset tags, ids. The lettering on the object itself. */
+    data: { fontFamily: FONT.mono, fontSize: 13, letterSpacing: 0.2, lineHeight: 18 },
+    /** Money and counts that sit in a column. */
+    figure: { fontFamily: FONT.monoBold, fontSize: 17, letterSpacing: -0.2, lineHeight: 22 },
+    /** A total, or a stat tile's value. */
+    figureLg: { fontFamily: FONT.monoBold, fontSize: 26, letterSpacing: -0.6, lineHeight: 30 },
+  }),
+
+  /** Motion. Durations stay short: a field agent taps and moves. */
+  motion: Object.freeze({
+    instant: 120,
+    quick: 200,
+    settle: 320,
+    count: 500,
+    /** Between staggered siblings. */
+    stagger: 60,
+    spring: { damping: 18, stiffness: 180, mass: 0.9 },
+    pressSpring: { damping: 22, stiffness: 400, mass: 0.6 },
   }),
 } as const;
 
 /** Dark forest palette — pre-auth screens only (Welcome, Sign Up, Sign In). */
 export const authTokens = Object.freeze({
-  bg: "#0E3A32",
-  bgDeep: "#0A2E27",
-  surface: "#1D4A42",
-  surfacePressed: "#245049",
-  border: "#2F5B52",
-  primary: "#5FC85A",
-  primaryPressed: "#4EAF4A",
-  onPrimary: "#0A2E27",
+  bg: "#0A3B2C",
+  bgDeep: "#06291E",
+  surface: "#12503C",
+  surfacePressed: "#175A44",
+  border: "#1D6349",
+  primary: "#D9A05B",
+  primaryPressed: "#C48F4E",
+  onPrimary: "#06291E",
   text: "#FFFFFF",
-  muted: "#A8C4BB",
-  link: "#8FE07E",
+  muted: "#9DB8AB",
+  link: "#E0B778",
 });
 
 /**
  * Per-role accents for the dark auth backdrop.
  *
  * PORTAL_ACCENTS below are tuned for the light in-app theme and go muddy on
- * #0E3A32 (the business gold in particular drops to roughly 2:1 against it).
- * These are the same three hues lifted into a range that stays legible on the
- * dark surface, so the role picker's three cards read as three distinct
- * choices rather than one repeated card.
+ * the board green -- the org's own accent is that green, so on the auth
+ * backdrop it would vanish entirely. These are the same three materials lifted
+ * into a range that stays legible on a dark board.
  */
 export const AUTH_ROLE_ACCENTS = Object.freeze({
-  org: "#5FC85A",
-  business: "#E8B65C",
-  agent: "#4ECFC0",
+  org: "#6FD39B",
+  business: "#E6C25C",
+  agent: "#D9915B",
 });
 
+/**
+ * The three portals are three products: a hospital handing over boards, a shop
+ * being paid for them, and the driver recovering the metal. The accents follow
+ * the object rather than rotating a hue wheel -- solder mask, contact gold,
+ * trace copper.
+ */
 export const PORTAL_ACCENTS = Object.freeze({
-  org: "#2E6B4F",
-  business: "#B8862F",
-  agent: "#1F7A6B",
+  org: "#0A3B2C",
+  business: "#B08A1F",
+  agent: "#B4703A",
 });
 
 export const PORTAL_ACCENTS_SUBTLE = Object.freeze({
-  org: "#E6F1E9",
-  business: "#FBF1E8",
-  agent: "#E3F1EE",
+  org: "#E9EFEA",
+  business: "#F7EFD5",
+  agent: "#F3E7DC",
 });
 
 export type PortalKey = keyof typeof PORTAL_ACCENTS;
