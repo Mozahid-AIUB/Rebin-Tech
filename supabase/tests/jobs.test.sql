@@ -3,7 +3,7 @@
 -- The rules worth protecting: two agents cannot take the same job, an agent
 -- cannot touch another's, and a pickup cannot be finished without a count.
 begin;
-select plan(21);
+select plan(24);
 
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'owner@org-a.test'),
@@ -209,6 +209,37 @@ select is(
   (select collected_value_cents::int from my_agent_summary()),
   24000,
   'the agent summary counts what the paid collections were worth'
+);
+
+-- ---------------------------------------------------------------------------
+-- The whole point of the board: a customer books, a driver can see it (0027).
+--
+-- These pin the two paths end to end, because both were broken at different
+-- times and neither failure was visible from either side alone -- an
+-- organization saw "submitted" and an agent saw an empty board.
+-- ---------------------------------------------------------------------------
+insert into pickup_requests (id, org_id, created_by, size_tier, unit_count, categories, window_start, window_end, timezone, on_site_contact_name, on_site_contact_phone, dock_address) values
+  ('cccccccc-0000-0000-0000-00000000000f', 'aaaaaaaa-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'tier_10_30', 12, '{monitors_displays}', now() + interval '3 days', now() + interval '3 days 3 hours', 'America/New_York', 'Dana', '5550100000', 'Dock B');
+
+select is(
+  (select status::text from pickup_requests where id = 'cccccccc-0000-0000-0000-00000000000f'),
+  'scheduled',
+  'a booking lands scheduled, not parked in a queue nobody works'
+);
+
+set local request.jwt.claim.sub = '77777777-7777-7777-7777-777777777777';
+select is(
+  (select count(*)::int from list_available_jobs()
+    where kind = 'pickup' and subject_id = 'cccccccc-0000-0000-0000-00000000000f'),
+  1,
+  'an organization booking reaches the agent job board'
+);
+
+-- And the paid path, from the same board.
+select is(
+  (select count(*)::int from list_available_jobs() where kind = 'collection'),
+  0,
+  'the accepted quote from earlier was claimed, so it is off the board'
 );
 
 select * from finish();
