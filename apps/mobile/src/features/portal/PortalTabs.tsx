@@ -57,7 +57,7 @@ export function PortalTabs({
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: dark ? tokens.color.copper : accent,
-        tabBarInactiveTintColor: dark ? "#8FA89A" : tokens.color.muted,
+        tabBarInactiveTintColor: dark ? "#809388" : tokens.color.muted,
         // No ripple. Android draws a dark circle that spills past the icon and
         // reads as a smudge rather than as feedback -- the tint change on the
         // icon and label already says which tab was hit.
@@ -79,8 +79,8 @@ export function PortalTabs({
           // list that is meant to be seen moving; a tab bar is navigation, and
           // a label competing with whatever scrolls behind it is a label you
           // cannot read.
-          backgroundColor: dark ? tokens.color.boardDeep : tokens.color.surface,
-          borderTopColor: dark ? "rgba(180,112,58,0.22)" : tokens.color.divider,
+          backgroundColor: dark ? "#18221D" : tokens.color.surface,
+          borderTopColor: dark ? "#26322C" : tokens.color.divider,
           borderTopWidth: 1,
           // Field agents work one-handed, often gloved: their bar is taller
           // and its targets bigger.

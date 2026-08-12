@@ -18,7 +18,7 @@ export function Card({
   style,
   ...rest
 }: ViewProps & { variant?: keyof typeof BACKGROUNDS; accentBorder?: boolean }) {
-  const { accent } = usePortalTheme();
+  const { accent, dark } = usePortalTheme();
   const scheme = useScheme();
   return (
     <View
@@ -38,11 +38,14 @@ export function Card({
           // one card on a screen that is the point of it; everything else
           // gets separation from elevation, which reads as depth rather than
           // as a drawn box.
-          borderWidth: accentBorder ? 1.5 : 0,
-          borderColor: accent,
+          // A shadow is invisible on a dark surface, so a dark card is
+          // separated by a hairline instead -- without one the whole screen
+          // reads as a single slab.
+          borderWidth: accentBorder ? 1.5 : dark && variant !== "flat" ? 1 : 0,
+          borderColor: accentBorder ? accent : scheme.border,
           padding: variant === "flat" ? 0 : tokens.space[4],
         },
-        variant === "flat" ? tokens.elevation.flat : tokens.elevation.raised,
+        variant === "flat" || dark ? tokens.elevation.flat : tokens.elevation.raised,
         style,
       ]}
     />

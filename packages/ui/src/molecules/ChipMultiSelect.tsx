@@ -1,7 +1,7 @@
 import { Pressable, View } from "react-native";
 import { AppText } from "../atoms/AppText";
 import { tokens } from "../tokens";
-import { usePortalTheme } from "../theme";
+import { usePortalTheme, useScheme } from "../theme";
 
 export type ChipOption = { value: string; label: string };
 
@@ -15,6 +15,7 @@ export function ChipMultiSelect({
   onChange: (next: string[]) => void;
 }) {
   const { accent, accentSubtle } = usePortalTheme();
+  const scheme = useScheme();
   return (
     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: tokens.space[1] }}>
       {options.map((opt) => {
@@ -34,8 +35,8 @@ export function ChipMultiSelect({
               paddingHorizontal: tokens.space[3],
               borderRadius: tokens.radius.chip,
               borderWidth: 1,
-              borderColor: isOn ? accent : tokens.color.border,
-              backgroundColor: isOn ? accentSubtle : tokens.color.surface,
+              borderColor: isOn ? accent : scheme.border,
+              backgroundColor: isOn ? accentSubtle : scheme.surface,
             }}
           >
             <AppText variant="bodySm" tone={isOn ? "accent" : "default"}>

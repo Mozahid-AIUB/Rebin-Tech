@@ -3,7 +3,7 @@ import { View } from "react-native";
 import { AppText } from "../atoms/AppText";
 import { tokens } from "../tokens";
 import { Enter, useCountUp } from "../motion";
-import { useScheme } from "../theme";
+import { usePortalTheme, useScheme } from "../theme";
 
 /**
  * One number and what it means.
@@ -30,6 +30,7 @@ export function StatTile({
   prefix?: string;
 }) {
   const scheme = useScheme();
+  const { dark } = usePortalTheme();
   const numeric = typeof value === "number";
   const counted = useCountUp(numeric ? value : 0, numeric);
   const shown = numeric ? `${prefix}${counted.toLocaleString("en-US")}` : String(value);
@@ -47,10 +48,22 @@ export function StatTile({
           borderRadius: tokens.radius.card,
           backgroundColor: scheme.surface,
           alignItems: "center",
-          ...tokens.elevation.raised,
+          borderWidth: dark ? 1 : 0,
+          borderColor: scheme.border,
+          ...(dark ? tokens.elevation.flat : tokens.elevation.raised),
         }}
       >
-        <AppText variant="figureLg" tone={tone === "muted" ? "muted" : tone}>{shown}</AppText>
+        {/* A money figure in a third of a phone's width will not fit at full
+            size. Shrinking beats wrapping: "$370." over "00" is not a number. */}
+        <AppText
+          variant="figureLg"
+          tone={tone === "muted" ? "muted" : tone}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.6}
+        >
+          {shown}
+        </AppText>
         <AppText variant="label" tone="muted" style={{ textAlign: "center", fontSize: 10 }}>
           {label}
         </AppText>

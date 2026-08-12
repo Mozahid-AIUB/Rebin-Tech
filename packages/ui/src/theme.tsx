@@ -31,15 +31,28 @@ const LIGHT: Scheme = {
   divider: tokens.color.divider,
 };
 
+/**
+ * The agent's theme, corrected after a phone showed it.
+ *
+ * The first attempt used solder-mask green for the background and a slightly
+ * lighter green for cards. On a screen it read as one flat green wall: five
+ * percent of lightness between a card and what is behind it is not separation,
+ * and a shadow does nothing on a dark surface. Everything blurred together.
+ *
+ * This keeps the green -- the cast is what stops it being a generic near-black
+ * dark mode -- but takes the saturation out of the base and puts real distance
+ * between the levels. Copper stays the only chroma on screen, which is what
+ * makes a price or a button findable at a glance in a dark van.
+ */
 const DARK: Scheme = {
-  bg: tokens.color.board,
-  surface: "#0F4835",
-  surfaceAlt: "#0D4130",
+  bg: "#0D1512",
+  surface: "#18221D",
+  surfaceAlt: "#131C18",
   text: "#F2F6F2",
-  textSecondary: "#BCD2C6",
-  muted: "#8FA89A",
-  border: "#1B5A44",
-  divider: "#16513C",
+  textSecondary: "#B7C7BE",
+  muted: "#809388",
+  border: "#26322C",
+  divider: "#1E2823",
 };
 
 type PortalTheme = {

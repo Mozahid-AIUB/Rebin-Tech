@@ -9,6 +9,7 @@ import {
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { tokens } from "../tokens";
+import { useScheme } from "../theme";
 
 /**
  * Every screen's frame: the scroll area, the floating footer, and the status
@@ -32,7 +33,8 @@ export function Screen({
   dark?: boolean;
 }) {
   const insets = useSafeAreaInsets();
-  const bg = dark ? tokens.color.board : tokens.color.bg;
+  const scheme = useScheme();
+  const bg = dark ? scheme.bg : tokens.color.bg;
   // The tab bar floats (PortalTabs positions it absolutely), which means it
   // occupies no layout space and a footer pinned to bottom: 0 lands underneath
   // it. This is the clearance.
@@ -55,7 +57,7 @@ export function Screen({
         padding: tokens.space[4],
         gap: tokens.space[4],
         // Clearance so the last row is never trapped under the footer glass.
-        paddingBottom: footer ? tokens.space[7] * 2 + barHeight : tokens.space[7] + barHeight,
+        paddingBottom: footer ? 132 + barHeight : tokens.space[7] + barHeight,
       }}
     >
       {children}
@@ -109,7 +111,7 @@ export function Screen({
               paddingBottom: tokens.space[3],
               // Blur alone leaves text hard to read over a busy list, so the
               // glass sits on a wash of the background rather than on nothing.
-              backgroundColor: dark ? "rgba(6,41,30,0.72)" : "rgba(237,239,233,0.72)",
+              backgroundColor: dark ? "rgba(13,21,18,0.86)" : "rgba(237,239,233,0.72)",
               borderTopWidth: 1,
               borderTopColor: dark ? "rgba(180,112,58,0.22)" : "rgba(10,59,44,0.08)",
             }}
