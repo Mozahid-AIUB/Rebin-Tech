@@ -8,25 +8,19 @@
       "developmentClient": true,
       "distribution": "internal",
       "android": {
-        "// buildType": "APK rather than the default AAB: an AAB has to go through a store to install, and this build exists to be sideloaded onto a phone from a link.",
         "buildType": "apk"
       },
       "ios": {
         "simulator": false
-      },
-      "env": {
-        "// note": "EXPO_PUBLIC_* values are read from apps/mobile/.env at bundle time by the dev server, not baked in here -- a dev client loads its JS from the machine running `expo start`."
       }
     },
     "preview": {
-      "// note": "A shareable build with no dev tooling: what a client installs to try the app before it reaches a store.",
       "distribution": "internal",
       "android": {
         "buildType": "apk"
       }
     },
     "production": {
-      "// note": "Store submission. AAB for Play, which is what Google requires.",
       "autoIncrement": true
     }
   },
