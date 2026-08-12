@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import {
+  claimCollection,
   claimJob,
   getAgentSummary,
   getProfileName,
@@ -12,7 +13,7 @@ import {
   type AvailableJob,
   type MyJob,
 } from "@rebin/api";
-import { formatUsDate, formatUsTimeWindow } from "@rebin/shared";
+import { formatCents, formatUsDate, formatUsTimeWindow } from "@rebin/shared";
 import {
   AppText,
   Card,
@@ -25,7 +26,7 @@ import {
   StatTile,
   tokens,
 } from "@rebin/ui";
-import { JobCard } from "../../src/features/jobs/JobCard";
+import { JobCard, KIND_LABEL } from "../../src/features/jobs/JobCard";
 
 // S49. Same shape as the other two portals: honest stats, the list that
 // matters, and the work in one place.
@@ -33,6 +34,11 @@ import { JobCard } from "../../src/features/jobs/JobCard";
 // The board is not filtered by distance. Routing on service area needs
 // geocoded addresses, and matching on a ZIP string would hide a job one street
 // over -- worse than showing everything while the board is small.
+//
+// It carries both errands: an organization's free pickup and a business's
+// paid collection. They are labelled by who they are for rather than by
+// whether they pay -- "Organization" tells a driver to expect a dock and a
+// booked time, "Business" a shop and a call to arrange one.
 
 function greeting(hour: number): string {
   if (hour < 12) return "Good morning";
@@ -93,10 +99,13 @@ export default function AgentDispatch() {
   }, [load]);
 
   async function onClaim(job: AvailableJob) {
-    setClaiming(job.requestId);
+    setClaiming(job.subjectId);
     setError(null);
     try {
-      const jobId = await claimJob(job.requestId);
+      const jobId =
+        job.kind === "collection"
+          ? await claimCollection(job.subjectId)
+          : await claimJob(job.subjectId);
       await load();
       router.push(asHref(`/(agent)/job/${jobId}`));
     } catch (e) {
@@ -127,8 +136,12 @@ export default function AgentDispatch() {
             <StatTile value={String(summary?.jobsActive ?? 0)} label="IN HAND" tone="accent" />
             <StatTile value={String(summary?.jobsCompleted ?? 0)} label="COMPLETED" />
             <StatTile
-              value={String(summary?.devicesCollected ?? 0)}
-              label="DEVICES"
+              value={
+                (summary?.collectedValueCents ?? 0) > 0
+                  ? formatCents(summary!.collectedValueCents)
+                  : String(summary?.devicesCollected ?? 0)
+              }
+              label={(summary?.collectedValueCents ?? 0) > 0 ? "PAID OUT" : "DEVICES"}
               tone={(summary?.devicesCollected ?? 0) > 0 ? "default" : "muted"}
             />
           </StatRow>
@@ -164,22 +177,31 @@ export default function AgentDispatch() {
             <View style={{ gap: tokens.space[2] }}>
               <SectionHeader title={`${board.length} available`} />
               {board.map((job) => (
-                <Card key={job.requestId} style={{ gap: tokens.space[2] }}>
+                <Card key={job.subjectId} style={{ gap: tokens.space[2] }}>
                   <View
                     style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
                   >
-                    <AppText variant="h3">{job.orgName}</AppText>
-                    <AppText variant="h3" tone="accent">{`${job.unitCount}`}</AppText>
+                    <AppText variant="h3">{job.accountName}</AppText>
+                    <AppText variant="h3" tone="accent">
+                      {job.payoutCents !== null ? formatCents(job.payoutCents) : `${job.unitCount}`}
+                    </AppText>
                   </View>
+                  <AppText variant="label" tone="accent">{KIND_LABEL[job.kind]}</AppText>
                   <AppText variant="bodySm" tone="muted">
-                    {`${job.city}, ${job.state} · ${formatUsDate(job.windowStart, job.timezone)}`}
+                    {`${job.street}, ${job.city}, ${job.state} · ${job.unitCount} devices`}
                   </AppText>
-                  <AppText variant="bodySm" tone="secondary">
-                    {formatUsTimeWindow(job.windowStart, job.windowEnd, job.timezone)}
-                  </AppText>
+                  {job.windowStart && job.windowEnd ? (
+                    <AppText variant="bodySm" tone="secondary">
+                      {`${formatUsDate(job.windowStart, job.timezone)} · ${formatUsTimeWindow(job.windowStart, job.windowEnd, job.timezone)}`}
+                    </AppText>
+                  ) : (
+                    <AppText variant="bodySm" tone="secondary">
+                      Call the shop to arrange a time
+                    </AppText>
+                  )}
                   <PillButton
                     label="Take this job"
-                    loading={claiming === job.requestId}
+                    loading={claiming === job.subjectId}
                     onPress={() => void onClaim(job)}
                   />
                 </Card>

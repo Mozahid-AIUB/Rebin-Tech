@@ -239,7 +239,8 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
-          request_id: string
+          quote_id: string | null
+          request_id: string | null
           status: Database["public"]["Enums"]["job_status_enum"]
         }
         Insert: {
@@ -251,7 +252,8 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
-          request_id: string
+          quote_id?: string | null
+          request_id?: string | null
           status?: Database["public"]["Enums"]["job_status_enum"]
         }
         Update: {
@@ -263,7 +265,8 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
-          request_id?: string
+          quote_id?: string | null
+          request_id?: string | null
           status?: Database["public"]["Enums"]["job_status_enum"]
         }
         Relationships: [
@@ -272,6 +275,13 @@ export type Database = {
             columns: ["agent_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_assignments_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
             referencedColumns: ["id"]
           },
           {
@@ -782,6 +792,7 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: undefined
       }
+      claim_collection: { Args: { p_quote_id: string }; Returns: string }
       claim_job: { Args: { p_request_id: string }; Returns: string }
       create_business_with_owner: {
         Args: {
@@ -864,6 +875,10 @@ export type Database = {
         Returns: Json
       }
       is_assigned_agent: { Args: { p_request_id: string }; Returns: boolean }
+      is_assigned_agent_for_quote: {
+        Args: { p_quote_id: string }
+        Returns: boolean
+      }
       is_business_member: { Args: { p_business: string }; Returns: boolean }
       is_field_agent: { Args: never; Returns: boolean }
       is_org_member: { Args: { p_org: string }; Returns: boolean }
@@ -871,11 +886,13 @@ export type Database = {
       list_available_jobs: {
         Args: never
         Returns: {
-          categories: Database["public"]["Enums"]["device_category_enum"][]
+          account_name: string
           city: string
-          org_name: string
-          request_id: string
+          kind: string
+          payout_cents: number
           state: string
+          street: string
+          subject_id: string
           timezone: string
           unit_count: number
           window_end: string
@@ -885,15 +902,17 @@ export type Database = {
       list_my_jobs: {
         Args: never
         Returns: {
+          account_name: string
           city: string
           claimed_at: string
           collected_at: string
           id: string
-          org_name: string
-          request_id: string
+          kind: string
+          payout_cents: number
           state: string
           status: Database["public"]["Enums"]["job_status_enum"]
           street: string
+          subject_id: string
           timezone: string
           unit_count: number
           window_end: string
@@ -935,6 +954,7 @@ export type Database = {
       my_agent_summary: {
         Args: never
         Returns: {
+          collected_value_cents: number
           devices_collected: number
           jobs_active: number
           jobs_completed: number
@@ -950,6 +970,7 @@ export type Database = {
           next_pickup: string
         }[]
       }
+      owns_quote: { Args: { p_quote_id: string }; Returns: boolean }
       owns_request: { Args: { p_request_id: string }; Returns: boolean }
       publish_price_catalog: {
         Args: { p_version_id: string }

@@ -716,30 +716,46 @@ export async function decideQuote(quoteId: string, accept: boolean): Promise<voi
 
 export type JobStatus = "claimed" | "en_route" | "on_site" | "collected" | "cancelled";
 
+/**
+ * What kind of errand a job is.
+ *
+ * 'pickup' is an organization's free collection -- counted, not bought.
+ * 'collection' is an accepted quote at a business -- bought and paid for.
+ * They share a driver and a van, so they share a board.
+ */
+export type JobKind = "pickup" | "collection";
+
 export type AvailableJob = {
-  requestId: string;
-  orgName: string;
+  kind: JobKind;
+  /** The pickup request or the quote, depending on `kind`. */
+  subjectId: string;
+  accountName: string;
+  street: string;
   city: string;
   state: string;
   unitCount: number;
-  categories: string[];
-  windowStart: string;
-  windowEnd: string;
+  /** Null for a free pickup; what the vendor is owed for a collection. */
+  payoutCents: number | null;
+  /** Null on a collection: a vendor agrees a price, not a slot. */
+  windowStart: string | null;
+  windowEnd: string | null;
   timezone: string;
 };
 
 export type MyJob = {
   id: string;
-  requestId: string;
+  kind: JobKind;
+  subjectId: string;
   status: JobStatus;
-  orgName: string;
+  accountName: string;
   street: string;
   city: string;
   state: string;
   zip: string;
   unitCount: number;
-  windowStart: string;
-  windowEnd: string;
+  payoutCents: number | null;
+  windowStart: string | null;
+  windowEnd: string | null;
   timezone: string;
   claimedAt: string;
   collectedAt: string | null;
@@ -749,19 +765,24 @@ export type AgentSummary = {
   jobsCompleted: number;
   devicesCollected: number;
   jobsActive: number;
+  /** What the paid collections were worth -- the nearest thing to earnings
+   *  until an agent rate table exists. */
+  collectedValueCents: number;
 };
 
-/** Scheduled pickups nobody has claimed yet. */
+/** Everything waiting for a driver: free pickups and paid collections alike. */
 export async function listAvailableJobs(): Promise<AvailableJob[]> {
   const { data, error } = await supabase.rpc("list_available_jobs");
   if (error) throw asError(error.message);
   return (data ?? []).map((row) => ({
-    requestId: row.request_id,
-    orgName: row.org_name,
+    kind: row.kind as JobKind,
+    subjectId: row.subject_id,
+    accountName: row.account_name,
+    street: row.street,
     city: row.city,
     state: row.state,
     unitCount: row.unit_count,
-    categories: (row.categories ?? []) as string[],
+    payoutCents: row.payout_cents,
     windowStart: row.window_start,
     windowEnd: row.window_end,
     timezone: row.timezone,
@@ -773,14 +794,16 @@ export async function listMyJobs(): Promise<MyJob[]> {
   if (error) throw asError(error.message);
   return (data ?? []).map((row) => ({
     id: row.id,
-    requestId: row.request_id,
+    kind: row.kind as JobKind,
+    subjectId: row.subject_id,
     status: row.status as JobStatus,
-    orgName: row.org_name,
+    accountName: row.account_name,
     street: row.street,
     city: row.city,
     state: row.state,
     zip: row.zip,
     unitCount: row.unit_count,
+    payoutCents: row.payout_cents,
     windowStart: row.window_start,
     windowEnd: row.window_end,
     timezone: row.timezone,
@@ -797,6 +820,13 @@ export async function listMyJobs(): Promise<MyJob[]> {
  */
 export async function claimJob(requestId: string): Promise<string> {
   const { data, error } = await supabase.rpc("claim_job", { p_request_id: requestId });
+  if (error) throw asError(error.message);
+  return data as string;
+}
+
+/** Takes a paid collection -- an accepted quote -- off the board. */
+export async function claimCollection(quoteId: string): Promise<string> {
+  const { data, error } = await supabase.rpc("claim_collection", { p_quote_id: quoteId });
   if (error) throw asError(error.message);
   return data as string;
 }
@@ -830,6 +860,7 @@ export async function getAgentSummary(): Promise<AgentSummary> {
     jobsCompleted: Number(row?.jobs_completed ?? 0),
     devicesCollected: Number(row?.devices_collected ?? 0),
     jobsActive: Number(row?.jobs_active ?? 0),
+    collectedValueCents: Number(row?.collected_value_cents ?? 0),
   };
 }
 

@@ -4,12 +4,14 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   advanceJob,
   getPickupRequest,
+  getQuote,
   listMyJobs,
   type JobStatus,
   type MyJob,
   type PickupRequestDetail,
+  type QuoteDetail,
 } from "@rebin/api";
-import { formatUsDate, formatUsTimeWindow } from "@rebin/shared";
+import { formatCents, formatUsDate, formatUsTimeWindow } from "@rebin/shared";
 import {
   AppText,
   Card,
@@ -56,6 +58,7 @@ export default function AgentJobDetail() {
 
   const [job, setJob] = useState<MyJob | null>(null);
   const [request, setRequest] = useState<PickupRequestDetail | null>(null);
+  const [quote, setQuote] = useState<QuoteDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -74,7 +77,10 @@ export default function AgentJobDetail() {
       const found = (await listMyJobs()).find((j) => j.id === id) ?? null;
       setJob(found);
       if (found) {
-        setRequest(await getPickupRequest(found.requestId));
+        // The subject is a pickup request or a quote depending on the errand,
+        // and each carries different things worth showing on a doorstep.
+        if (found.kind === "pickup") setRequest(await getPickupRequest(found.subjectId));
+        else setQuote(await getQuote(found.subjectId));
         setActualUnits((current) => current || String(found.unitCount));
       }
     } catch (e) {
@@ -153,10 +159,19 @@ export default function AgentJobDetail() {
       }
     >
       <View style={{ gap: tokens.space[1] }}>
-        <AppText variant="display">{job.orgName}</AppText>
-        <AppText variant="body" tone="secondary">
-          {`${formatUsDate(job.windowStart, job.timezone)} · ${formatUsTimeWindow(job.windowStart, job.windowEnd, job.timezone)}`}
+        <AppText variant="display">{job.accountName}</AppText>
+        <AppText variant="label" tone="accent">
+          {job.kind === "pickup" ? "Organization" : "Business"}
         </AppText>
+        {job.windowStart && job.windowEnd ? (
+          <AppText variant="body" tone="secondary">
+            {`${formatUsDate(job.windowStart, job.timezone)} · ${formatUsTimeWindow(job.windowStart, job.windowEnd, job.timezone)}`}
+          </AppText>
+        ) : (
+          <AppText variant="body" tone="secondary">
+            Call the shop to arrange a time
+          </AppText>
+        )}
       </View>
 
       <SectionHeader title="Where" />
@@ -196,6 +211,30 @@ export default function AgentJobDetail() {
         </>
       ) : null}
 
+      {quote ? (
+        <>
+          <SectionHeader title="What you're collecting" />
+          {quote.items.map((line, index) => (
+            <Card key={`${line.componentKey}-${index}`} style={{ gap: 2 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <AppText variant="body">{`${line.quantity} × ${line.displayName}`}</AppText>
+                <AppText variant="body" tone="muted">{line.grade}</AppText>
+              </View>
+            </Card>
+          ))}
+          {/* The figure the vendor is expecting. Payment itself is not wired
+              yet, so this says what is owed rather than pretending it moves
+              money. */}
+          <Card accentBorder style={{ gap: tokens.space[1] }}>
+            <AppText variant="label" tone="accent">AGREED PRICE</AppText>
+            <AppText variant="display">{formatCents(quote.totalCents)}</AppText>
+            <AppText variant="bodySm" tone="muted">
+              Payment is arranged by the office — payouts arrive in a coming release.
+            </AppText>
+          </Card>
+        </>
+      ) : null}
+
       {actionError ? (
         <AppText variant="bodySm" style={{ color: tokens.color.danger }}>{actionError}</AppText>
       ) : null}
@@ -230,7 +269,7 @@ export default function AgentJobDetail() {
         <Card accentBorder style={{ gap: tokens.space[1] }}>
           <AppText variant="h3">Collected</AppText>
           <AppText variant="bodySm" tone="secondary">
-            {`${job.unitCount} booked · ${request?.unitCount ?? job.unitCount} on the record`}
+            {`${job.unitCount} expected`}
           </AppText>
           <AppText variant="bodySm" tone="muted">
             The customer&apos;s request is marked completed.

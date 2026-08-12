@@ -3,7 +3,7 @@
 -- The rules worth protecting: two agents cannot take the same job, an agent
 -- cannot touch another's, and a pickup cannot be finished without a count.
 begin;
-select plan(13);
+select plan(21);
 
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'owner@org-a.test'),
@@ -26,6 +26,19 @@ insert into role_assignments (user_id, role, scope_type, scope_id) values
   ('33333333-3333-3333-3333-333333333333', 'platform_ops', 'platform',     null);
 insert into pickup_requests (id, org_id, created_by, size_tier, unit_count, categories, window_start, window_end, timezone, on_site_contact_name, on_site_contact_phone, dock_address, status) values
   ('cccccccc-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'tier_30_100', 40, '{computers_laptops}', now() + interval '2 days', now() + interval '2 days 3 hours', 'America/New_York', 'Dana', '5550100000', 'Dock A', 'scheduled');
+
+-- The vendor's fixtures join the others here, before the session drops to
+-- `authenticated` -- these tables have no insert policy, by design.
+insert into businesses (id, name, business_type, street, city, state, zip, status) values
+  ('bbbbbbbb-9999-0000-0000-000000000009', 'Eastside Repair', 'repair_shop', '14 Market St', 'Newark', 'NJ', '07102', 'active');
+insert into auth.users (id, email) values
+  ('99999999-9999-9999-9999-999999999999', 'shop@eastside.test');
+insert into profiles (id, full_name, status) values
+  ('99999999-9999-9999-9999-999999999999', 'Shop Owner', 'active');
+insert into business_members values
+  ('bbbbbbbb-9999-0000-0000-000000000009', '99999999-9999-9999-9999-999999999999', 'biz_owner');
+insert into role_assignments (user_id, role, scope_type, scope_id) values
+  ('99999999-9999-9999-9999-999999999999', 'biz_owner', 'business', 'bbbbbbbb-9999-0000-0000-000000000009');
 
 set local role authenticated;
 
@@ -129,6 +142,73 @@ select is(
   (select devices_collected::int from my_agent_summary()),
   52,
   'the summary counts what was actually collected, not what was booked'
+);
+
+-- ---------------------------------------------------------------------------
+-- Paid collections: an accepted quote is an errand too (0026).
+-- ---------------------------------------------------------------------------
+set local request.jwt.claim.sub = '99999999-9999-9999-9999-999999999999';
+create temporary table vq as select create_quote(
+  'bbbbbbbb-9999-0000-0000-000000000009',
+  '[{"componentKey":"laptop_business","grade":"working","quantity":2,"confidence":95}]'::jsonb
+) as id;
+
+-- An open offer is still the vendor's to decide; collecting against it would
+-- be taking stock nobody agreed to sell.
+set local request.jwt.claim.sub = '77777777-7777-7777-7777-777777777777';
+select throws_ok(
+  format($$select claim_collection(%L)$$, (select id from vq)),
+  '22023',
+  null,
+  'an undecided quote is not on the job board'
+);
+
+set local request.jwt.claim.sub = '99999999-9999-9999-9999-999999999999';
+select decide_quote((select id from vq), true);
+
+set local request.jwt.claim.sub = '77777777-7777-7777-7777-777777777777';
+select is(
+  (select count(*)::int from list_available_jobs() where kind = 'collection'),
+  1,
+  'an accepted quote appears on the same board as a free pickup'
+);
+select is(
+  (select payout_cents from list_available_jobs() where kind = 'collection'),
+  24000,
+  'the board shows what a paid collection is worth'
+);
+
+create temporary table vjob as select claim_collection((select id from vq)) as id;
+
+select is(
+  (select count(*)::int from list_available_jobs() where kind = 'collection'),
+  0,
+  'a claimed collection leaves the board'
+);
+select is(
+  (select kind from list_my_jobs() where id = (select id from vjob)),
+  'collection',
+  'the agent sees it among their own jobs, marked as a collection'
+);
+
+-- The agent must be able to read the quote they were sent for, or they arrive
+-- at a shop with no idea what they are picking up.
+select is(
+  (select count(*)::int from quotes where id = (select id from vq)),
+  1,
+  'the assigned agent can read the quote behind their job'
+);
+
+select advance_job((select id from vjob), 'en_route');
+select advance_job((select id from vjob), 'on_site');
+select lives_ok(
+  format($$select advance_job(%L, 'collected', 2)$$, (select id from vjob)),
+  'a collection finishes the same way a pickup does'
+);
+select is(
+  (select collected_value_cents::int from my_agent_summary()),
+  24000,
+  'the agent summary counts what the paid collections were worth'
 );
 
 select * from finish();
