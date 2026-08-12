@@ -11,11 +11,24 @@ const config: ExpoConfig = {
   // the app before the first frame paints, so a stale value here shows as a
   // flash of the old palette on every cold start.
   backgroundColor: "#EDEFE9",
-  ios: { bundleIdentifier: "com.rebintech.app", supportsTablet: true },
+  // Spelled out because Expo's defaults point at ./assets/images/, and these
+  // live in ./assets/ -- left implicit, Metro spends every launch failing to
+  // read a directory that does not exist.
+  icon: "./assets/icon.png",
+  ios: {
+    bundleIdentifier: "com.rebintech.app",
+    supportsTablet: true,
+  },
   android: {
     package: "com.rebintech.app",
-    adaptiveIcon: { backgroundColor: "#EDEFE9" },
+    adaptiveIcon: {
+      foregroundImage: "./assets/android-icon-foreground.png",
+      backgroundImage: "./assets/android-icon-background.png",
+      monochromeImage: "./assets/android-icon-monochrome.png",
+      backgroundColor: "#EDEFE9",
+    },
   },
+  web: { favicon: "./assets/favicon.png" },
   plugins: [
     "expo-router",
     [
