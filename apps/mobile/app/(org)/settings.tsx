@@ -171,12 +171,17 @@ export default function OrgSettings() {
         value={street}
         onChangeText={(v) => { setStreet(v); setSaved(false); }}
         error={errors.street}
+        autoComplete="street-address"
+        textContentType="streetAddressLine1"
       />
       <FormField
         label="City"
         value={city}
         onChangeText={(v) => { setCity(v); setSaved(false); }}
         error={errors.city}
+        autoComplete="postal-address-locality"
+        textContentType="addressCity"
+        autoCapitalize="words"
       />
       <SelectField
         label="State"
@@ -191,6 +196,8 @@ export default function OrgSettings() {
         onChangeText={(v) => { setZip(v.replace(/\D/g, "").slice(0, 9)); setSaved(false); }}
         mask="zip"
         error={errors.zip}
+        autoComplete="postal-code"
+        textContentType="postalCode"
       />
       <ToggleRow
         label="Loading dock"

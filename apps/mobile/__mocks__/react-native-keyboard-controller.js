@@ -34,7 +34,15 @@ function KeyboardProvider({ children }) {
   return children ?? null;
 }
 
+// Screen drives its floating footer up with the keyboard. Under Jest there is
+// no keyboard, so the shared values stay at rest and the footer sits where it
+// would with the keyboard closed -- which is the state every test asserts on.
+function useReanimatedKeyboardAnimation() {
+  return { height: { value: 0 }, progress: { value: 0 } };
+}
+
 module.exports = {
   KeyboardAwareScrollView,
   KeyboardProvider,
+  useReanimatedKeyboardAnimation,
 };

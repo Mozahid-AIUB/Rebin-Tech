@@ -364,6 +364,9 @@ export default function NewPickupRequest() {
             value={contactName}
             onChangeText={setContactName}
             error={errors.contactName}
+            autoComplete="name"
+            textContentType="name"
+            autoCapitalize="words"
           />
           <FormField
             label="Contact phone"
@@ -372,12 +375,16 @@ export default function NewPickupRequest() {
             mask="phone"
             keyboardType="phone-pad"
             error={errors.contactPhone}
+            autoComplete="tel"
+            textContentType="telephoneNumber"
           />
           <FormField
             label="Facility dock address"
             value={dockAddress}
             onChangeText={setDockAddress}
             error={errors.dockAddress}
+            autoComplete="street-address"
+            textContentType="fullStreetAddress"
           />
           <FormField
             label="Dock access & special instructions (optional)"

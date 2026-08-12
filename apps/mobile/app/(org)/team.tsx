@@ -212,6 +212,9 @@ export default function OrgTeam() {
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
+                  autoComplete="email"
+                  textContentType="emailAddress"
+                  autoCapitalize="none"
                   placeholder="colleague@yourorg.org"
                 />
                 <View style={{ gap: tokens.space[1] }}>

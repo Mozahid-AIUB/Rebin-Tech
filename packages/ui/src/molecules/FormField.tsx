@@ -1,4 +1,4 @@
-import { TextInput, View, type KeyboardTypeOptions } from "react-native";
+import { TextInput, View, type KeyboardTypeOptions, type TextInputProps } from "react-native";
 import { AppText } from "../atoms/AppText";
 import { tokens } from "../tokens";
 
@@ -25,6 +25,9 @@ export function FormField({
   helper,
   mask,
   keyboardType,
+  autoComplete,
+  textContentType,
+  autoCapitalize,
   secureTextEntry,
   multiline,
   placeholder,
@@ -36,6 +39,16 @@ export function FormField({
   helper?: string;
   mask?: Mask;
   keyboardType?: KeyboardTypeOptions;
+  /**
+   * What this field is, so the phone's autofill can offer the right thing.
+   *
+   * Without it a password manager cannot tell a contact name from a street,
+   * and the user types an address they already have saved. Passed through to
+   * both platforms' own hint systems.
+   */
+  autoComplete?: TextInputProps["autoComplete"];
+  textContentType?: TextInputProps["textContentType"];
+  autoCapitalize?: TextInputProps["autoCapitalize"];
   secureTextEntry?: boolean;
   multiline?: boolean;
   placeholder?: string;
@@ -51,6 +64,9 @@ export function FormField({
         value={displayMask(value, mask)}
         onChangeText={(raw) => onChangeText(applyMask(raw, mask))}
         keyboardType={inferredKeyboard}
+        autoComplete={autoComplete}
+        textContentType={textContentType}
+        autoCapitalize={autoCapitalize}
         secureTextEntry={secureTextEntry}
         multiline={multiline}
         placeholder={placeholder}
