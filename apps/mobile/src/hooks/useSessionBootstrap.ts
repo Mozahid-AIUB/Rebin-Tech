@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { AppState } from "react-native";
 import { identityFromAuthUser, resolveRoles, supabase, useSessionStore } from "@rebin/api";
 
 /**
@@ -60,6 +61,38 @@ export function useSessionBootstrap() {
     return () => {
       cancelled = true;
       data.subscription.unsubscribe();
+    };
+  }, []);
+
+  /**
+   * Ties Supabase's token refresh to whether the app is actually on screen.
+   *
+   * `autoRefreshToken` runs on a JS timer, and React Native suspends those
+   * once the app is backgrounded. So the refresh scheduled for a token that
+   * expires while the phone is in someone's pocket does not happen, and the
+   * agent who reopens the app at the next stop is holding an expired one --
+   * the first request of the day fails, or they land back on login.
+   *
+   * Stopping the timer on the way out and starting it again on the way back
+   * is Supabase's documented answer: the restart refreshes immediately if the
+   * token has aged out, so returning to the app renews it rather than
+   * discovering the problem mid-request. It also stops a pointless timer
+   * ticking against the battery of a phone that spends all day in a van.
+   */
+  useEffect(() => {
+    supabase.auth.startAutoRefresh();
+
+    const subscription = AppState.addEventListener("change", (state) => {
+      // Only "active" is the foreground. iOS reports "inactive" while the app
+      // is transitioning or the call banner is up, and treating that as
+      // foreground would restart the timer on the way out.
+      if (state === "active") supabase.auth.startAutoRefresh();
+      else supabase.auth.stopAutoRefresh();
+    });
+
+    return () => {
+      subscription.remove();
+      supabase.auth.stopAutoRefresh();
     };
   }, []);
 }

@@ -1,4 +1,5 @@
 import { renderHook, waitFor } from "@testing-library/react-native";
+import { AppState } from "react-native";
 import { useSessionStore } from "../src/store/session";
 import { useSessionBootstrap } from "../src/hooks/useSessionBootstrap";
 
@@ -7,6 +8,8 @@ import { useSessionBootstrap } from "../src/hooks/useSessionBootstrap";
 let authCallback: ((event: string, session: unknown) => void) | null = null;
 const mockUnsubscribe = jest.fn();
 const mockResolveRoles = jest.fn();
+const mockStartRefresh = jest.fn();
+const mockStopRefresh = jest.fn();
 
 jest.mock("@rebin/api", () => {
   const actual = jest.requireActual("@rebin/api");
@@ -19,14 +22,31 @@ jest.mock("@rebin/api", () => {
           authCallback = cb;
           return { data: { subscription: { unsubscribe: mockUnsubscribe } } };
         },
+        startAutoRefresh: () => mockStartRefresh(),
+        stopAutoRefresh: () => mockStopRefresh(),
       },
     },
   };
 });
 
+// Captures the handler the hook registers, so a foreground/background
+// transition can be driven the way the OS would. Spied rather than
+// jest.mock'd: AppState's real module path differs between React Native
+// versions, and replacing the whole react-native module to reach it takes far
+// more with it than one listener.
+let appStateHandler: ((state: string) => void) | null = null;
+const mockRemoveAppState = jest.fn();
+
 beforeEach(() => {
   jest.clearAllMocks();
   authCallback = null;
+  appStateHandler = null;
+  jest
+    .spyOn(AppState, "addEventListener")
+    .mockImplementation(((_event: string, handler: (state: string) => void) => {
+      appStateHandler = handler;
+      return { remove: mockRemoveAppState };
+    }) as unknown as typeof AppState.addEventListener);
   useSessionStore.setState({ status: "loading", userId: null, assignments: [], activeIndex: 0 });
 });
 
@@ -148,5 +168,45 @@ describe("session bootstrap", () => {
     // suites: RNTL 14 wraps these in act() internally and returns a promise.
     await unmount();
     expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  // Supabase's token refresh runs on a JS timer, and React Native suspends
+  // those in the background. Left running, the refresh that was supposed to
+  // happen while the phone was in a pocket simply does not, and the agent who
+  // reopens the app at the next stop finds an expired token. Supabase's own
+  // React Native guidance is to drive it off AppState, which nothing did.
+  describe("token refresh across backgrounding", () => {
+    it("runs the refresh timer only while the app is in the foreground", async () => {
+      await renderHook(() => useSessionBootstrap());
+
+      // Mounted foreground: refreshing from the start, not from the first
+      // time the app happens to be backgrounded and restored.
+      expect(mockStartRefresh).toHaveBeenCalledTimes(1);
+
+      appStateHandler!("background");
+      expect(mockStopRefresh).toHaveBeenCalledTimes(1);
+
+      appStateHandler!("active");
+      expect(mockStartRefresh).toHaveBeenCalledTimes(2);
+    });
+
+    // iOS reports this between states; it is not the foreground.
+    it("does not restart the timer for an inactive app", async () => {
+      await renderHook(() => useSessionBootstrap());
+      mockStartRefresh.mockClear();
+
+      appStateHandler!("inactive");
+
+      expect(mockStartRefresh).not.toHaveBeenCalled();
+      expect(mockStopRefresh).toHaveBeenCalled();
+    });
+
+    it("stops the timer and detaches the listener on unmount", async () => {
+      const { unmount } = await renderHook(() => useSessionBootstrap());
+      await unmount();
+
+      expect(mockRemoveAppState).toHaveBeenCalledTimes(1);
+      expect(mockStopRefresh).toHaveBeenCalled();
+    });
   });
 });
