@@ -150,7 +150,7 @@ select is(
 set local request.jwt.claim.sub = '99999999-9999-9999-9999-999999999999';
 create temporary table vq as select create_quote(
   'bbbbbbbb-9999-0000-0000-000000000009',
-  '[{"componentKey":"laptop_business","grade":"working","quantity":2,"confidence":95}]'::jsonb
+  '[{"componentKey":"laptop","grade":"working","quantity":2,"confidence":95}]'::jsonb
 ) as id;
 
 -- An open offer is still the vendor's to decide; collecting against it would

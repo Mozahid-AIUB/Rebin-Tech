@@ -3,7 +3,7 @@
 -- The rule these tests exist to protect: a published price is a promise. It
 -- cannot be edited, and exactly one catalog is live at a time.
 begin;
-select plan(12);
+select plan(16);
 
 insert into auth.users (id, email) values
   ('33333333-3333-3333-3333-333333333333', 'ops@rebin.test'),
@@ -17,7 +17,7 @@ insert into role_assignments (user_id, role, scope_type, scope_id) values
 set local role authenticated;
 
 -- ---------------------------------------------------------------------------
--- The starter catalog (0022) shipped live and priced.
+-- The live catalog (0029) covers every category and is priced.
 -- ---------------------------------------------------------------------------
 set local request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';
 select is(
@@ -26,13 +26,13 @@ select is(
   'exactly one catalog is active'
 );
 select is(
-  (select unit_price_cents from current_price('laptop_business', 'working')),
-  12000,
-  'a vendor can read the live price of a working business laptop'
+  (select unit_price_cents from current_price('laptop', 'working')),
+  9000,
+  'a vendor can read the live price of a working laptop'
 );
 select is(
-  (select unit_price_cents from current_price('laptop_business', 'parts')),
-  800,
+  (select unit_price_cents from current_price('laptop', 'parts')),
+  700,
   'the same component grades down to a different price'
 );
 
@@ -71,19 +71,19 @@ select is(
 -- ---------------------------------------------------------------------------
 select throws_ok(
   $$select set_price_item((select id from price_catalog_versions where status = 'active'),
-      'laptop_business', 'Business laptop', 'computers_laptops', 'working', 'each', 999)$$,
+      'laptop', 'Laptop', 'computers_laptops', 'working', 'each', 999)$$,
   '42501',
   null,
   'a published price cannot be edited'
 );
 select lives_ok(
-  $$select set_price_item((select id from draft), 'laptop_business', 'Business laptop',
+  $$select set_price_item((select id from draft), 'laptop', 'Laptop',
       'computers_laptops', 'working', 'each', 15000)$$,
   'a draft price can be set'
 );
 select is(
-  (select unit_price_cents from current_price('laptop_business', 'working')),
-  12000,
+  (select unit_price_cents from current_price('laptop', 'working')),
+  9000,
   'the live price is unchanged while the draft is unpublished'
 );
 
@@ -95,7 +95,7 @@ select lives_ok(
   'ops can publish a draft'
 );
 select is(
-  (select unit_price_cents from current_price('laptop_business', 'working')),
+  (select unit_price_cents from current_price('laptop', 'working')),
   15000,
   'the new price is live once published'
 );
@@ -106,4 +106,49 @@ select is(
 );
 
 select * from finish();
+-- ---------------------------------------------------------------------------
+-- What the live catalog actually covers (0029).
+--
+-- An unpriced category is not "missing some options" -- it is invisible. The
+-- Edge Function builds the model's vocabulary from the live catalog, so a
+-- printer nobody priced cannot be returned from a photograph of one, and
+-- create_quote refuses a key it cannot price. These pin that every category
+-- the schema knows about can actually be quoted.
+-- ---------------------------------------------------------------------------
+select is(
+  (select count(distinct category)::int from price_items p
+     join price_catalog_versions v on v.id = p.catalog_version_id
+    where v.status = 'active'),
+  6,
+  'every device category, including harvested parts, has prices in the live catalog'
+);
+
+select ok(
+  exists (select 1 from price_items p
+            join price_catalog_versions v on v.id = p.catalog_version_id
+           where v.status = 'active' and p.component_key = 'ram_module'),
+  'memory is priced -- the highest-value thing in the stream was absent until 0029'
+);
+
+-- The consolidation rule, pinned. A key split on a difference the camera
+-- cannot actually see does not make a quote more accurate -- it makes the
+-- model guess, and the guess becomes money. `laptop_business` and
+-- `laptop_consumer` looked identical closed; four memory generations look
+-- identical in a tray.
+select is(
+  (select count(*)::int from price_items p
+     join price_catalog_versions v on v.id = p.catalog_version_id
+    where v.status = 'active'
+      and (p.component_key like 'ram_ddr%' or p.component_key like 'laptop\_%')),
+  0,
+  'nothing is split on a difference a photograph cannot show'
+);
+
+-- The old version is the record of what existing quotes were priced against.
+select is(
+  (select count(*)::int from price_catalog_versions where status = 'retired'),
+  1,
+  'the version it replaced is retired, not deleted -- old quotes stay explainable'
+);
+
 rollback;

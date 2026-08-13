@@ -30,17 +30,17 @@ set local request.jwt.claim.sub = '55555555-5555-5555-5555-555555555555';
 -- ---------------------------------------------------------------------------
 create temporary table q as select create_quote(
   'bbbbbbbb-1111-0000-0000-000000000001',
-  '[{"componentKey":"laptop_business","grade":"working","quantity":3,"confidence":94,"notes":"Dell","source":"scan"}]'::jsonb
+  '[{"componentKey":"laptop","grade":"working","quantity":3,"confidence":94,"notes":"Dell","source":"scan"}]'::jsonb
 ) as id;
 
 select is(
   (select total_cents from quotes where id = (select id from q)),
-  36000,
+  27000,
   'the total is 3 x the catalog price, computed from the lines'
 );
 select is(
   (select unit_price_cents from quote_items where quote_id = (select id from q)),
-  12000,
+  9000,
   'the line price comes from the catalog'
 );
 select is(
@@ -53,11 +53,11 @@ select is(
 -- client that could set unit_price_cents could set its own payout.
 create temporary table q2 as select create_quote(
   'bbbbbbbb-1111-0000-0000-000000000001',
-  '[{"componentKey":"laptop_business","grade":"working","quantity":1,"unitPriceCents":999999,"confidence":90}]'::jsonb
+  '[{"componentKey":"laptop","grade":"working","quantity":1,"unitPriceCents":999999,"confidence":90}]'::jsonb
 ) as id;
 select is(
   (select total_cents from quotes where id = (select id from q2)),
-  12000,
+  9000,
   'a price supplied by the caller is ignored in favour of the catalog'
 );
 
@@ -73,7 +73,7 @@ select is(
 -- ---------------------------------------------------------------------------
 create temporary table q3 as select create_quote(
   'bbbbbbbb-1111-0000-0000-000000000001',
-  '[{"componentKey":"laptop_business","grade":"broken","quantity":4,"confidence":null,"notes":null,"source":"manual"}]'::jsonb
+  '[{"componentKey":"laptop","grade":"broken","quantity":4,"confidence":null,"notes":null,"source":"manual"}]'::jsonb
 ) as id;
 
 select is(
@@ -88,7 +88,7 @@ select is(
 );
 select is(
   (select total_cents from quotes where id = (select id from q3)),
-  14000,
+  10000,
   'a hand-typed line is priced by the catalog, same as a scanned one'
 );
 
@@ -112,7 +112,7 @@ select throws_ok(
 set local request.jwt.claim.sub = '66666666-6666-6666-6666-666666666666';
 select throws_ok(
   $$select create_quote('bbbbbbbb-1111-0000-0000-000000000001',
-      '[{"componentKey":"laptop_business","grade":"working","quantity":1,"confidence":90}]'::jsonb)$$,
+      '[{"componentKey":"laptop","grade":"working","quantity":1,"confidence":90}]'::jsonb)$$,
   '42501',
   null,
   'a rival cannot raise a quote against another business'

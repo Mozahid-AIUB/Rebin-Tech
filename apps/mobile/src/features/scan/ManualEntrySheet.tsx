@@ -224,4 +224,5 @@ const CATEGORY_LABEL: Record<string, string> = {
   server_gear: "Server gear",
   copiers_printers: "Copiers and printers",
   batteries_ups: "Batteries and UPS",
+  components_parts: "Parts and components",
 };

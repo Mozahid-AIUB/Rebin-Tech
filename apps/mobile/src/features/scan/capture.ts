@@ -32,7 +32,12 @@ export async function capturePhotoForScan(): Promise<
     // returns a far smaller string when the native module is present, and this
     // is what is left when it is not.
     base64: true,
-    quality: 0.6,
+    // Lowered from 0.6 for the sake of that fallback. The picker cannot resize,
+    // so compression is the only lever left on a build without the manipulator,
+    // and the difference on a 12MP photo is megabytes. A label legible enough
+    // to read a model number off survives 0.4 comfortably -- the model is
+    // reading print, not judging image quality.
+    quality: 0.4,
   });
   const asset = shot.assets?.[0];
   if (shot.canceled || !asset?.uri) return { ok: false, reason: "cancelled" };

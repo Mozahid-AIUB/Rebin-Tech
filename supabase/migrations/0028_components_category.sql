@@ -1,0 +1,13 @@
+-- A category for the parts that come out of a machine rather than the machine.
+--
+-- The five categories in 0001 are all whole devices, because the organization
+-- flow that named them books whole devices for collection. The vendor flow
+-- buys what a machine is broken down into, and RAM, CPUs and drives are the
+-- highest-value things in the whole waste stream -- a tray of DDR4 is worth
+-- more than the tower it came out of. There was nowhere to file any of it, so
+-- none of it was priced, so the camera could never return it.
+--
+-- Its own migration on purpose: Postgres will not let a value added to an enum
+-- be *used* in the same transaction that adds it, and Supabase runs each
+-- migration in one. 0029 fills the catalog.
+alter type device_category_enum add value if not exists 'components_parts';

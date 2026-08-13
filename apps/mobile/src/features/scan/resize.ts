@@ -1,20 +1,29 @@
+import { requireOptionalNativeModule } from "expo";
+
 export const SCAN_LONG_EDGE = 1024;
 
 /**
  * Shrinks a captured photo, or returns null if this build cannot.
  *
- * expo-image-manipulator is a native module, so a JS-only reload onto an older
- * dev build has the JavaScript that calls it and none of the native side. A
- * top-level import throws at module load, which expo-router reports as the
- * route "missing the required default export" -- a message that points at the
- * screen rather than at the missing module, and takes the whole screen down
- * with it.
+ * expo-image-manipulator resolves its native module at import time, so on a
+ * build made before the dependency existed, *merely requiring it* throws. The
+ * first attempt at this guarded the require in a try/catch, which does catch
+ * the throw -- and still was not enough. Metro logs the failure of any module
+ * whose evaluation throws, whoever catches it, so the dev client put a red box
+ * on screen on every single scan. That is what "the camera is broken" was.
  *
- * Required lazily and guarded instead. A build without the module falls back
- * to sending the original photo: slower, but the camera still works, and the
- * failure is a slow scan rather than a blank screen.
+ * `requireOptionalNativeModule` answers the question without asking the
+ * question destructively: it returns null for a module that is not in the
+ * binary, so the JS wrapper is never evaluated and there is nothing to log.
+ *
+ * A build without the module falls back to sending the original photo:
+ * slower, but the camera works and the failure is a slow scan rather than a
+ * red screen. Installing the dependency is not enough to fix that -- a native
+ * module needs a new dev build. See BUILDS.md.
  */
 export async function resizeForScan(uri: string): Promise<string | null> {
+  if (requireOptionalNativeModule("ExpoImageManipulator") == null) return null;
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const manipulator = require("expo-image-manipulator") as typeof import("expo-image-manipulator");
@@ -31,6 +40,8 @@ export async function resizeForScan(uri: string): Promise<string | null> {
     });
     return result.base64 ?? null;
   } catch {
+    // The module is present and the resize still failed -- an unreadable file,
+    // or a photo the OS cleaned up behind us.
     return null;
   }
 }
