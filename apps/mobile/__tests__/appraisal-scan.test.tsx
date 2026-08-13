@@ -119,6 +119,34 @@ describe("Appraisal scan", () => {
     expect(screen.getByText("Business laptop")).toBeTruthy();
   });
 
+  // A vendor whose photo will not read is stuck staring at an error with only
+  // a camera button under it. The way out has to be offered where they hit the
+  // wall, not left on a screen they have to know to go back to.
+  it("offers the by-hand path when a photo will not read", async () => {
+    const onFallback = jest.fn();
+    mockAppraise.mockRejectedValue(new Error("Couldn't read that photo."));
+    await render(
+      <PortalThemeProvider portal="business">
+        <AppraisalScanSheet visible onClose={jest.fn()} onDone={jest.fn()} onFallback={onFallback} />
+      </PortalThemeProvider>,
+    );
+
+    await fireEvent.press(screen.getByRole("button", { name: "Take a photo" }));
+    await waitFor(() => expect(screen.getByText("Couldn't read that photo.")).toBeTruthy());
+
+    await fireEvent.press(screen.getByRole("button", { name: "Add them by hand instead" }));
+
+    expect(onFallback).toHaveBeenCalledTimes(1);
+  });
+
+  // Only after a failure. Offering it up front would make the camera look like
+  // the harder of two options on a screen built around the camera.
+  it("keeps the by-hand offer out of the way until something fails", async () => {
+    await renderSheet();
+
+    expect(screen.queryByRole("button", { name: "Add them by hand instead" })).toBeNull();
+  });
+
   it("hands the quote everything it priced", async () => {
     const onDone = jest.fn();
     await renderSheet(onDone);

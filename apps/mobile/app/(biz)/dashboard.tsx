@@ -25,6 +25,7 @@ import {
 } from "@rebin/ui";
 import { useLoader } from "../../src/hooks/useLoader";
 import { AppraisalScanSheet } from "../../src/features/scan/AppraisalScanSheet";
+import { ManualEntrySheet } from "../../src/features/scan/ManualEntrySheet";
 import { QuoteCard } from "../../src/features/quotes/QuoteCard";
 
 // S34, built to the same shape as the organization home: three honest stats,
@@ -60,6 +61,7 @@ export default function BizDashboard() {
   // wrong one sends the user back to the wrong place.
   const [saveError, setSaveError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [typing, setTyping] = useState(false);
   const [quoting, setQuoting] = useState(false);
 
   const { loading, error, reload } = useLoader(
@@ -88,6 +90,7 @@ export default function BizDashboard() {
   async function onAppraised(appraisal: Appraisal) {
     if (!businessId) return;
     setScanning(false);
+    setTyping(false);
     setQuoting(true);
     setSaveError(null);
     try {
@@ -99,6 +102,9 @@ export default function BizDashboard() {
           quantity: item.quantity,
           confidence: item.confidence,
           notes: item.notes,
+          // Carried through so an operator reviewing a quote can tell a line
+          // the camera read from one somebody typed.
+          source: item.source,
         })),
       );
       reload();
@@ -121,6 +127,13 @@ export default function BizDashboard() {
             loading={quoting}
             onPress={() => setScanning(true)}
           />
+          {/* Deliberately the quieter of the two. The camera is what this
+              portal is for; typing is what it falls back to. */}
+          <PillButton
+            label="Add items by hand"
+            variant="ghost"
+            onPress={() => setTyping(true)}
+          />
           {/* Sits with the button that failed rather than in the list above
               it: a scan the vendor just finished is what they are looking at,
               and the lines it produced are gone by the time this shows. */}
@@ -142,6 +155,15 @@ export default function BizDashboard() {
       <AppraisalScanSheet
         visible={scanning}
         onClose={() => setScanning(false)}
+        onDone={(appraisal) => void onAppraised(appraisal)}
+        onFallback={() => {
+          setScanning(false);
+          setTyping(true);
+        }}
+      />
+      <ManualEntrySheet
+        visible={typing}
+        onClose={() => setTyping(false)}
         onDone={(appraisal) => void onAppraised(appraisal)}
       />
 

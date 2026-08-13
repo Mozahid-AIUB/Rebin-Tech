@@ -563,11 +563,21 @@ export type AppraisedLine = {
   displayName: string;
   grade: "working" | "broken" | "parts";
   quantity: number;
-  confidence: number;
+  /**
+   * How sure the model was, or null when there was no model.
+   *
+   * A hand-typed line has no confidence to report -- nobody guessed, someone
+   * said. Reporting 100 would be indistinguishable from a photograph the model
+   * read perfectly, which is the one thing an operator reviewing a quote needs
+   * to be able to tell apart.
+   */
+  confidence: number | null;
   notes: string | null;
   unit: "each" | "lb";
   unitPriceCents: number;
   lineTotalCents: number;
+  /** Which door this line came in by. quote_items has carried it since 0023. */
+  source: "scan" | "manual";
 };
 
 export type Appraisal = {
@@ -639,8 +649,9 @@ export async function createQuote(
     componentKey: string;
     grade: "working" | "broken" | "parts";
     quantity: number;
-    confidence: number;
+    confidence: number | null;
     notes: string | null;
+    source: "scan" | "manual";
   }[],
 ): Promise<string> {
   const { data, error } = await supabase.rpc("create_quote", {

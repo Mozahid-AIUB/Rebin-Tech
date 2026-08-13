@@ -16,10 +16,21 @@ export function AppraisalScanSheet({
   visible,
   onClose,
   onDone,
+  onFallback,
 }: {
   visible: boolean;
   onClose: () => void;
   onDone: (appraisal: Appraisal) => void;
+  /**
+   * Hands the vendor over to typing the lot in by hand.
+   *
+   * Offered only after a photo has actually failed. A dark warehouse, a
+   * declined camera permission or a model that will not read the label leaves
+   * someone staring at an error with nothing under it but the button that
+   * just failed -- the way out belongs where they hit the wall, not on a
+   * screen they would have to know to go back to.
+   */
+  onFallback?: () => void;
 }) {
   const [lines, setLines] = useState<AppraisedLine[]>([]);
   const [catalogVersionId, setCatalogVersionId] = useState<string | null>(null);
@@ -91,6 +102,14 @@ export function AppraisalScanSheet({
             <AppText variant="bodySm" style={{ color: tokens.color.danger }}>{error}</AppText>
           ) : null}
 
+          {error && onFallback ? (
+            <PillButton
+              label="Add them by hand instead"
+              variant="secondary"
+              onPress={onFallback}
+            />
+          ) : null}
+
           {lines.length === 0 ? (
             <EmptyState
               title="Nothing scanned yet"
@@ -113,8 +132,10 @@ export function AppraisalScanSheet({
                 ) : null}
 
                 {/* A grade the model was unsure of is worth real money, so it
-                    is called out to be argued with rather than accepted. */}
-                {scanDisposition(line.confidence) !== "auto" ? (
+                    is called out to be argued with rather than accepted. A
+                    null confidence is a hand-typed line -- there was no model
+                    to doubt, so there is nothing here to check. */}
+                {line.confidence !== null && scanDisposition(line.confidence) !== "auto" ? (
                   <AppText variant="label" style={{ color: tokens.color.warning }}>
                     Check this one
                   </AppText>

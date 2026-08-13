@@ -163,6 +163,7 @@ Deno.serve(async (req) => {
         unit: row.unit,
         unitPriceCents: row.unit_price_cents,
         lineTotalCents: row.unit_price_cents * item.quantity,
+        source: "scan" as const,
         catalogVersionId: row.catalog_version_id,
       }];
     });

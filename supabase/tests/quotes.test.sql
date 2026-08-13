@@ -4,7 +4,7 @@
 -- business that owns a quote can answer it, and an expired offer is not
 -- acceptable.
 begin;
-select plan(11);
+select plan(14);
 
 insert into auth.users (id, email) values
   ('55555555-5555-5555-5555-555555555555', 'owner@shop.test'),
@@ -59,6 +59,37 @@ select is(
   (select total_cents from quotes where id = (select id from q2)),
   12000,
   'a price supplied by the caller is ignored in favour of the catalog'
+);
+
+-- ---------------------------------------------------------------------------
+-- A quote typed in by hand.
+--
+-- The camera is the way this portal is meant to be used, but it is not the
+-- only way it can be: a vendor with the permission switched off, a dead
+-- warehouse light, or a model that will not read the photo still has stock to
+-- sell. A hand-typed line has no model behind it, so it carries no confidence
+-- and says so -- but it is priced by exactly the same catalog, because a
+-- vendor who could type their own price could set their own payout.
+-- ---------------------------------------------------------------------------
+create temporary table q3 as select create_quote(
+  'bbbbbbbb-1111-0000-0000-000000000001',
+  '[{"componentKey":"laptop_business","grade":"broken","quantity":4,"confidence":null,"notes":null,"source":"manual"}]'::jsonb
+) as id;
+
+select is(
+  (select source from quote_items where quote_id = (select id from q3)),
+  'manual',
+  'a hand-typed line records that a person entered it, not the camera'
+);
+select is(
+  (select confidence from quote_items where quote_id = (select id from q3)),
+  null,
+  'a hand-typed line carries no confidence -- there was no model to be unsure'
+);
+select is(
+  (select total_cents from quotes where id = (select id from q3)),
+  14000,
+  'a hand-typed line is priced by the catalog, same as a scanned one'
 );
 
 select throws_ok(
