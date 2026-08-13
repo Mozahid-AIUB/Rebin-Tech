@@ -101,6 +101,12 @@ export default function QuoteDetailScreen() {
   }
 
   const open = quote.status === "offered";
+  // Only a finished collection has anything to report. An agent still on the
+  // road has no counts yet -- expected_units is snapshotted when the job is
+  // closed, not when it is claimed -- so a card built from a live job would be
+  // "Collected null of null".
+  const outcome = quote.collection?.status === "collected" ? quote.collection : null;
+  const held = outcome?.reconciliation === "mismatch";
 
   return (
     <Screen
@@ -173,7 +179,11 @@ export default function QuoteDetailScreen() {
         </Card>
       ) : null}
 
-      {quote.status === "accepted" ? (
+      {/* Withdrawn once someone has actually been: promising to arrange a
+          collection under a card that says what was collected reads as two
+          screens arguing, and it is the held-payout case where a vendor is
+          reading most carefully. */}
+      {quote.status === "accepted" && !outcome ? (
         <Card accentBorder style={{ gap: tokens.space[1] }}>
           <AppText variant="h3">What happens next</AppText>
           <AppText variant="bodySm" tone="secondary">
@@ -184,6 +194,41 @@ export default function QuoteDetailScreen() {
           <AppText variant="bodySm" tone="muted">
             Shipping labels and payouts arrive in a coming release.
           </AppText>
+        </Card>
+      ) : null}
+
+      {/* A count that agreed with the offer says nothing here. It is the
+          expected outcome, and narrating it would teach the vendor to skim
+          past the one card on this screen that ever needs reading. */}
+      {outcome && (outcome.reconciliation === "mismatch" || outcome.reconciliation === "resolved") ? (
+        <Card accentBorder style={{ gap: tokens.space[1] }}>
+          <AppText variant="h3">
+            Collected {outcome.actualUnits} of {outcome.expectedUnits}
+          </AppText>
+          {held ? (
+            <>
+              <AppText variant="bodySm" tone="secondary">
+                That is not the count this offer covered, so payment is on hold while the
+                office checks the count with our driver.
+              </AppText>
+              {/* A hold with no end to it reads as money lost. Naming who is
+                  doing the checking, and that it is not the vendor, is the
+                  whole difference between a delay and a dispute. */}
+              <AppText variant="bodySm" tone="muted">
+                Nothing is needed from you — we&apos;ll write as soon as it&apos;s settled.
+              </AppText>
+            </>
+          ) : (
+            <>
+              <AppText variant="bodySm" tone="secondary">
+                The office settled the difference and released the payment.
+              </AppText>
+              {/* The resolution note is the only account of what happened that
+                  anyone will have six weeks later, so it is shown rather than
+                  summarised. */}
+              <AppText variant="bodySm" tone="muted">{outcome.resolutionNote}</AppText>
+            </>
+          )}
         </Card>
       ) : null}
     </Screen>

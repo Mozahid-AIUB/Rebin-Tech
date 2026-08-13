@@ -237,10 +237,15 @@ export type Database = {
           claimed_at: string
           collected_at: string | null
           created_at: string
+          expected_units: number | null
           id: string
           notes: string | null
           quote_id: string | null
+          reconciliation: string
           request_id: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
           status: Database["public"]["Enums"]["job_status_enum"]
         }
         Insert: {
@@ -250,10 +255,15 @@ export type Database = {
           claimed_at?: string
           collected_at?: string | null
           created_at?: string
+          expected_units?: number | null
           id?: string
           notes?: string | null
           quote_id?: string | null
+          reconciliation?: string
           request_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
           status?: Database["public"]["Enums"]["job_status_enum"]
         }
         Update: {
@@ -263,10 +273,15 @@ export type Database = {
           claimed_at?: string
           collected_at?: string | null
           created_at?: string
+          expected_units?: number | null
           id?: string
           notes?: string | null
           quote_id?: string | null
+          reconciliation?: string
           request_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
           status?: Database["public"]["Enums"]["job_status_enum"]
         }
         Relationships: [
@@ -289,6 +304,13 @@ export type Database = {
             columns: ["request_id"]
             isOneToOne: false
             referencedRelation: "pickup_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_assignments_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -976,9 +998,24 @@ export type Database = {
         Args: { p_version_id: string }
         Returns: undefined
       }
+      quote_collection: {
+        Args: { p_quote_id: string }
+        Returns: {
+          actual_units: number
+          collected_at: string
+          expected_units: number
+          reconciliation: string
+          resolution_note: string
+          status: Database["public"]["Enums"]["job_status_enum"]
+        }[]
+      }
       remove_org_member: {
         Args: { p_org_id: string; p_user_id: string }
         Returns: undefined
+      }
+      request_status_label: {
+        Args: { p_status: Database["public"]["Enums"]["request_status_enum"] }
+        Returns: string
       }
       reschedule_pickup_request: {
         Args: {
@@ -986,6 +1023,10 @@ export type Database = {
           p_window_end: string
           p_window_start: string
         }
+        Returns: undefined
+      }
+      resolve_collection_units: {
+        Args: { p_job_id: string; p_note: string }
         Returns: undefined
       }
       set_agent_status: {
@@ -1069,6 +1110,7 @@ export type Database = {
         | "server_gear"
         | "copiers_printers"
         | "batteries_ups"
+        | "components_parts"
       job_status_enum:
         | "claimed"
         | "en_route"
@@ -1263,6 +1305,7 @@ export const Constants = {
         "server_gear",
         "copiers_printers",
         "batteries_ups",
+        "components_parts",
       ],
       job_status_enum: [
         "claimed",

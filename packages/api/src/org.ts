@@ -630,10 +630,37 @@ export type QuoteLine = {
   notes: string | null;
 };
 
+/**
+ * How the reconciliation in migration 0030 stands.
+ *
+ * 'not_required' never reaches a quote screen -- it is the free-pickup case --
+ * but it is the column's default, so a collection read before it finishes
+ * carries it.
+ */
+export type Reconciliation = "not_required" | "matched" | "mismatch" | "resolved";
+
+/**
+ * What actually came off the vendor's dock, once anyone has been.
+ *
+ * `expectedUnits` is null until the job is finished: it is snapshotted from
+ * the quote at collection time, not read from it now, so an agent still
+ * driving has nothing to report.
+ */
+export type QuoteCollection = {
+  status: JobStatus;
+  collectedAt: string | null;
+  expectedUnits: number | null;
+  actualUnits: number | null;
+  reconciliation: Reconciliation;
+  resolutionNote: string | null;
+};
+
 export type QuoteDetail = Omit<QuoteRow, "itemCount"> & {
   catalogVersionId: string;
   decidedAt: string | null;
   items: QuoteLine[];
+  /** Null until an agent has claimed the accepted quote. */
+  collection: QuoteCollection | null;
 };
 
 /**
@@ -676,7 +703,7 @@ export async function listQuotes(businessId: string): Promise<QuoteRow[]> {
 }
 
 export async function getQuote(quoteId: string): Promise<QuoteDetail | null> {
-  const [quote, items] = await Promise.all([
+  const [quote, items, collection] = await Promise.all([
     supabase
       .from("quotes")
       .select("id, status, total_cents, catalog_version_id, expires_at, decided_at, created_at")
@@ -686,12 +713,19 @@ export async function getQuote(quoteId: string): Promise<QuoteDetail | null> {
       .from("quote_items")
       .select("component_key, display_name, grade, unit, quantity, unit_price_cents, line_total_cents, confidence, notes")
       .eq("quote_id", quoteId),
+    // Through `quote_collection` (migration 0031) rather than a select on
+    // job_assignments: RLS would admit the row, and with it the agent's id and
+    // their own running notes, which are written for dispatch and not for the
+    // customer. The function returns the outcome alone.
+    supabase.rpc("quote_collection", { p_quote_id: quoteId }),
   ]);
   if (quote.error) throw asError(quote.error.message);
   if (items.error) throw asError(items.error.message);
+  if (collection.error) throw asError(collection.error.message);
   if (!quote.data) return null;
 
   const row = quote.data;
+  const job = (collection.data ?? [])[0];
   // Reported expired the moment it lapses, whether or not a write has caught
   // up -- offering an Accept button that can only fail is worse than saying so.
   const expired = row.status === "offered" && new Date(row.expires_at) <= new Date();
@@ -714,6 +748,16 @@ export async function getQuote(quoteId: string): Promise<QuoteDetail | null> {
       confidence: i.confidence,
       notes: i.notes,
     })),
+    collection: job
+      ? {
+          status: job.status as JobStatus,
+          collectedAt: job.collected_at ?? null,
+          expectedUnits: job.expected_units ?? null,
+          actualUnits: job.actual_units ?? null,
+          reconciliation: job.reconciliation as Reconciliation,
+          resolutionNote: job.resolution_note ?? null,
+        }
+      : null,
   };
 }
 

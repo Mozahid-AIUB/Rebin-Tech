@@ -4,14 +4,21 @@
 -- business that owns a quote can answer it, and an expired offer is not
 -- acceptable.
 begin;
-select plan(14);
+select plan(22);
 
 insert into auth.users (id, email) values
   ('55555555-5555-5555-5555-555555555555', 'owner@shop.test'),
-  ('66666666-6666-6666-6666-666666666666', 'rival@othershop.test');
+  ('66666666-6666-6666-6666-666666666666', 'rival@othershop.test'),
+  -- The driver and the office. They belong to no business, which is the point:
+  -- the collection block below turns on a vendor being told about work these
+  -- two did, without either of them being a member of anything.
+  ('77777777-7777-7777-7777-777777777777', 'agent@rebin.test'),
+  ('33333333-3333-3333-3333-333333333333', 'ops@rebin.test');
 insert into profiles (id, full_name, status) values
   ('55555555-5555-5555-5555-555555555555', 'Shop Owner', 'active'),
-  ('66666666-6666-6666-6666-666666666666', 'Rival Owner', 'active');
+  ('66666666-6666-6666-6666-666666666666', 'Rival Owner', 'active'),
+  ('77777777-7777-7777-7777-777777777777', 'Agent One', 'active'),
+  ('33333333-3333-3333-3333-333333333333', 'Ops Staff', 'active');
 insert into businesses (id, name, business_type, street, city, state, zip, status) values
   ('bbbbbbbb-1111-0000-0000-000000000001', 'Eastside Repair', 'repair_shop', '14 Market St', 'Newark', 'NJ', '07102', 'active'),
   ('bbbbbbbb-2222-0000-0000-000000000002', 'Rival Repair',    'repair_shop', '9 Other St',   'Newark', 'NJ', '07102', 'active');
@@ -20,7 +27,9 @@ insert into business_members values
   ('bbbbbbbb-2222-0000-0000-000000000002', '66666666-6666-6666-6666-666666666666', 'biz_owner');
 insert into role_assignments (user_id, role, scope_type, scope_id) values
   ('55555555-5555-5555-5555-555555555555', 'biz_owner', 'business', 'bbbbbbbb-1111-0000-0000-000000000001'),
-  ('66666666-6666-6666-6666-666666666666', 'biz_owner', 'business', 'bbbbbbbb-2222-0000-0000-000000000002');
+  ('66666666-6666-6666-6666-666666666666', 'biz_owner', 'business', 'bbbbbbbb-2222-0000-0000-000000000002'),
+  ('77777777-7777-7777-7777-777777777777', 'field_agent',  'self',     null),
+  ('33333333-3333-3333-3333-333333333333', 'platform_ops', 'platform', null);
 
 set local role authenticated;
 set local request.jwt.claim.sub = '55555555-5555-5555-5555-555555555555';
@@ -142,6 +151,86 @@ select throws_ok(
   '22023',
   null,
   'a decided quote cannot be answered again'
+);
+
+-- ---------------------------------------------------------------------------
+-- What actually came off the dock, told to the side whose money it is (0031).
+--
+-- 0030 compares the collected count against the quote and holds the payout
+-- when they disagree. The agent could see the number they typed and the office
+-- could see the flag; the vendor saw an accepted offer that had simply stopped
+-- paying, with no sentence anywhere saying why. Silence is the worst possible
+-- answer to "where is my money" -- it reads as the platform hoping nobody
+-- asks.
+-- ---------------------------------------------------------------------------
+-- Nothing has been collected against an open offer, so there is nothing to
+-- report -- and no row is the honest answer, not a row of nulls that the
+-- screen would have to guess its way through.
+select is(
+  (select count(*)::int from quote_collection((select id from q3))),
+  0,
+  'a quote nobody has collected against reports no outcome at all'
+);
+
+set local request.jwt.claim.sub = '77777777-7777-7777-7777-777777777777';
+create temporary table cjob as select claim_collection((select id from q)) as id;
+select advance_job((select id from cjob), 'en_route');
+select advance_job((select id from cjob), 'on_site');
+-- Two laptops on the dock against the three the offer covered.
+select advance_job((select id from cjob), 'collected', 2);
+
+set local request.jwt.claim.sub = '55555555-5555-5555-5555-555555555555';
+select is(
+  (select reconciliation from quote_collection((select id from q))),
+  'mismatch',
+  'the business is told its payout is being held, not left to wonder'
+);
+select is(
+  (select expected_units from quote_collection((select id from q))),
+  3,
+  'what the offer covered comes back'
+);
+select is(
+  (select actual_units from quote_collection((select id from q))),
+  2,
+  'and what the driver actually took, so the screen can name both numbers'
+);
+
+-- The agent reads the same quote screen the vendor does -- the job detail
+-- screen loads the quote behind the errand, exactly as `quotes_read` has
+-- allowed since 0026. Shutting them out here would not hide anything (they
+-- typed the count and can read their own job row) -- it would just make the
+-- screen they work from fail to load.
+set local request.jwt.claim.sub = '77777777-7777-7777-7777-777777777777';
+select is(
+  (select actual_units from quote_collection((select id from q))),
+  2,
+  'the agent sent for the stock can still read the quote they collected against'
+);
+
+-- The whole reason this goes through a function: the outcome is readable
+-- through the quote, and a quote belongs to one business.
+set local request.jwt.claim.sub = '66666666-6666-6666-6666-666666666666';
+select throws_ok(
+  format($$select * from quote_collection(%L)$$, (select id from q)),
+  '42501',
+  null,
+  'a rival cannot read the collection behind another business''s quote'
+);
+
+set local request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
+select resolve_collection_units((select id from cjob), 'vendor sold one before pickup');
+
+set local request.jwt.claim.sub = '55555555-5555-5555-5555-555555555555';
+select is(
+  (select reconciliation from quote_collection((select id from q))),
+  'resolved',
+  'the business learns when the hold is lifted'
+);
+select is(
+  (select resolution_note from quote_collection((select id from q))),
+  'vendor sold one before pickup',
+  'and reads the reason, which is the only account of it anyone will have'
 );
 
 select * from finish();
