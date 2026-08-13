@@ -11,7 +11,10 @@ import {
   type PickupRequestDetail,
   type QuoteDetail,
 } from "@rebin/api";
-import { formatCents, formatUsDate, formatUsTimeWindow } from "@rebin/shared";
+import { formatCents, formatUsDate, formatUsTimeWindow,
+  countGap,
+  expectedUnits,
+} from "@rebin/shared";
 import {
   AppText,
   Card,
@@ -64,6 +67,7 @@ export default function AgentJobDetail() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [counting, setCounting] = useState(false);
+
   const [actualUnits, setActualUnits] = useState("");
   const [notes, setNotes] = useState("");
 
@@ -93,6 +97,11 @@ export default function AgentJobDetail() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // What the vendor agreed to sell, and how far this load is from it. Both are
+  // null on a free pickup, which has no quote behind it.
+  const agreedUnits = quote ? expectedUnits(quote.items) : null;
+  const gap = countGap(agreedUnits, actualUnits ? Number(actualUnits) : null);
 
   async function advance(status: JobStatus, units?: number) {
     if (!id) return;
@@ -251,8 +260,33 @@ export default function AgentJobDetail() {
             value={actualUnits}
             onChangeText={(v) => setActualUnits(v.replace(/\D/g, ""))}
             keyboardType="number-pad"
-            helper={`${job.unitCount} were booked`}
+            helper={quote ? `${agreedUnits} on the quote` : `${job.unitCount} were booked`}
           />
+
+          {/* Said here, at the dock, because this is the last moment the gap
+              can be settled by turning round and asking. The database makes
+              the same comparison when this is submitted and holds the payout
+              either way -- this is not the control, it is the warning that
+              stops the control from being a surprise a week later.
+
+              Not a blocker. The agent may well be right, and a driver who
+              cannot file what they actually loaded will file something else. */}
+          {gap ? (
+            <Card variant="alt" style={{ gap: tokens.space[1] }}>
+              <AppText variant="label" style={{ color: tokens.color.warning }}>
+                {gap.direction === "short" ? "FEWER THAN QUOTED" : "MORE THAN QUOTED"}
+              </AppText>
+              <AppText variant="bodySm">
+                {gap.direction === "short"
+                  ? `The quote covers ${agreedUnits}. You have ${gap.by} fewer.`
+                  : `The quote covers ${agreedUnits}. You have ${gap.by} more.`}
+              </AppText>
+              <AppText variant="bodySm" tone="muted">
+                Send the real number. Payment is held until the office checks it, so a note
+                here saves someone a phone call.
+              </AppText>
+            </Card>
+          ) : null}
           <FormField
             label="Anything worth noting? (optional)"
             value={notes}

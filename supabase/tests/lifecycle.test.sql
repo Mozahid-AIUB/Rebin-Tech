@@ -21,8 +21,14 @@ insert into organization_members values
 insert into role_assignments (user_id, role, scope_type, scope_id) values
   ('11111111-1111-1111-1111-111111111111', 'org_owner', 'organization', 'aaaaaaaa-0000-0000-0000-000000000001'),
   ('33333333-3333-3333-3333-333333333333', 'platform_ops', 'platform', null);
-insert into pickup_requests (id, org_id, created_by, size_tier, unit_count, categories, window_start, window_end, timezone, on_site_contact_name, on_site_contact_phone, dock_address) values
-  ('cccccccc-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'tier_10_30', 25, '{computers_laptops}', now(), now() + interval '3 hours', 'America/New_York', 'A Contact', '5550100000', 'Dock A');
+-- Status set explicitly. 0027 made 'scheduled' the default so a customer
+-- booking reaches a driver without anyone approving it, which left this row
+-- landing in 'scheduled' and every transition below asserting against a state
+-- it was never in. 'pending' is still a legal state and advance_pickup_request
+-- still guards the moves out of it, so it is still worth exercising -- it just
+-- has to be asked for now.
+insert into pickup_requests (id, org_id, created_by, size_tier, unit_count, categories, window_start, window_end, timezone, on_site_contact_name, on_site_contact_phone, dock_address, status) values
+  ('cccccccc-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'tier_10_30', 25, '{computers_laptops}', now(), now() + interval '3 hours', 'America/New_York', 'A Contact', '5550100000', 'Dock A', 'pending');
 
 -- ---------------------------------------------------------------------------
 -- Account review: the whole point is that you cannot approve yourself.
@@ -105,8 +111,10 @@ select throws_ok(
 -- ---------------------------------------------------------------------------
 -- Rescheduling puts a scheduled pickup back in the queue.
 -- ---------------------------------------------------------------------------
-insert into pickup_requests (id, org_id, created_by, size_tier, unit_count, categories, window_start, window_end, timezone, on_site_contact_name, on_site_contact_phone, dock_address) values
-  ('cccccccc-0000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'tier_10_30', 25, '{computers_laptops}', now(), now() + interval '3 hours', 'America/New_York', 'A Contact', '5550100000', 'Dock A');
+-- Explicit for the same reason as the fixture above: since 0027 a booking
+-- lands 'scheduled', and this block is about the move out of 'pending'.
+insert into pickup_requests (id, org_id, created_by, size_tier, unit_count, categories, window_start, window_end, timezone, on_site_contact_name, on_site_contact_phone, dock_address, status) values
+  ('cccccccc-0000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'tier_10_30', 25, '{computers_laptops}', now(), now() + interval '3 hours', 'America/New_York', 'A Contact', '5550100000', 'Dock A', 'pending');
 set local request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
 select advance_pickup_request('cccccccc-0000-0000-0000-000000000002', 'under_review');
 select advance_pickup_request('cccccccc-0000-0000-0000-000000000002', 'scheduled');

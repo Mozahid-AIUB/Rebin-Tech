@@ -105,7 +105,6 @@ select is(
   'publishing retires the previous catalog rather than adding a second live one'
 );
 
-select * from finish();
 -- ---------------------------------------------------------------------------
 -- What the live catalog actually covers (0029).
 --
@@ -144,11 +143,15 @@ select is(
   'nothing is split on a difference a photograph cannot show'
 );
 
--- The old version is the record of what existing quotes were priced against.
-select is(
-  (select count(*)::int from price_catalog_versions where status = 'retired'),
-  1,
-  'the version it replaced is retired, not deleted -- old quotes stay explainable'
+-- A retired version is the record of what quotes priced against it were
+-- offered. Counting versions would only count this file's own publishing;
+-- what matters is that retiring one does not take its prices with it.
+select ok(
+  (select count(*) from price_items p
+     join price_catalog_versions v on v.id = p.catalog_version_id
+    where v.status = 'retired') > 0,
+  'a retired version keeps its prices -- old quotes stay explainable'
 );
 
+select * from finish();
 rollback;

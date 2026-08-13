@@ -3,7 +3,7 @@
 -- The rules worth protecting: two agents cannot take the same job, an agent
 -- cannot touch another's, and a pickup cannot be finished without a count.
 begin;
-select plan(24);
+select plan(30);
 
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'owner@org-a.test'),
@@ -174,7 +174,7 @@ select is(
 );
 select is(
   (select payout_cents from list_available_jobs() where kind = 'collection'),
-  24000,
+  18000,
   'the board shows what a paid collection is worth'
 );
 
@@ -207,7 +207,7 @@ select lives_ok(
 );
 select is(
   (select collected_value_cents::int from my_agent_summary()),
-  24000,
+  18000,
   'the agent summary counts what the paid collections were worth'
 );
 
@@ -218,6 +218,9 @@ select is(
 -- times and neither failure was visible from either side alone -- an
 -- organization saw "submitted" and an agent saw an empty board.
 -- ---------------------------------------------------------------------------
+-- Booked by the customer, not the driver. The session is still the agent's
+-- from the collection block above, and RLS is right to refuse that write.
+set local request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
 insert into pickup_requests (id, org_id, created_by, size_tier, unit_count, categories, window_start, window_end, timezone, on_site_contact_name, on_site_contact_phone, dock_address) values
   ('cccccccc-0000-0000-0000-00000000000f', 'aaaaaaaa-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'tier_10_30', 12, '{monitors_displays}', now() + interval '3 days', now() + interval '3 days 3 hours', 'America/New_York', 'Dana', '5550100000', 'Dock B');
 
@@ -226,6 +229,8 @@ select is(
   'scheduled',
   'a booking lands scheduled, not parked in a queue nobody works'
 );
+
+set local request.jwt.claim.sub = '77777777-7777-7777-7777-777777777777';
 
 set local request.jwt.claim.sub = '77777777-7777-7777-7777-777777777777';
 select is(
@@ -240,6 +245,75 @@ select is(
   (select count(*)::int from list_available_jobs() where kind = 'collection'),
   0,
   'the accepted quote from earlier was claimed, so it is off the board'
+);
+
+-- ---------------------------------------------------------------------------
+-- Reconciling what was collected against what was quoted (0030).
+--
+-- The leak this closes: `advance_job` recorded actual_units and the payout
+-- summed quotes.total_cents regardless. A vendor who scanned ten laptops and
+-- had seven on the dock was still owed for ten -- the number the agent typed
+-- was written down, audited, and never compared to anything.
+--
+-- It is flagged rather than repriced. actual_units is a single total and a
+-- quote has many lines at different rates, so "they were three short" does not
+-- say which three, and no arithmetic can recover it. A person decides; the
+-- money waits until they do.
+-- ---------------------------------------------------------------------------
+set local request.jwt.claim.sub = '99999999-9999-9999-9999-999999999999';
+create temporary table sq as select create_quote(
+  'bbbbbbbb-9999-0000-0000-000000000009',
+  '[{"componentKey":"laptop","grade":"working","quantity":10,"confidence":95}]'::jsonb
+) as id;
+select decide_quote((select id from sq), true);
+
+set local request.jwt.claim.sub = '77777777-7777-7777-7777-777777777777';
+create temporary table sjob as select claim_collection((select id from sq)) as id;
+select advance_job((select id from sjob), 'en_route');
+select advance_job((select id from sjob), 'on_site');
+
+-- Seven on the dock against ten on the quote.
+select advance_job((select id from sjob), 'collected', 7);
+
+select is(
+  (select reconciliation from job_assignments where id = (select id from sjob)),
+  'mismatch',
+  'a collection short of its quote is flagged rather than quietly accepted'
+);
+select is(
+  (select expected_units from job_assignments where id = (select id from sjob)),
+  10,
+  'what the quote asked for is recorded beside what arrived'
+);
+
+-- The money. 10 x 9000 = 90000 was owed on paper; none of it is payable while
+-- the count is unexplained.
+select is(
+  (select collected_value_cents::int from my_agent_summary()),
+  18000,
+  'a flagged collection is held out of the payable total'
+);
+
+-- An agent cannot wave away their own discrepancy -- that is the whole point.
+select throws_ok(
+  format($$select resolve_collection_units(%L, 'looked fine to me')$$, (select id from sjob)),
+  '42501',
+  null,
+  'the agent who reported the gap cannot clear it'
+);
+
+set local request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
+select lives_ok(
+  format($$select resolve_collection_units(%L, 'vendor confirmed three were sold before pickup')$$,
+         (select id from sjob)),
+  'platform staff can settle it'
+);
+
+set local request.jwt.claim.sub = '77777777-7777-7777-7777-777777777777';
+select is(
+  (select collected_value_cents::int from my_agent_summary()),
+  108000,
+  'once settled the collection counts toward the payable total again'
 );
 
 select * from finish();
