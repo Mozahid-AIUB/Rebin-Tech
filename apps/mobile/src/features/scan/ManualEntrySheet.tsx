@@ -5,6 +5,7 @@ import { listCurrentPrices, type Appraisal, type AppraisedLine, type PriceItem }
 import { formatCents } from "@rebin/shared";
 import { AppText, Card, FormField, PillButton, SectionHeader, tokens } from "@rebin/ui";
 import { useLoader } from "../../hooks/useLoader";
+import { Stepper } from "./Stepper";
 
 /**
  * The business portal's second door.
@@ -117,14 +118,33 @@ export function ManualEntrySheet({
                   <AppText variant="bodySm" tone="muted">
                     {`${line.quantity} × ${formatCents(line.unitPriceCents)} · ${line.grade}`}
                   </AppText>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Remove ${line.displayName}`}
-                    onPress={() => setLines((prev) => prev.filter((_, i) => i !== index))}
-                    style={{ minHeight: 44, justifyContent: "center" }}
-                  >
-                    <AppText variant="bodySm" style={{ color: tokens.color.danger }}>Remove</AppText>
-                  </Pressable>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: tokens.space[3] }}>
+                    {/* Correctable here too: a count typed a moment ago is as
+                        easy to get wrong as one the model guessed, and having
+                        to delete the line to fix a digit is worse. */}
+                    <Stepper
+                      label={line.displayName}
+                      quantity={line.quantity}
+                      onChange={(by) =>
+                        setLines((prev) =>
+                          prev.map((l, i) => {
+                            if (i !== index) return l;
+                            const quantity = Math.max(1, l.quantity + by);
+                            return { ...l, quantity, lineTotalCents: l.unitPriceCents * quantity };
+                          }),
+                        )
+                      }
+                    />
+                    <View style={{ flex: 1 }} />
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove ${line.displayName}`}
+                      onPress={() => setLines((prev) => prev.filter((_, i) => i !== index))}
+                      style={{ minHeight: 44, justifyContent: "center" }}
+                    >
+                      <AppText variant="bodySm" style={{ color: tokens.color.danger }}>Remove</AppText>
+                    </Pressable>
+                  </View>
                 </Card>
               ))}
             </>

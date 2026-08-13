@@ -119,6 +119,69 @@ describe("Appraisal scan", () => {
     expect(screen.getByText("Business laptop")).toBeTruthy();
   });
 
+  // The model counts what it can see, and a pallet hides most of itself. Until
+  // now a vendor who could see eleven laptops where the photo showed three had
+  // one move available: delete the line and photograph it again. The count is
+  // what the offer is multiplied by, so it has to be arguable.
+  describe("correcting the count", () => {
+    it("reprices the line and the total when the count is raised", async () => {
+      await renderSheet();
+      await fireEvent.press(screen.getByRole("button", { name: "Take a photo" }));
+      await waitFor(() => expect(screen.getByText("Business laptop")).toBeTruthy());
+
+      await fireEvent.press(screen.getByRole("button", { name: "One more Business laptop" }));
+
+      // 4 x 12000, on the line and again as the running total.
+      await waitFor(() => expect(screen.getAllByText("$480.00")).toHaveLength(2));
+      expect(screen.getByText(/4 ×/)).toBeTruthy();
+    });
+
+    it("reprices when the count is lowered", async () => {
+      await renderSheet();
+      await fireEvent.press(screen.getByRole("button", { name: "Take a photo" }));
+      await waitFor(() => expect(screen.getByText("Business laptop")).toBeTruthy());
+
+      await fireEvent.press(screen.getByRole("button", { name: "One fewer Business laptop" }));
+
+      await waitFor(() => expect(screen.getAllByText("$240.00")).toHaveLength(2));
+    });
+
+    // Removing is its own button. A quantity that could reach zero would leave
+    // a $0 line on the quote that reads as an item worth nothing rather than
+    // an item that is not there.
+    it("will not take a count below one", async () => {
+      mockAppraise.mockResolvedValue({
+        ...APPRAISAL,
+        items: [{ ...APPRAISAL.items[0]!, quantity: 1, lineTotalCents: 12000 }],
+        totalCents: 12000,
+      });
+      await renderSheet();
+      await fireEvent.press(screen.getByRole("button", { name: "Take a photo" }));
+      await waitFor(() => expect(screen.getByText("Business laptop")).toBeTruthy());
+
+      const fewer = screen.getByRole("button", { name: "One fewer Business laptop" });
+      expect(fewer.props.accessibilityState.disabled).toBe(true);
+    });
+
+    it("sends the corrected count to the quote, not the one the model returned", async () => {
+      const onDone = jest.fn();
+      await renderSheet(onDone);
+      await fireEvent.press(screen.getByRole("button", { name: "Take a photo" }));
+      await waitFor(() => expect(screen.getByText("Business laptop")).toBeTruthy());
+
+      await fireEvent.press(screen.getByRole("button", { name: "One more Business laptop" }));
+      await waitFor(() => expect(screen.getByText(/4 ×/)).toBeTruthy());
+      await fireEvent.press(screen.getByRole("button", { name: "Use this quote · $480.00" }));
+
+      expect(onDone).toHaveBeenCalledWith(
+        expect.objectContaining({
+          totalCents: 48000,
+          items: [expect.objectContaining({ quantity: 4, lineTotalCents: 48000 })],
+        }),
+      );
+    });
+  });
+
   // A vendor whose photo will not read is stuck staring at an error with only
   // a camera button under it. The way out has to be offered where they hit the
   // wall, not left on a screen they have to know to go back to.

@@ -5,6 +5,7 @@ import { appraisePhoto, type Appraisal, type AppraisedLine } from "@rebin/api";
 import { formatCents, scanDisposition } from "@rebin/shared";
 import { AppText, Card, EmptyState, PillButton, tokens } from "@rebin/ui";
 import { capturePhotoForScan } from "./capture";
+import { Stepper } from "./Stepper";
 
 // S35-S37. Same camera and the same "one still per subject" flow as the
 // organization's inventory sheet, with one decisive difference: every line
@@ -76,6 +77,31 @@ export function AppraisalScanSheet({
     setLines((prev) => prev.filter((_, i) => i !== index));
   }
 
+  /**
+   * Corrects what the model counted.
+   *
+   * A photograph of a pallet hides most of a pallet, so the count is the
+   * number this screen is most often wrong about -- and it is the number the
+   * offer is multiplied by. Without this the only correction available was
+   * deleting the line and photographing it again.
+   *
+   * The unit price is not touched, because it never came from the phone: the
+   * line is re-multiplied by the catalog rate the Edge Function attached, and
+   * `create_quote` reads that rate again server-side regardless.
+   */
+  function adjustAt(index: number, by: 1 | -1) {
+    setLines((prev) =>
+      prev.map((line, i) => {
+        if (i !== index) return line;
+        // Floored at one. A line that could reach zero would sit on the quote
+        // reading as an item worth nothing rather than an item that is not
+        // there -- removing is a separate button for that reason.
+        const quantity = Math.max(1, line.quantity + by);
+        return { ...line, quantity, lineTotalCents: line.unitPriceCents * quantity };
+      }),
+    );
+  }
+
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: tokens.color.bg, paddingTop: insets.top }}>
@@ -141,14 +167,22 @@ export function AppraisalScanSheet({
                   </AppText>
                 ) : null}
 
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Remove ${line.displayName}`}
-                  onPress={() => removeAt(index)}
-                  style={{ minHeight: 44, justifyContent: "center" }}
-                >
-                  <AppText variant="bodySm" style={{ color: tokens.color.danger }}>Remove</AppText>
-                </Pressable>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: tokens.space[3] }}>
+                  <Stepper
+                    label={line.displayName}
+                    quantity={line.quantity}
+                    onChange={(by) => adjustAt(index, by)}
+                  />
+                  <View style={{ flex: 1 }} />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remove ${line.displayName}`}
+                    onPress={() => removeAt(index)}
+                    style={{ minHeight: 44, justifyContent: "center" }}
+                  >
+                    <AppText variant="bodySm" style={{ color: tokens.color.danger }}>Remove</AppText>
+                  </Pressable>
+                </View>
               </Card>
             ))
           )}
