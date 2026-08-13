@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   getOrgSummary,
   getOrganization,
@@ -9,10 +9,9 @@ import {
   type OrgSummary2,
   type PickupRequestRow,
 } from "@rebin/api";
+import { useLoader } from "../../hooks/useLoader";
 
 type State = {
-  loading: boolean;
-  error: string | null;
   firstName: string | null;
   org: OrgSummary | null;
   requests: PickupRequestRow[];
@@ -20,7 +19,7 @@ type State = {
   summary: OrgSummary2 | null;
 };
 
-const INITIAL: State = { loading: true, error: null, firstName: null, org: null, requests: [], summary: null };
+const INITIAL: State = { firstName: null, org: null, requests: [], summary: null };
 
 /** "Karim Rahman" -> "Karim". The greeting is first-name only. */
 function firstNameOf(fullName: string | null): string | null {
@@ -30,10 +29,13 @@ function firstNameOf(fullName: string | null): string | null {
 /**
  * Everything S22 renders, in one load.
  *
- * The three reads are independent, so they run in parallel -- serialising them
- * would make the dashboard three round-trips slow for no reason. They're also
+ * The four reads are independent, so they run in parallel -- serialising them
+ * would make the dashboard four round-trips slow for no reason. They're also
  * failed together: a dashboard showing a greeting but no request list is
  * harder to reason about than one honest error with a retry.
+ *
+ * Loading state belongs to useLoader, which keeps the last good dashboard on
+ * screen while a refresh runs rather than replacing it with a spinner.
  */
 export function useOrgDashboard() {
   const { userId, assignments, activeIndex } = useSessionStore();
@@ -42,35 +44,21 @@ export function useOrgDashboard() {
 
   const [state, setState] = useState<State>(INITIAL);
 
-  const load = useCallback(async () => {
-    if (!userId || !orgId) {
+  const { loading, error, reload } = useLoader(
+    useCallback(async () => {
       // RoleGuard should make this unreachable; if it ever happens, say so
       // rather than rendering an empty dashboard that looks like a new account.
-      setState({ ...INITIAL, loading: false, error: "No organization is active for this account." });
-      return;
-    }
+      if (!userId || !orgId) throw new Error("No organization is active for this account.");
 
-    setState((prev) => ({ ...prev, loading: true, error: null }));
-    try {
       const [fullName, org, requests, summary] = await Promise.all([
         getProfileName(userId),
         getOrganization(orgId),
         listRecentPickupRequests(orgId),
         getOrgSummary(orgId),
       ]);
-      setState({ loading: false, error: null, firstName: firstNameOf(fullName), org, requests, summary });
-    } catch (e) {
-      setState((prev) => ({
-        ...prev,
-        loading: false,
-        error: e instanceof Error ? e.message : "Couldn't load your dashboard.",
-      }));
-    }
-  }, [userId, orgId]);
+      setState({ firstName: firstNameOf(fullName), org, requests, summary });
+    }, [userId, orgId]),
+  );
 
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  return { ...state, reload: load };
+  return { ...state, loading, error, reload };
 }

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { resolveRoles, supabase, useSessionStore } from "@rebin/api";
+import { identityFromAuthUser, resolveRoles, supabase, useSessionStore } from "@rebin/api";
 
 /**
  * Rehydrates the session store from whatever Supabase already has on disk.
@@ -27,17 +27,25 @@ export function useSessionBootstrap() {
 
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       const ticket = ++latest;
-      const userId = session?.user?.id;
+      const user = session?.user;
+      const userId = user?.id;
 
       if (!userId) {
         if (!cancelled) useSessionStore.getState().setSignedOut();
         return;
       }
 
+      // Taken from the session rather than fetched. The email and the social
+      // profile picture are already on this object; asking the server for them
+      // again is a round trip for something in hand.
+      const identity = identityFromAuthUser(user);
+
       void resolveRoles(userId)
         .then((assignments) => {
           if (cancelled || ticket !== latest) return;
-          useSessionStore.getState().setSession(userId, assignments, assignments.length > 0);
+          useSessionStore
+            .getState()
+            .setSession(userId, assignments, assignments.length > 0, identity);
         })
         .catch(() => {
           if (cancelled || ticket !== latest) return;

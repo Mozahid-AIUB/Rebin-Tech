@@ -1,13 +1,31 @@
 import { create } from "zustand";
 import type { RoleAssignment } from "../auth";
 
-type SessionState = {
+/**
+ * What the auth session tells us about the person, as opposed to their roles.
+ *
+ * Both arrive free with the Supabase session object. Kept here so a screen
+ * that wants an email does not pay a network round trip for one it was handed
+ * at sign-in -- which is exactly what Me was doing via `auth.getUser()`.
+ */
+type SessionIdentity = {
+  email: string | null;
+  /** Set by a social sign-in only; a stored profile avatar always wins. */
+  oauthAvatarUrl: string | null;
+};
+
+type SessionState = SessionIdentity & {
   status: "loading" | "signed-out" | "pending" | "ready";
   userId: string | null;
   assignments: RoleAssignment[];
   activeIndex: number;
   setSignedOut: () => void;
-  setSession: (userId: string, assignments: RoleAssignment[], accountActive: boolean) => void;
+  setSession: (
+    userId: string,
+    assignments: RoleAssignment[],
+    accountActive: boolean,
+    identity?: SessionIdentity,
+  ) => void;
   setActiveIndex: (index: number) => void;
 };
 
@@ -36,11 +54,30 @@ type SessionState = {
 export const useSessionStore = create<SessionState>((set) => ({
   status: "loading",
   userId: null,
+  email: null,
+  oauthAvatarUrl: null,
   assignments: [],
   activeIndex: 0,
-  setSignedOut: () => set({ status: "signed-out", userId: null, assignments: [], activeIndex: 0 }),
-  setSession: (userId, assignments, accountActive) =>
-    set({ status: accountActive ? "ready" : "pending", userId, assignments, activeIndex: 0 }),
+  setSignedOut: () =>
+    set({
+      status: "signed-out",
+      userId: null,
+      // Cleared with the rest: an email left behind after sign-out would be
+      // shown to whoever signs in next.
+      email: null,
+      oauthAvatarUrl: null,
+      assignments: [],
+      activeIndex: 0,
+    }),
+  setSession: (userId, assignments, accountActive, identity) =>
+    set({
+      status: accountActive ? "ready" : "pending",
+      userId,
+      email: identity?.email ?? null,
+      oauthAvatarUrl: identity?.oauthAvatarUrl ?? null,
+      assignments,
+      activeIndex: 0,
+    }),
   setActiveIndex: (activeIndex) => set({ activeIndex }),
 }));
 
@@ -53,4 +90,23 @@ export const useSessionStore = create<SessionState>((set) => ({
  */
 export const useSession = useSessionStore;
 
-export type { SessionState };
+/**
+ * Pulls the identity fields out of a Supabase auth user.
+ *
+ * Providers disagree about where the picture lives: Google puts it in
+ * `picture`, Supabase normalises most others to `avatar_url`, and Apple sends
+ * neither -- it never shares a photo, so those accounts stay on initials.
+ */
+export function identityFromAuthUser(user: {
+  email?: string | null;
+  user_metadata?: Record<string, unknown> | null;
+}): SessionIdentity {
+  const meta = user.user_metadata ?? {};
+  const picture = meta.avatar_url ?? meta.picture;
+  return {
+    email: user.email ?? null,
+    oauthAvatarUrl: typeof picture === "string" ? picture : null,
+  };
+}
+
+export type { SessionState, SessionIdentity };

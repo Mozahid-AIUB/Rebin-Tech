@@ -49,6 +49,54 @@ describe("session bootstrap", () => {
     expect(useSessionStore.getState().assignments).toEqual(ORG_ROLE);
   });
 
+  // The auth session already carries the email and, for a social sign-in, the
+  // profile picture. Me was calling supabase.auth.getUser() for both, which is
+  // a network round trip for something already in hand.
+  it("keeps the email and social avatar off the restored session", async () => {
+    mockResolveRoles.mockResolvedValue(ORG_ROLE);
+    await renderHook(() => useSessionBootstrap());
+
+    authCallback!("INITIAL_SESSION", {
+      user: {
+        id: "u1",
+        email: "ops@riverside.example",
+        user_metadata: { avatar_url: "https://cdn.example/u1.jpg" },
+      },
+    });
+
+    await waitFor(() => expect(useSessionStore.getState().status).toBe("ready"));
+    expect(useSessionStore.getState().email).toBe("ops@riverside.example");
+    expect(useSessionStore.getState().oauthAvatarUrl).toBe("https://cdn.example/u1.jpg");
+  });
+
+  // Google sends `picture`, most other providers are normalised to
+  // `avatar_url`, and Apple sends neither -- it never shares a photo.
+  it("accepts Google's `picture` and tolerates a provider that sends no photo", async () => {
+    mockResolveRoles.mockResolvedValue(ORG_ROLE);
+    await renderHook(() => useSessionBootstrap());
+
+    authCallback!("SIGNED_IN", {
+      user: { id: "u1", email: "a@b.co", user_metadata: { picture: "https://g/p.jpg" } },
+    });
+    await waitFor(() => expect(useSessionStore.getState().oauthAvatarUrl).toBe("https://g/p.jpg"));
+
+    authCallback!("SIGNED_IN", { user: { id: "u2", email: "c@d.co", user_metadata: {} } });
+    await waitFor(() => expect(useSessionStore.getState().userId).toBe("u2"));
+    expect(useSessionStore.getState().oauthAvatarUrl).toBeNull();
+  });
+
+  it("clears the email on sign-out", async () => {
+    mockResolveRoles.mockResolvedValue(ORG_ROLE);
+    await renderHook(() => useSessionBootstrap());
+    authCallback!("INITIAL_SESSION", { user: { id: "u1", email: "ops@riverside.example" } });
+    await waitFor(() => expect(useSessionStore.getState().email).toBe("ops@riverside.example"));
+
+    authCallback!("SIGNED_OUT", null);
+
+    await waitFor(() => expect(useSessionStore.getState().status).toBe("signed-out"));
+    expect(useSessionStore.getState().email).toBeNull();
+  });
+
   it("marks an account with no roles as pending, not ready", async () => {
     mockResolveRoles.mockResolvedValue([]);
     await renderHook(() => useSessionBootstrap());

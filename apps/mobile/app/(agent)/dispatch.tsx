@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import {
@@ -26,6 +26,7 @@ import {
   StatTile,
   tokens,
 } from "@rebin/ui";
+import { useLoader } from "../../src/hooks/useLoader";
 import { JobCard, KIND_LABEL } from "../../src/features/jobs/JobCard";
 
 // S49. Same shape as the other two portals: honest stats, the list that
@@ -69,14 +70,14 @@ export default function AgentDispatch() {
   const [summary, setSummary] = useState<AgentSummary | null>(null);
   const [mine, setMine] = useState<MyJob[]>([]);
   const [board, setBoard] = useState<AvailableJob[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // "Another agent already took this job" belongs to the tap that hit it, not
+  // to the board's own load -- and a background refresh must not wipe it
+  // before the agent has read why their claim bounced.
+  const [claimError, setClaimError] = useState<string | null>(null);
   const [claiming, setClaiming] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const { loading, error, reload } = useLoader(
+    useCallback(async () => {
       const [name, stats, jobs, available] = await Promise.all([
         userId ? getProfileName(userId) : Promise.resolve(null),
         getAgentSummary(),
@@ -87,31 +88,28 @@ export default function AgentDispatch() {
       setSummary(stats);
       setMine(jobs);
       setBoard(available);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't load your work.");
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+    }, [userId]),
+  );
 
   async function onClaim(job: AvailableJob) {
     setClaiming(job.subjectId);
-    setError(null);
+    setClaimError(null);
     try {
       const jobId =
         job.kind === "collection"
           ? await claimCollection(job.subjectId)
           : await claimJob(job.subjectId);
-      await load();
+      reload();
       router.push(asHref(`/(agent)/job/${jobId}`));
     } catch (e) {
       // "Another agent already took this job" is the common one, and it is
       // worth reading rather than a generic failure.
-      setError(e instanceof Error ? e.message : "Couldn't claim that job.");
+      setClaimError(e instanceof Error ? e.message : "Couldn't claim that job.");
+      // The board is stale by definition here -- a claim fails because someone
+      // else got there first, so the card that was just tapped should not
+      // still be sitting on it. Refreshing keeps the list honest without
+      // wiping the message, which is what the split error state is for.
+      reload();
     } finally {
       setClaiming(null);
     }
@@ -152,7 +150,18 @@ export default function AgentDispatch() {
           {error ? (
             <Card variant="alt" style={{ gap: tokens.space[2] }}>
               <AppText variant="bodySm" tone="muted">{error}</AppText>
-              <PillButton label="Try again" variant="secondary" onPress={() => void load()} />
+              <PillButton label="Try again" variant="secondary" onPress={reload} />
+            </Card>
+          ) : null}
+
+          {/* A bounced claim gets its own line and no retry button. "Another
+              agent already took this job" is not something trying again
+              fixes -- the board below has refreshed and the job is gone. */}
+          {claimError ? (
+            <Card variant="alt">
+              <AppText variant="bodySm" style={{ color: tokens.color.danger }}>
+                {claimError}
+              </AppText>
             </Card>
           ) : null}
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { View } from "react-native";
 import { getAgentSummary, listMyJobs, type AgentSummary, type MyJob } from "@rebin/api";
 import {
@@ -12,6 +12,7 @@ import {
   StatTile,
   tokens,
 } from "@rebin/ui";
+import { useLoader } from "../../src/hooks/useLoader";
 import { JobCard } from "../../src/features/jobs/JobCard";
 
 // S64, minus earnings. There is no agent pay table and nothing calculates a
@@ -22,26 +23,14 @@ import { JobCard } from "../../src/features/jobs/JobCard";
 export default function AgentHistory() {
   const [jobs, setJobs] = useState<MyJob[]>([]);
   const [summary, setSummary] = useState<AgentSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const { loading, error, reload } = useLoader(
+    useCallback(async () => {
       const [rows, stats] = await Promise.all([listMyJobs(), getAgentSummary()]);
       setJobs(rows.filter((j) => j.status === "collected"));
       setSummary(stats);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't load your history.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+    }, []),
+  );
 
   return (
     <Screen>
@@ -53,7 +42,7 @@ export default function AgentHistory() {
         <Card variant="alt" style={{ gap: tokens.space[2] }}>
           <AppText variant="h3">Couldn&apos;t load your history</AppText>
           <AppText variant="bodySm" tone="muted">{error}</AppText>
-          <PillButton label="Try again" variant="secondary" onPress={() => void load()} />
+          <PillButton label="Try again" variant="secondary" onPress={reload} />
         </Card>
       ) : (
         <>

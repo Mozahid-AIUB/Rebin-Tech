@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Pressable, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import {
@@ -6,7 +6,6 @@ import {
   getBusinessDetail,
   getOrganizationDetail,
   getProfileDetail,
-  supabase,
   updateOwnProfile,
   useSessionStore,
   type AgentDetail,
@@ -16,6 +15,7 @@ import {
   type ProfileDetail,
 } from "@rebin/api";
 import { AppText, Card, PillButton, Screen, SectionHeader, tokens } from "@rebin/ui";
+import { useLoader } from "../../hooks/useLoader";
 import { useLogout } from "../../hooks/useLogout";
 import { Avatar } from "./Avatar";
 import { EditProfileSheet } from "./EditProfileSheet";
@@ -102,62 +102,48 @@ function asHref(path: string): Href {
 
 export function MeScreen() {
   const router = useRouter();
-  const { userId, assignments, activeIndex } = useSessionStore();
+  const { userId, email, oauthAvatarUrl, assignments, activeIndex } = useSessionStore();
   const { logout, pending } = useLogout();
   const active = assignments[activeIndex];
 
-  const [email, setEmail] = useState<string | null>(null);
-  // Set on Google/Apple sign-in, before anything has been written to
-  // profiles.avatar_url. Used only as a fallback so a stored avatar always wins.
-  const [oauthAvatar, setOauthAvatar] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState<ProfileDetail | null>(null);
   const [detail, setDetail] = useState<Detail>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    if (!userId) return;
-    setLoading(true);
-    setError(null);
-    try {
-      // Email lives on the auth user, not on `profiles`.
-      const [{ data: userData }, profileRow] = await Promise.all([
-        supabase.auth.getUser(),
-        getProfileDetail(userId),
-      ]);
-      setEmail(userData.user?.email ?? null);
-      // Google puts it in `picture`, Supabase normalises to `avatar_url` for
-      // most providers -- accept either. Apple returns neither: it never
-      // shares a photo, so those accounts stay on initials.
-      const meta = (userData.user?.user_metadata ?? {}) as Record<string, unknown>;
-      const picture = meta.avatar_url ?? meta.picture;
-      setOauthAvatar(typeof picture === "string" ? picture : null);
-      setProfile(profileRow);
-
-      const scopeId = active?.scopeId ?? null;
-      if (active?.scopeType === "organization" && scopeId) {
-        const org = await getOrganizationDetail(scopeId);
-        setDetail(org ? { kind: "organization", org } : null);
-      } else if (active?.scopeType === "business" && scopeId) {
-        const business = await getBusinessDetail(scopeId);
-        setDetail(business ? { kind: "business", business } : null);
-      } else if (active?.role.startsWith("field_")) {
-        const agent = await getAgentDetail(userId);
-        setDetail(agent ? { kind: "agent", agent } : null);
-      } else {
-        setDetail(null);
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't load your details.");
-    } finally {
-      setLoading(false);
+  /**
+   * Which tenant row belongs to the active role.
+   *
+   * Split out so it can be started alongside the profile read rather than
+   * after it. The two share no data -- which row to fetch is decided by the
+   * active assignment, which is in memory before any request goes out -- so
+   * running them in sequence was two waits where one would do.
+   */
+  const loadDetail = useCallback(async (): Promise<Detail> => {
+    if (!userId) return null;
+    const scopeId = active?.scopeId ?? null;
+    if (active?.scopeType === "organization" && scopeId) {
+      const org = await getOrganizationDetail(scopeId);
+      return org ? { kind: "organization", org } : null;
     }
+    if (active?.scopeType === "business" && scopeId) {
+      const business = await getBusinessDetail(scopeId);
+      return business ? { kind: "business", business } : null;
+    }
+    if (active?.role.startsWith("field_")) {
+      const agent = await getAgentDetail(userId);
+      return agent ? { kind: "agent", agent } : null;
+    }
+    return null;
   }, [userId, active?.scopeType, active?.scopeId, active?.role]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { loading, error, reload } = useLoader(
+    useCallback(async () => {
+      if (!userId) return;
+      const [profileRow, detailRow] = await Promise.all([getProfileDetail(userId), loadDetail()]);
+      setProfile(profileRow);
+      setDetail(detailRow);
+    }, [userId, loadDetail]),
+  );
 
   return (
     <Screen>
@@ -165,7 +151,7 @@ export function MeScreen() {
           profile card below identifies whose it is far better than the word
           does. */}
       <Card style={{ flexDirection: "row", alignItems: "center", gap: tokens.space[3] }}>
-        <Avatar uri={profile?.avatarUrl ?? oauthAvatar} fullName={profile?.fullName ?? null} />
+        <Avatar uri={profile?.avatarUrl ?? oauthAvatarUrl} fullName={profile?.fullName ?? null} />
         <View style={{ flex: 1, gap: 2 }}>
           <AppText variant="h2">{profile?.fullName ?? "—"}</AppText>
           {email ? <AppText variant="bodySm" tone="muted">{email}</AppText> : null}
@@ -176,7 +162,7 @@ export function MeScreen() {
         <Card variant="alt" style={{ gap: tokens.space[2] }}>
           <AppText variant="h3">Couldn&apos;t load your details</AppText>
           <AppText variant="bodySm" tone="muted">{error}</AppText>
-          <PillButton label="Try again" variant="secondary" onPress={() => void load()} />
+          <PillButton label="Try again" variant="secondary" onPress={reload} />
         </Card>
       ) : loading ? (
         <AppText variant="body" tone="muted">Loading your details…</AppText>
@@ -273,7 +259,7 @@ export function MeScreen() {
         onClose={() => setEditing(false)}
         onSaved={() => {
           setEditing(false);
-          void load();
+          reload();
         }}
         save={updateOwnProfile}
       />

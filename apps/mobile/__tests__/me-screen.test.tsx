@@ -46,10 +46,11 @@ beforeEach(() => {
     dockAccess: true,
   });
   mockSignOut.mockResolvedValue(undefined);
-  mockGetUser.mockResolvedValue({ data: { user: { email: "karim.rahman@riversidemedical.org" } } });
   useSessionStore.setState({
     status: "ready",
     userId: "u1",
+    email: "karim.rahman@riversidemedical.org",
+    oauthAvatarUrl: null,
     assignments: [{ role: "org_owner", scopeType: "organization", scopeId: "o1", scopeName: "Riverside Medical Center" }],
     activeIndex: 0,
   });
@@ -74,6 +75,31 @@ describe("S71 Me", () => {
     expect(screen.getAllByText("karim.rahman@riversidemedical.org")).toHaveLength(2);
   });
 
+  // Me was calling supabase.auth.getUser() purely to read an email that the
+  // sign-in session had already handed over -- a network round trip on every
+  // visit for a string sitting in memory.
+  it("reads the email from the session rather than asking the server", async () => {
+    await renderMe();
+
+    await waitFor(() =>
+      expect(screen.getAllByText("karim.rahman@riversidemedical.org")).toHaveLength(2),
+    );
+    expect(mockGetUser).not.toHaveBeenCalled();
+  });
+
+  // The organization read depends on the active role, which is known before
+  // any request goes out -- so it has no reason to queue behind the profile.
+  // Waiting made two round trips out of one.
+  it("loads the organization without waiting for the profile", async () => {
+    let resolveProfile: (v: unknown) => void = () => {};
+    mockProfile.mockImplementation(() => new Promise((r) => { resolveProfile = r; }));
+
+    await renderMe();
+
+    await waitFor(() => expect(mockOrgDetail).toHaveBeenCalledWith("o1"));
+    resolveProfile({ fullName: "Karim Rahman", phone: "5550192345", avatarUrl: null, status: "active" });
+  });
+
   it("shows every organization detail captured at registration", async () => {
     await renderMe();
     await waitFor(() => expect(screen.getByText("Riverside Medical Center")).toBeTruthy());
@@ -88,6 +114,8 @@ describe("S71 Me", () => {
     useSessionStore.setState({
       status: "ready",
       userId: "u2",
+      email: "agent@rebin.test",
+      oauthAvatarUrl: null,
       assignments: [{ role: "field_agent", scopeType: "self", scopeId: null, scopeName: null }],
       activeIndex: 0,
     });
@@ -130,9 +158,7 @@ describe("S71 Me", () => {
       avatarUrl: "https://cdn.test/stored.png",
       status: "active",
     });
-    mockGetUser.mockResolvedValue({
-      data: { user: { email: "k@r.test", user_metadata: { picture: "https://cdn.test/google.png" } } },
-    });
+    useSessionStore.setState({ oauthAvatarUrl: "https://cdn.test/google.png" });
 
     await renderMe();
     await waitFor(() => expect(screen.getByLabelText("Profile picture")).toBeTruthy());
@@ -142,9 +168,7 @@ describe("S71 Me", () => {
   });
 
   it("uses the Google photo when the profile has no avatar of its own", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: { email: "k@r.test", user_metadata: { picture: "https://cdn.test/google.png" } } },
-    });
+    useSessionStore.setState({ oauthAvatarUrl: "https://cdn.test/google.png" });
 
     await renderMe();
     await waitFor(() =>

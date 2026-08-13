@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { View } from "react-native";
 import { useRouter } from "expo-router";
+import { useLoader } from "../../src/hooks/useLoader";
 import {
   inviteOrgMember,
   listOrganizationInvitations,
@@ -51,8 +52,6 @@ export default function OrgTeam() {
 
   const [members, setMembers] = useState<OrgMember[]>([]);
   const [invitations, setInvitations] = useState<OrgInvitation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<InvitableRole>("org_requester");
@@ -61,15 +60,11 @@ export default function OrgTeam() {
   const [added, setAdded] = useState<string | null>(null);
   const [code, setCode] = useState<{ email: string; value: string } | null>(null);
 
-  const load = useCallback(async () => {
-    if (!orgId) {
-      setLoading(false);
-      setError("No organization is active for this account.");
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
+  const { loading, error, reload } = useLoader(
+    useCallback(async () => {
+      // RoleGuard should make this unreachable; saying so beats an
+      // empty screen that reads as a brand-new account.
+      if (!orgId) throw new Error("No organization is active for this account.");
       const [rows, pending] = await Promise.all([
         listOrganizationMembers(orgId),
         // Only owners and admins may read invitations; a requester viewing the
@@ -78,16 +73,8 @@ export default function OrgTeam() {
       ]);
       setMembers(rows);
       setInvitations(pending);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't load your team.");
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId, canManage]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+    }, [orgId, canManage]),
+  );
 
   async function onInvite() {
     if (!orgId) return;
@@ -103,7 +90,7 @@ export default function OrgTeam() {
         setCode({ email: email.trim(), value: result.code });
       }
       setEmail("");
-      await load();
+      reload();
     } catch (e) {
       setInviteError(e instanceof Error ? e.message : "Couldn't send that invite.");
     } finally {
@@ -116,7 +103,7 @@ export default function OrgTeam() {
     setInviteError(null);
     try {
       await removeOrgMember(orgId, member.userId);
-      await load();
+      reload();
     } catch (e) {
       setInviteError(e instanceof Error ? e.message : "Couldn't remove that person.");
     }
@@ -128,7 +115,7 @@ export default function OrgTeam() {
     const next = member.memberRole === "org_admin" ? "org_requester" : "org_admin";
     try {
       await setOrgMemberRole(orgId, member.userId, next);
-      await load();
+      reload();
     } catch (e) {
       setInviteError(e instanceof Error ? e.message : "Couldn't change that role.");
     }
@@ -144,7 +131,7 @@ export default function OrgTeam() {
         <Card variant="alt" style={{ gap: tokens.space[2] }}>
           <AppText variant="h3">Couldn&apos;t load your team</AppText>
           <AppText variant="bodySm" tone="muted">{error}</AppText>
-          <PillButton label="Try again" variant="secondary" onPress={() => void load()} />
+          <PillButton label="Try again" variant="secondary" onPress={reload} />
         </Card>
       ) : (
         <>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { View } from "react-native";
 import { listPickupRequests, useSessionStore, type PickupRequestRow } from "@rebin/api";
 import type { RequestStatus } from "@rebin/shared";
@@ -12,6 +12,7 @@ import {
   Screen,
   tokens,
 } from "@rebin/ui";
+import { useLoader } from "../../src/hooks/useLoader";
 import { RequestCard } from "../../src/features/org-dashboard/RequestCard";
 
 // S30's filter chips and ID search. Infinite scroll is not here: 50 rows is
@@ -52,18 +53,12 @@ export default function OrgRequests() {
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
   const [rows, setRows] = useState<PickupRequestRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    if (!orgId) {
-      setLoading(false);
-      setError("No organization is active for this account.");
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
+  const { loading, error, reload } = useLoader(
+    useCallback(async () => {
+      // RoleGuard should make this unreachable; saying so beats an
+      // empty screen that reads as a brand-new account.
+      if (!orgId) throw new Error("No organization is active for this account.");
       setRows(
         await listPickupRequests(orgId, {
           status: filter === "all" ? undefined : (filter as RequestStatus),
@@ -71,16 +66,8 @@ export default function OrgRequests() {
           limit: PAGE_SIZE,
         }),
       );
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't load your requests.");
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId, filter, search]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+    }, [orgId, filter, search]),
+  );
 
   return (
     <Screen>
@@ -107,7 +94,7 @@ export default function OrgRequests() {
         <Card variant="alt" style={{ gap: tokens.space[2] }}>
           <AppText variant="h3">Couldn&apos;t load your requests</AppText>
           <AppText variant="bodySm" tone="muted">{error}</AppText>
-          <PillButton label="Try again" variant="secondary" onPress={() => void load()} />
+          <PillButton label="Try again" variant="secondary" onPress={reload} />
         </Card>
       ) : rows.length === 0 ? (
         // The copy names the filter, so an empty screen reads as "nothing

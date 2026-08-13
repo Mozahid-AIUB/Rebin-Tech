@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { View } from "react-native";
 import { listQuotes, useSessionStore, type QuoteRow } from "@rebin/api";
 import {
@@ -10,6 +10,7 @@ import {
   Screen,
   tokens,
 } from "@rebin/ui";
+import { useLoader } from "../../src/hooks/useLoader";
 import { QuoteCard } from "../../src/features/quotes/QuoteCard";
 
 // S44. Filtering happens here rather than in the query, unlike the
@@ -44,29 +45,15 @@ export default function BizQuotes() {
 
   const [filter, setFilter] = useState<Filter>("all");
   const [quotes, setQuotes] = useState<QuoteRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    if (!businessId) {
-      setLoading(false);
-      setError("No business is active for this account.");
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
+  const { loading, error, reload } = useLoader(
+    useCallback(async () => {
+      // RoleGuard should make this unreachable; saying so beats an
+      // empty screen that reads as a brand-new account.
+      if (!businessId) throw new Error("No business is active for this account.");
       setQuotes(await listQuotes(businessId));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't load your quotes.");
-    } finally {
-      setLoading(false);
-    }
-  }, [businessId]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+    }, [businessId]),
+  );
 
   const shown = filter === "all" ? quotes : quotes.filter((q) => q.status === filter);
 
@@ -86,7 +73,7 @@ export default function BizQuotes() {
         <Card variant="alt" style={{ gap: tokens.space[2] }}>
           <AppText variant="h3">Couldn&apos;t load your quotes</AppText>
           <AppText variant="bodySm" tone="muted">{error}</AppText>
-          <PillButton label="Try again" variant="secondary" onPress={() => void load()} />
+          <PillButton label="Try again" variant="secondary" onPress={reload} />
         </Card>
       ) : shown.length === 0 ? (
         <EmptyState title={EMPTY_COPY[filter].title} body={EMPTY_COPY[filter].body} />

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import {
@@ -23,6 +23,7 @@ import {
   StatTile,
   tokens,
 } from "@rebin/ui";
+import { useLoader } from "../../src/hooks/useLoader";
 import { AppraisalScanSheet } from "../../src/features/scan/AppraisalScanSheet";
 import { QuoteCard } from "../../src/features/quotes/QuoteCard";
 
@@ -54,20 +55,18 @@ export default function BizDashboard() {
   const [firstName, setFirstName] = useState<string | null>(null);
   const [business, setBusiness] = useState<BusinessSummary | null>(null);
   const [quotes, setQuotes] = useState<QuoteRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Kept apart from the loader's own error: a quote that failed to save is
+  // not a dashboard that failed to load, and offering "Try again" against the
+  // wrong one sends the user back to the wrong place.
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const [quoting, setQuoting] = useState(false);
 
-  const load = useCallback(async () => {
-    if (!userId || !businessId) {
-      setLoading(false);
-      setError("No business is active for this account.");
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
+  const { loading, error, reload } = useLoader(
+    useCallback(async () => {
+      // RoleGuard should make this unreachable; saying so beats an empty
+      // dashboard that reads as a brand-new account.
+      if (!userId || !businessId) throw new Error("No business is active for this account.");
       const [name, biz, rows] = await Promise.all([
         getProfileName(userId),
         getBusiness(businessId),
@@ -76,16 +75,8 @@ export default function BizDashboard() {
       setFirstName(name?.trim().split(/\s+/)[0] ?? null);
       setBusiness(biz);
       setQuotes(rows);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't load your dashboard.");
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, businessId]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+    }, [userId, businessId]),
+  );
 
   /**
    * Saves what the camera priced as a real offer.
@@ -98,7 +89,7 @@ export default function BizDashboard() {
     if (!businessId) return;
     setScanning(false);
     setQuoting(true);
-    setError(null);
+    setSaveError(null);
     try {
       const quoteId = await createQuote(
         businessId,
@@ -110,10 +101,10 @@ export default function BizDashboard() {
           notes: item.notes,
         })),
       );
-      await load();
+      reload();
       router.push(asHref(`/(biz)/quote/${quoteId}`));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't save that quote.");
+      setSaveError(e instanceof Error ? e.message : "Couldn't save that quote.");
     } finally {
       setQuoting(false);
     }
@@ -130,9 +121,21 @@ export default function BizDashboard() {
             loading={quoting}
             onPress={() => setScanning(true)}
           />
-          <AppText variant="bodySm" tone="muted" style={{ textAlign: "center" }}>
-            Photograph what you have · priced against today&apos;s catalog
-          </AppText>
+          {/* Sits with the button that failed rather than in the list above
+              it: a scan the vendor just finished is what they are looking at,
+              and the lines it produced are gone by the time this shows. */}
+          {saveError ? (
+            <AppText
+              variant="bodySm"
+              style={{ textAlign: "center", color: tokens.color.danger }}
+            >
+              {saveError}
+            </AppText>
+          ) : (
+            <AppText variant="bodySm" tone="muted" style={{ textAlign: "center" }}>
+              Photograph what you have · priced against today&apos;s catalog
+            </AppText>
+          )}
         </View>
       }
     >
@@ -155,7 +158,7 @@ export default function BizDashboard() {
         <Card variant="alt" style={{ gap: tokens.space[2] }}>
           <AppText variant="h3">Couldn&apos;t load your dashboard</AppText>
           <AppText variant="bodySm" tone="muted">{error}</AppText>
-          <PillButton label="Try again" variant="secondary" onPress={() => void load()} />
+          <PillButton label="Try again" variant="secondary" onPress={reload} />
         </Card>
       ) : (
         <>
