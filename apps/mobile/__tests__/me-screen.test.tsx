@@ -143,6 +143,39 @@ describe("S71 Me", () => {
     expect(mockReplace).toHaveBeenCalledWith("/login");
   });
 
+  // Signing out is a network call. The hook has tracked `pending` since it was
+  // written and nothing ever rendered it, so a slow or offline sign-out looked
+  // like a button that did nothing -- and the natural response to that is to
+  // press it again.
+  it("says it is working while the sign-out is in flight", async () => {
+    let finish: () => void = () => {};
+    mockSignOut.mockImplementation(() => new Promise<void>((r) => { finish = r; }));
+    await renderMe();
+    await waitFor(() => expect(screen.getByText("Hospital / Clinic")).toBeTruthy());
+
+    await fireEvent.press(screen.getByRole("button", { name: "Log Out" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Log Out" }).props.accessibilityState.busy).toBe(true),
+    );
+    expect(screen.getByText("Signing out…")).toBeTruthy();
+
+    finish();
+  });
+
+  it("cannot be pressed twice while it is signing out", async () => {
+    let finish: () => void = () => {};
+    mockSignOut.mockImplementation(() => new Promise<void>((r) => { finish = r; }));
+    await renderMe();
+    await waitFor(() => expect(screen.getByText("Hospital / Clinic")).toBeTruthy());
+
+    await fireEvent.press(screen.getByRole("button", { name: "Log Out" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Log Out" }));
+
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    finish();
+  });
+
   it("falls back to initials when no avatar has been provided", async () => {
     await renderMe();
     // Password signups have no provider photo, so this is the normal state --

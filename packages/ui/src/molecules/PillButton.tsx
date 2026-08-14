@@ -5,7 +5,7 @@ import { tokens } from "../tokens";
 import { usePortalTheme, useScheme } from "../theme";
 import { PressableScale } from "../motion";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "quietDanger";
 
 /**
  * The app's one button.
@@ -28,6 +28,15 @@ export function PillButton({
   /** Overrides the default feel. `success` for a completed job or an accepted
    *  offer -- the moments worth marking. */
   haptic = "impact",
+  /**
+   * A stable name for the control, when the visible label changes with state.
+   *
+   * "Log Out" becoming "Signing out…" mid-press is right for a person looking
+   * at it and wrong for anyone driving the screen by name -- a screen reader
+   * user, or a test -- because the button they reached for stops existing
+   * halfway through the action.
+   */
+  accessibilityLabel,
 }: {
   label: string;
   onPress: () => void;
@@ -36,6 +45,7 @@ export function PillButton({
   disabled?: boolean;
   fullWidth?: boolean;
   haptic?: "impact" | "success" | "none";
+  accessibilityLabel?: string;
 }) {
   const { accent, accentText, onAccent } = usePortalTheme();
   const scheme = useScheme();
@@ -46,6 +56,11 @@ export function PillButton({
     secondary: scheme.surfaceAlt,
     ghost: "transparent",
     danger: tokens.color.danger,
+    // Outlined rather than filled. A filled red bar is what you use for
+    // something that destroys data; signing out destroys nothing, you simply
+    // sign back in. But it is still the one control on the screen with a
+    // consequence, so the label keeps the red and the shape stays quiet.
+    quietDanger: "transparent",
   };
   // The label's colour is resolved rather than toned, because "text on the
   // accent" is not one colour across three portals -- see PORTAL_ON_ACCENT.
@@ -56,6 +71,7 @@ export function PillButton({
     // ink metal rather than the fill one -- the same reason accent type is.
     ghost: accentText,
     danger: "#FFFFFF",
+    quietDanger: tokens.color.danger,
   };
 
   function fire() {
@@ -67,7 +83,7 @@ export function PillButton({
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: inert, busy: loading }}
       disabled={inert}
       onPress={fire}
@@ -81,15 +97,15 @@ export function PillButton({
         paddingHorizontal: tokens.space[5],
         borderRadius: tokens.radius.button,
         backgroundColor: bg[variant],
-        borderWidth: variant === "ghost" ? 1 : 0,
+        borderWidth: variant === "ghost" || variant === "quietDanger" ? 1 : 0,
         // A ghost button's outline should read as a boundary, not as a second
         // primary button competing with the real one above it.
-        borderColor: variant === "ghost" ? scheme.border : accent,
+        borderColor: variant === "ghost" || variant === "quietDanger" ? scheme.border : accent,
         opacity: inert ? 0.4 : 1,
       }}
     >
       {loading ? (
-        <ActivityIndicator color={variant === "primary" ? onAccent : variant === "danger" ? "#FFF" : accentText} />
+        <ActivityIndicator color={fg[variant]} />
       ) : null}
       <View>
         {/* Slight positive tracking: a button label is read at a glance rather

@@ -264,15 +264,22 @@ export function MeScreen() {
         save={updateOwnProfile}
       />
 
-      <Pressable
-        accessibilityRole="button"
+      {/* Set apart, not stacked. This is the last thing on the screen and the
+          only control on it with a consequence, so it gets air above it rather
+          than sitting flush against the account rows like another field.
+
+          It was bare red text before -- no edge, no press response, and no
+          sign that anything was happening while the network call ran. A
+          control that looks inert is one people press twice. */}
+      <View style={{ height: tokens.space[4] }} />
+      <PillButton
+        label={pending ? "Signing out…" : "Log Out"}
         accessibilityLabel="Log Out"
-        accessibilityState={{ busy: pending }}
+        variant="quietDanger"
+        loading={pending}
+        haptic="none"
         onPress={() => void logout()}
-        style={{ minHeight: 48, alignItems: "center", justifyContent: "center" }}
-      >
-        <AppText variant="h3" style={{ color: tokens.color.danger }}>Log Out</AppText>
-      </Pressable>
+      />
     </Screen>
   );
 }
