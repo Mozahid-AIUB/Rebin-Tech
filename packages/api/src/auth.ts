@@ -1,5 +1,5 @@
 import type { AgentSignupInput, BusinessSignupInput, OrgSignupInput, Role, ScopeType } from "@rebin/shared";
-import type { PortalKey } from "@rebin/ui";
+import type { PortalKey } from "@rebin/shared";
 import { supabase } from "./client";
 
 export type RoleAssignment = {

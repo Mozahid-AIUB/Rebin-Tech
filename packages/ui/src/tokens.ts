@@ -1,4 +1,23 @@
 /**
+ * The single source for the palette is @rebin/shared, not this file.
+ *
+ * The website needs the same colours, and it cannot import this module -- the
+ * values below are React Native style objects and importing them would pull in
+ * the whole Expo tree. So the platform-neutral half (colour, spacing, radius,
+ * the type scale as numbers) lives in `packages/shared/src/brand.ts`, and this
+ * file re-exports it. Every existing `from "@rebin/ui"` import still resolves;
+ * nothing in the app had to move.
+ */
+export {
+  BRAND,
+  PORTAL_ACCENTS,
+  PORTAL_ACCENT_TEXT,
+  PORTAL_ON_ACCENT,
+  PORTAL_ACCENTS_SUBTLE,
+  type PortalKey,
+} from "@rebin/shared";
+
+/**
  * Registered family names for the app typefaces.
  *
  * Three roles, deliberately (see docs/design-direction.md §2):
@@ -178,76 +197,7 @@ export const AUTH_ROLE_ACCENTS = Object.freeze({
   agent: "#D9915B",
 });
 
-/**
- * Two customer portals in one brand colour, and the driver's in another.
- *
- * The business portal ran on contact gold for a while, on the argument that
- * three portals are three products and each should look like its own -- a
- * hospital handing over boards, a shop being paid for them, a driver
- * recovering the metal. Changed at the client's direction: the organization
- * and the business are both *customers*, and a customer who deals with Rebin
- * in both capacities should not feel handed between two companies.
- *
- * The agent keeps copper. That portal is staff, not customers, and the
- * difference is worth showing.
- */
-export const PORTAL_ACCENTS = Object.freeze({
-  org: "#0A3B2C",
-  // Solder-mask green, the same value as the org's rather than a near-miss.
-  // Two greens a few percent apart read as a mistake; one green reads as a
-  // brand.
-  business: "#0A3B2C",
-  // Brighter than the trace copper it comes from, so it holds its own against
-  // the silkscreen background instead of sinking into it.
-  agent: "#C8823F",
-});
 
-/**
- * The same three accents, darkened until they can be read as text.
- *
- * A metal is a fill colour. Contact gold on the silkscreen background is
- * 2.8:1 and the agent's copper 2.7:1 -- fine behind a button label, nowhere
- * near enough for a label set *in* it, which is what "AGREED PRICE" above a
- * figure actually is. Rather than give those labels up to plain ink and lose
- * the portal's colour where it does the most work, each metal has a deepened
- * version that clears 4.5:1 and still reads as gold or copper rather than
- * brown.
- *
- * The org's solder-mask green is already dark enough, so it is unchanged --
- * the pair exists so call sites need not care which portal they are in.
- */
-export const PORTAL_ACCENT_TEXT = Object.freeze({
-  org: "#0A3B2C",
-  // The board green is already 10.8:1 on the silkscreen background, so unlike
-  // the metals it needs no darkened twin -- the fill colour is the ink colour.
-  business: "#0A3B2C",
-  agent: "#8A5228",
-});
 
-/**
- * What colour text sits on a portal's accent.
- *
- * White on copper is roughly 4:1 and white on contact gold barely 3:1 -- both
- * fail for anything smaller than a heading, and both read muddy rather than
- * rich. Dark text on a metal reads the way an engraved plate does, and clears
- * 5:1. Only the org's solder-mask green is dark enough to want white.
- */
-export const PORTAL_ON_ACCENT = Object.freeze({
-  org: "#FFFFFF",
-  // Follows the accent, not the portal. The near-black this was while the
-  // business ran on gold reads at 1.4:1 against green -- a button whose label
-  // has disappeared. White clears 12.5:1.
-  business: "#FFFFFF",
-  agent: "#1C1109",
-});
 
-export const PORTAL_ACCENTS_SUBTLE = Object.freeze({
-  org: "#E9EFEA",
-  // The gold tint would have left icon tiles and selected chips warm on a
-  // portal whose accent is now cool -- the one place the old colour would
-  // have survived unnoticed.
-  business: "#E9EFEA",
-  agent: "#F3E7DC",
-});
 
-export type PortalKey = keyof typeof PORTAL_ACCENTS;
