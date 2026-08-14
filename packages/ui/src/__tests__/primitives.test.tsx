@@ -66,11 +66,11 @@ describe("PillButton", () => {
     expect(onPress).not.toHaveBeenCalled();
   });
 
-  // The business accent is contact gold -- the metal on a board's edge
-  // connector -- because that portal is where a vendor gets paid.
+  // Solder-mask green: the organization and the business are both customers
+  // and share one brand colour. See PORTAL_ACCENTS for why the gold went.
   it("uses the portal accent as its primary background", async () => {
     await render(wrap(<PillButton label="Pay" onPress={jest.fn()} />));
-    expect(screen.getByRole("button", { name: "Pay" })).toHaveStyle({ backgroundColor: "#B08A1F" });
+    expect(screen.getByRole("button", { name: "Pay" })).toHaveStyle({ backgroundColor: "#0A3B2C" });
   });
 
   it("meets the 44pt minimum hit target", async () => {

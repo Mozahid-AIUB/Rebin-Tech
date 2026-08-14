@@ -46,9 +46,12 @@ describe("tokens", () => {
   // White on copper is roughly 4:1 and on contact gold barely 3:1 -- both fail
   // for anything smaller than a heading. Dark text on a metal clears 5:1 and
   // reads like an engraved plate rather than a muddy one.
-  it("puts dark text on the metals and white only on the board green", () => {
+  it("puts dark text on the metals and white on the board green", () => {
     expect(PORTAL_ON_ACCENT.org).toBe("#FFFFFF");
-    expect(PORTAL_ON_ACCENT.business).not.toBe("#FFFFFF");
+    // The business portal runs on that same green now, so it takes white too.
+    // Getting this wrong is not cosmetic: the dark ink gold wanted reads at
+    // 1.4:1 on green, which is a button whose label has vanished.
+    expect(PORTAL_ON_ACCENT.business).toBe("#FFFFFF");
     expect(PORTAL_ON_ACCENT.agent).not.toBe("#FFFFFF");
   });
   // A metal is a fill colour, not an ink. Contact gold on the silkscreen
@@ -82,7 +85,10 @@ describe("PortalThemeProvider", () => {
     // Solder mask, contact gold, trace copper -- the accents follow the object
     // rather than rotating a hue wheel.
     ["org", "#0A3B2C"],
-    ["business", "#B08A1F"],
+    // Solder-mask green, same as the org's. Contact gold was the vendor's
+    // accent until the client asked for one brand colour across the customer
+    // portals -- see the note on PORTAL_ACCENTS.
+    ["business", "#0A3B2C"],
     // Brighter than the trace copper it comes from: an accent on a dark screen
     // has to carry its own luminance.
     ["agent", "#C8823F"],

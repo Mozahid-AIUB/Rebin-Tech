@@ -179,14 +179,24 @@ export const AUTH_ROLE_ACCENTS = Object.freeze({
 });
 
 /**
- * The three portals are three products: a hospital handing over boards, a shop
- * being paid for them, and the driver recovering the metal. The accents follow
- * the object rather than rotating a hue wheel -- solder mask, contact gold,
- * trace copper.
+ * Two customer portals in one brand colour, and the driver's in another.
+ *
+ * The business portal ran on contact gold for a while, on the argument that
+ * three portals are three products and each should look like its own -- a
+ * hospital handing over boards, a shop being paid for them, a driver
+ * recovering the metal. Changed at the client's direction: the organization
+ * and the business are both *customers*, and a customer who deals with Rebin
+ * in both capacities should not feel handed between two companies.
+ *
+ * The agent keeps copper. That portal is staff, not customers, and the
+ * difference is worth showing.
  */
 export const PORTAL_ACCENTS = Object.freeze({
   org: "#0A3B2C",
-  business: "#B08A1F",
+  // Solder-mask green, the same value as the org's rather than a near-miss.
+  // Two greens a few percent apart read as a mistake; one green reads as a
+  // brand.
+  business: "#0A3B2C",
   // Brighter than the trace copper it comes from, so it holds its own against
   // the silkscreen background instead of sinking into it.
   agent: "#C8823F",
@@ -208,7 +218,9 @@ export const PORTAL_ACCENTS = Object.freeze({
  */
 export const PORTAL_ACCENT_TEXT = Object.freeze({
   org: "#0A3B2C",
-  business: "#7A5D12",
+  // The board green is already 10.8:1 on the silkscreen background, so unlike
+  // the metals it needs no darkened twin -- the fill colour is the ink colour.
+  business: "#0A3B2C",
   agent: "#8A5228",
 });
 
@@ -222,13 +234,19 @@ export const PORTAL_ACCENT_TEXT = Object.freeze({
  */
 export const PORTAL_ON_ACCENT = Object.freeze({
   org: "#FFFFFF",
-  business: "#1A1403",
+  // Follows the accent, not the portal. The near-black this was while the
+  // business ran on gold reads at 1.4:1 against green -- a button whose label
+  // has disappeared. White clears 12.5:1.
+  business: "#FFFFFF",
   agent: "#1C1109",
 });
 
 export const PORTAL_ACCENTS_SUBTLE = Object.freeze({
   org: "#E9EFEA",
-  business: "#F7EFD5",
+  // The gold tint would have left icon tiles and selected chips warm on a
+  // portal whose accent is now cool -- the one place the old colour would
+  // have survived unnoticed.
+  business: "#E9EFEA",
   agent: "#F3E7DC",
 });
 
