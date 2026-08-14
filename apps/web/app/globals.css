@@ -1,0 +1,1595 @@
+/* Colour and the type scale arrive as custom properties from layout.tsx, which
+   reads them out of @rebin/shared. Nothing in this file invents a value. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: var(--size-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  /* Condensed buys width, so display runs larger at the same measure. Weight
+     is carried by the family, never by font-weight, so the browser does not
+     synthesise a faux bold over an already-bold face. */
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  margin: 0;
+  text-wrap: balance;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+}
+
+p {
+  margin: 0;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shell {
+  width: min(100% - 2.5rem, 72rem);
+  margin-inline: auto;
+}
+
+/* The data layer: serials, weights, dates, rates, phone numbers. The lettering
+   already printed on the boards this company collects. Never for sentences. */
+.mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The eyebrow above every section heading -- copper, mono, with a leading rule.
+   Reads as a reference designator off a silkscreen rather than a decorative
+   label, which is the whole reason it is set in mono. */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: var(--size-label);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--copper);
+}
+
+.eyebrow::before {
+  content: "";
+  width: 1.25rem;
+  height: 2px;
+  background: currentColor;
+  flex: none;
+}
+
+.section {
+  padding-block: clamp(3.5rem, 7vw, 6rem);
+}
+
+.section-head {
+  max-width: 42rem;
+}
+
+.section-head h2 {
+  font-size: clamp(1.875rem, 4vw, 2.75rem);
+  margin-top: 0.875rem;
+}
+
+.section-head p {
+  margin-top: 1rem;
+  color: var(--ink-2);
+}
+
+.center {
+  margin-inline: auto;
+  text-align: center;
+}
+
+.center .eyebrow {
+  justify-content: center;
+}
+
+.tint {
+  background: var(--silk);
+}
+
+/* ---- Buttons ------------------------------------------------------------ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 3rem;
+  padding-inline: 1.5rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-button);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: var(--size-h3);
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.btn-primary {
+  background: var(--copper);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background: #9c5f2f;
+}
+
+.btn-light {
+  background: var(--silk);
+  color: var(--board);
+}
+
+.btn-light:hover {
+  background: #ffffff;
+}
+
+.btn-line {
+  border-color: rgba(237, 239, 233, 0.3);
+  color: var(--silk);
+}
+
+.btn-line:hover {
+  border-color: rgba(237, 239, 233, 0.7);
+}
+
+.btn-ghost {
+  border-color: var(--border);
+  color: var(--ink);
+}
+
+.btn-ghost:hover {
+  border-color: var(--board);
+}
+
+/* ---- Top bar and navigation --------------------------------------------- */
+
+.topbar {
+  background: var(--board-deep);
+  color: #9db8ab;
+  font-size: var(--size-body-sm);
+}
+
+.topbar-inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  justify-content: space-between;
+  padding-block: 0.625rem;
+}
+
+.topbar a:hover {
+  color: var(--silk);
+}
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--surface);
+  border-bottom: 1px solid var(--divider);
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding-block: 1rem;
+}
+
+.wordmark {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.375rem;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.wordmark small {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.5rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.75rem;
+  margin-left: auto;
+  font-size: var(--size-body-sm);
+  font-weight: 500;
+}
+
+.nav-links a:hover {
+  color: var(--copper);
+}
+
+/* ---- Hero --------------------------------------------------------------- */
+
+.hero {
+  position: relative;
+  background: var(--board);
+  color: var(--silk);
+  overflow: hidden;
+}
+
+/* The routing sits behind everything, anchored right so it never runs under
+   the headline -- the type is left-aligned and needs a clean field. Faint
+   enough to read as the surface the words are printed on. */
+.board-field {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(56%, 40rem);
+  height: 100%;
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+@media (max-width: 60rem) {
+  .board-field {
+    display: none;
+  }
+}
+
+.hero-inner {
+  position: relative;
+  z-index: 1;
+  padding-block: clamp(3.5rem, 8vw, 6.5rem);
+  max-width: 46rem;
+}
+
+.hero h1 {
+  font-size: clamp(2.25rem, 6vw, 4rem);
+  line-height: 1.04;
+  margin-block: 1rem 1.375rem;
+}
+
+.hero h1 em {
+  font-style: normal;
+  color: var(--copper);
+}
+
+.hero-lede {
+  font-size: clamp(var(--size-body), 1.8vw, 1.125rem);
+  color: #c9d6ce;
+  max-width: 36rem;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+/* Facts a visitor can check, not numbers we made up. Each is a property of how
+   the service works rather than a claim about how popular it is -- the layout
+   this follows puts a review count and a customer total here, and inventing
+   either for a company that has neither is a false statement to a customer. */
+.hero-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1.25rem 2rem;
+  margin-top: 2.75rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(237, 239, 233, 0.16);
+  max-width: 42rem;
+}
+
+.fact strong {
+  display: block;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.fact span {
+  display: block;
+  margin-top: 0.375rem;
+  font-size: var(--size-body-sm);
+  color: #a9bfb4;
+}
+
+/* ---- The seam: where the trace crosses ---------------------------------- */
+
+.seam {
+  line-height: 0;
+}
+
+.seam-svg {
+  display: block;
+  width: 100%;
+  height: 108px;
+}
+
+/* One orchestrated moment rather than scattered effects: the trace draws
+   itself once, on load, the way a route is laid down. Length is over-estimated
+   on purpose -- measuring the exact path needs JS, and overshooting only means
+   the line finishes slightly before the animation does. */
+.seam-trace {
+  stroke-dasharray: 700;
+  stroke-dashoffset: 700;
+  animation: draw 1100ms cubic-bezier(0.16, 1, 0.3, 1) 180ms forwards;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ---- About: photo slot, tabs, three points ------------------------------ */
+
+.about {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: start;
+}
+
+@media (max-width: 60rem) {
+  .about {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Reserves the shape a real photograph will take, at the ratio it will be
+   cropped to. Sized here rather than by the image, so dropping one in cannot
+   shift the layout -- and `object-fit: cover` on the image keeps it from
+   stretching, which is the failure this slot exists to prevent. */
+.photo-slot {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--radius-card);
+  background: var(--surface-alt);
+  border: 1px dashed var(--border);
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--size-body-sm);
+  overflow: hidden;
+}
+
+/* Once a photograph is in, the dashed outline that marked an empty slot would
+   read as a border round the picture. */
+.has-photo {
+  border: 0;
+  background: var(--board);
+}
+
+.photo-slot img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-slot .mono {
+  display: block;
+  font-size: var(--size-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  color: var(--copper);
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 2rem;
+}
+
+.tab {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-chip);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: var(--size-body-sm);
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.tab-on {
+  background: var(--board);
+  border-color: var(--board);
+  color: var(--silk);
+}
+
+.points {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 1.75rem;
+}
+
+.point {
+  display: grid;
+  grid-template-columns: 2.75rem 1fr;
+  gap: 1rem;
+}
+
+.point-mark {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: #e9efea;
+  color: var(--board);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: var(--size-body-sm);
+  font-weight: 600;
+}
+
+.point h3 {
+  font-size: var(--size-h2);
+}
+
+.point p {
+  margin-top: 0.375rem;
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+}
+
+/* ---- Call band ---------------------------------------------------------- */
+
+.band {
+  background: var(--board);
+  color: var(--silk);
+}
+
+.band-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  padding-block: clamp(2.5rem, 5vw, 3.5rem);
+}
+
+.band h2 {
+  font-size: clamp(1.5rem, 3.4vw, 2.25rem);
+  max-width: 28rem;
+}
+
+.band p {
+  margin-top: 0.75rem;
+  color: #c9d6ce;
+  max-width: 32rem;
+  font-size: var(--size-body-sm);
+}
+
+.band-call a {
+  display: block;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: clamp(1.5rem, 3.2vw, 2rem);
+  font-weight: 600;
+  margin-top: 0.5rem;
+  letter-spacing: -0.01em;
+}
+
+.band-call a:hover {
+  color: var(--copper);
+}
+
+/* ---- Cards -------------------------------------------------------------- */
+
+.grid-3 {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  margin-top: 2.75rem;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.card .photo-slot {
+  aspect-ratio: 16 / 10;
+  border: 0;
+  border-bottom: 1px dashed var(--border);
+  border-radius: 0;
+}
+
+.card-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.card h3 {
+  font-size: var(--size-h2);
+  margin-block: 0.625rem;
+}
+
+.card p {
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  flex: 1;
+}
+
+.card-foot {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--divider);
+  font-size: var(--size-body-sm);
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.card-link {
+  font-weight: 600;
+  color: var(--copper);
+}
+
+/* ---- Process: the chain of custody -------------------------------------- */
+
+.chain {
+  display: grid;
+  gap: 0;
+  margin-top: 2.75rem;
+}
+
+.stage {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr;
+  gap: 0 1.25rem;
+  padding-bottom: 2.25rem;
+}
+
+.stage:last-child {
+  padding-bottom: 0;
+}
+
+.stage-rail {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+/* A via is the plated hole where a trace changes layer. Filled where the stage
+   produces a record, hollow where it is only a movement. */
+.via {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+  border: 2px solid var(--copper);
+  background: var(--silk);
+  margin-top: 0.35rem;
+  flex: none;
+  z-index: 1;
+}
+
+.via-filled {
+  background: var(--copper);
+}
+
+.stage-rail::after {
+  content: "";
+  position: absolute;
+  top: 1.45rem;
+  bottom: -2.25rem;
+  width: 2px;
+  background: var(--copper);
+  opacity: 0.3;
+}
+
+.stage:last-child .stage-rail::after {
+  display: none;
+}
+
+.stage h3 {
+  font-size: var(--size-h2);
+}
+
+.stage .eyebrow {
+  margin-bottom: 0.375rem;
+  color: var(--muted);
+}
+
+.stage p {
+  margin-top: 0.5rem;
+  color: var(--ink-2);
+  max-width: 40rem;
+  font-size: var(--size-body-sm);
+}
+
+/* ---- FAQ ---------------------------------------------------------------- */
+
+.faq {
+  margin-top: 2.5rem;
+  display: grid;
+  gap: 0.75rem;
+  max-width: 48rem;
+}
+
+.faq details {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  padding: 1.125rem 1.375rem;
+}
+
+.faq summary {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: var(--size-h3);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq summary::after {
+  content: "+";
+  font-family: var(--font-mono), ui-monospace, monospace;
+  color: var(--copper);
+  font-size: 1.25rem;
+  flex: none;
+}
+
+.faq details[open] summary::after {
+  content: "\2212";
+}
+
+.faq p {
+  margin-top: 0.75rem;
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+}
+
+/* ---- Proof: reserved until there is something true to put here ---------- */
+
+.proof {
+  background: var(--board);
+  color: var(--silk);
+}
+
+.proof-note {
+  border: 1px dashed rgba(237, 239, 233, 0.28);
+  border-radius: var(--radius-card);
+  padding: 1.5rem;
+  margin-top: 2rem;
+  color: #a9bfb4;
+  font-size: var(--size-body-sm);
+  max-width: 42rem;
+}
+
+.proof-note strong {
+  color: var(--silk);
+  display: block;
+  margin-bottom: 0.375rem;
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+
+/* ---- Footer ------------------------------------------------------------- */
+
+.foot {
+  background: var(--board-deep);
+  color: #a9bfb4;
+  font-size: var(--size-body-sm);
+}
+
+.foot-grid {
+  display: grid;
+  gap: 2.5rem;
+  grid-template-columns: minmax(0, 1.4fr) repeat(auto-fit, minmax(9rem, 1fr));
+  padding-block: clamp(2.5rem, 5vw, 3.5rem);
+}
+
+.foot .wordmark {
+  color: var(--silk);
+}
+
+.foot h4 {
+  color: var(--silk);
+  font-size: var(--size-h3);
+  margin-bottom: 0.875rem;
+}
+
+.foot li + li {
+  margin-top: 0.5rem;
+}
+
+.foot a:hover {
+  color: var(--silk);
+}
+
+.foot-note {
+  margin-top: 1rem;
+  max-width: 22rem;
+}
+
+.foot-contact {
+  margin-top: 1.25rem;
+}
+
+.foot-contact a {
+  color: var(--silk);
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+.foot-bar {
+  border-top: 1px solid rgba(237, 239, 233, 0.12);
+  padding-block: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.foot-bar nav {
+  display: flex;
+  gap: 1.5rem;
+}
+
+/* ---- Long-form pages ---------------------------------------------------- */
+
+.prose {
+  padding-block: clamp(2.5rem, 6vw, 4rem) clamp(3rem, 8vw, 5rem);
+  max-width: 44rem;
+}
+
+.prose h1 {
+  font-size: clamp(2rem, 5vw, 2.75rem);
+}
+
+.prose h2 {
+  font-size: var(--size-h2);
+  margin-top: 2.5rem;
+}
+
+.prose p,
+.prose li {
+  color: var(--ink-2);
+  margin-top: 0.875rem;
+}
+
+.prose ul {
+  padding-left: 1.125rem;
+  list-style: disc;
+}
+
+.prose .updated {
+  color: var(--muted);
+  margin-top: 0.75rem;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1.25rem;
+  font-size: var(--size-body-sm);
+}
+
+.prose th,
+.prose td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.625rem 0.75rem 0.625rem 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.prose th {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: var(--size-label);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* ---- Quality floor ------------------------------------------------------ */
+
+:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.hero :focus-visible,
+.band :focus-visible,
+.proof :focus-visible,
+.foot :focus-visible,
+.topbar :focus-visible {
+  outline-color: var(--silk);
+}
+
+/* Below this the four links do not fit beside the wordmark and the button.
+   They wrap onto their own row rather than disappearing: hiding navigation on
+   the devices most visitors arrive on, with nothing in its place, leaves the
+   page with no way to reach anything except by scrolling. A row of four links
+   is cheaper than a hamburger and needs no script. */
+@media (max-width: 52rem) {
+  .nav-inner {
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+  }
+
+  .nav-links {
+    order: 3;
+    width: 100%;
+    margin-left: 0;
+    gap: 1.25rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--divider);
+    overflow-x: auto;
+    /* The row scrolls rather than wrapping to two lines on a narrow phone,
+       and the scrollbar is hidden because a four-item row that needs one is a
+       row nobody will scroll deliberately. */
+    scrollbar-width: none;
+    white-space: nowrap;
+  }
+
+  .nav-links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-inner .btn {
+    margin-left: auto;
+  }
+}
+
+/* The top bar carries the phone number and the hours. On a narrow screen the
+   two halves stack instead of colliding. */
+@media (max-width: 40rem) {
+  .topbar-inner {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .hero-facts {
+    gap: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .seam-trace {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+}
+
+/* ---- Motion ------------------------------------------------------------- */
+
+/* One movement, used everywhere: up and in, 620ms, on a curve that decelerates
+   hard so the block settles rather than sliding to a stop. Blocks that enter
+   from different directions at different speeds are what makes a page feel
+   like a theme with the effects switched on. */
+/* Guarded on `.js`, which an inline script in the layout adds before first
+   paint. Hiding content by default and revealing it with JavaScript means any
+   script failure -- a bad chunk, a blocked file, an extension -- leaves the
+   page blank below the fold. It did exactly that here. The animation is an
+   enhancement; the words are not. */
+.js .reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  /* Belt and braces. The inline script adds `.js` on the assumption that React
+     will follow, and when a chunk fails to load it does not -- which left every
+     section below the hero at opacity 0 behind a perfectly healthy server. This
+     animation reveals the block after 1.5s whatever happens; the observer beats
+     it to the punch in the normal case. Content is never at the mercy of a
+     script. */
+  animation: reveal-failsafe 1ms linear 1.5s forwards;
+  transition:
+    opacity 620ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.js .reveal-in {
+  opacity: 1;
+  transform: none;
+  /* Cancelled once the observer has done its job, so the failsafe cannot fire
+     a second time and re-trigger the transition. */
+  animation: none;
+}
+
+@keyframes reveal-failsafe {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Photographs lift very slightly and the image inside them scales instead of
+   the box, so the crop tightens rather than the card growing into its
+   neighbour. 1.04 is deliberately small -- at 1.1 it reads as a slideshow. */
+.photo-slot img {
+  transition: transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card:hover .photo-slot img {
+  transform: scale(1.04);
+}
+
+.card {
+  transition:
+    transform 300ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 300ms ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  border-color: var(--copper);
+}
+
+/* The one place a link is allowed to announce itself: the arrow travels, the
+   text does not move. */
+.card-link::after {
+  content: " \2192";
+  display: inline-block;
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card:hover .card-link::after {
+  transform: translateX(4px);
+}
+
+/* The vias light up as the chain arrives, so the eye follows the sequence
+   rather than seeing four bullets appear at once. */
+.reveal-in .via {
+  animation: via-settle 520ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+@keyframes via-settle {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .card:hover,
+  .card:hover .photo-slot img,
+  .card:hover .card-link::after {
+    transform: none;
+  }
+
+  .reveal-in .via {
+    animation: none;
+  }
+}
+
+/* ---- The page-load sequence --------------------------------------------- */
+
+/* The hero assembles rather than appearing. Six elements, 70ms apart, each on
+   the same curve as everything else on the page -- the stagger is what makes
+   it read as one movement instead of six.
+ *
+ * Done in CSS with animation-delay rather than in JS: this has to run before
+ * hydration, and a hero that waits for JavaScript is a hero that flashes.
+ */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+.js .hero-inner > * {
+  animation: rise 760ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.js .hero-inner > *:nth-child(1) { animation-delay: 80ms; }
+.js .hero-inner > *:nth-child(2) { animation-delay: 150ms; }
+.js .hero-inner > *:nth-child(3) { animation-delay: 220ms; }
+.js .hero-inner > *:nth-child(4) { animation-delay: 290ms; }
+.js .hero-inner > *:nth-child(5) { animation-delay: 360ms; }
+
+/* The three facts arrive after the block they sit in, so the eye reads the
+   headline before the detail underneath it. */
+.js .hero-facts .fact {
+  animation: rise 700ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.js .hero-facts .fact:nth-child(1) { animation-delay: 460ms; }
+.js .hero-facts .fact:nth-child(2) { animation-delay: 530ms; }
+.js .hero-facts .fact:nth-child(3) { animation-delay: 600ms; }
+
+/* The routing behind the hero fades up last and slowly. It is the surface, so
+   it should feel like it was always there rather than like it arrived. */
+.js .board-field {
+  animation: field-in 1600ms ease-out 200ms backwards;
+}
+
+@keyframes field-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+/* ---- Navigation on scroll ----------------------------------------------- */
+
+/* The bar earns a shadow only once there is something underneath it to cast
+   onto. A permanent shadow on a bar sitting at the top of a page is a shadow
+   from nothing. */
+.nav {
+  transition: box-shadow 240ms ease, padding 240ms ease;
+}
+
+.nav-scrolled {
+  box-shadow: 0 6px 24px rgba(10, 59, 44, 0.09);
+}
+
+.nav-scrolled .nav-inner {
+  padding-block: 0.625rem;
+}
+
+.nav-inner {
+  transition: padding 240ms ease;
+}
+
+/* ---- Section headings --------------------------------------------------- */
+
+/* The eyebrow's rule draws itself as the section arrives -- the same gesture
+   as the seam trace, at the scale of a label. It is the one flourish repeated
+   across the page, which is what makes it read as a system. */
+.reveal-in .eyebrow::before {
+  animation: rule-draw 560ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: 120ms;
+}
+
+@keyframes rule-draw {
+  from {
+    width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js .hero-inner > *,
+  .js .hero-facts .fact,
+  .js .board-field,
+  .reveal-in .eyebrow::before {
+    animation: none;
+  }
+
+  .nav,
+  .nav-inner {
+    transition: none;
+  }
+}
+
+/* ---- What happens next -------------------------------------------------- */
+
+.steps {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  margin-top: 2.75rem;
+  counter-reset: step;
+}
+
+.step {
+  position: relative;
+  padding-top: 1.5rem;
+  border-top: 2px solid var(--divider);
+}
+
+/* The rule above each step fills with copper as the row arrives, left to
+   right, so the four read as a progression rather than four columns. */
+.step::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: 0;
+  height: 2px;
+  width: 0;
+  background: var(--copper);
+}
+
+.reveal-in .step::before {
+  animation: rule-fill 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.step:nth-child(1)::before { animation-delay: 120ms; }
+.step:nth-child(2)::before { animation-delay: 240ms; }
+.step:nth-child(3)::before { animation-delay: 360ms; }
+.step:nth-child(4)::before { animation-delay: 480ms; }
+
+@keyframes rule-fill {
+  to {
+    width: 100%;
+  }
+}
+
+.step-n {
+  display: block;
+  font-size: var(--size-label);
+  letter-spacing: 0.16em;
+  color: var(--copper);
+  font-weight: 600;
+}
+
+.step h3 {
+  font-size: var(--size-h2);
+  margin-block: 0.5rem 0.5rem;
+}
+
+.step p {
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-in .step::before {
+    animation: none;
+    width: 100%;
+  }
+}
+
+/* ---- The vehicle on the call band --------------------------------------- */
+
+.band {
+  position: relative;
+  overflow: hidden;
+}
+
+.band-inner {
+  position: relative;
+  z-index: 1;
+}
+
+/* Sits behind the type, anchored right. The mask does the work a transparent
+   PNG would: the image fades to nothing on every edge that meets the band, so
+   there is no rectangle. Two masks composited -- one horizontal, one vertical
+   -- because a single radial fade dims the middle of the van as well. */
+.band-vehicle {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: min(58%, 42rem);
+  pointer-events: none;
+}
+
+.band-vehicle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.42;
+  filter: grayscale(0.35) contrast(1.05);
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0%, #000 42%, #000 100%),
+    linear-gradient(to bottom, transparent 0%, #000 26%, #000 74%, transparent 100%);
+  mask-image:
+    linear-gradient(to right, transparent 0%, #000 42%, #000 100%),
+    linear-gradient(to bottom, transparent 0%, #000 26%, #000 74%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
+/* Below this the headline runs the full width and the van would sit under the
+   words. The phone number is the point of this band; the picture is not. */
+@media (max-width: 56rem) {
+  .band-vehicle {
+    display: none;
+  }
+}
+
+/* ---- Hero: copy on the left, the product on the right ------------------- */
+
+.hero-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  align-items: center;
+}
+
+/* Below this the phones would be thumbnails beside a cramped column. The words
+   are what the page is for, so they keep the width and the pair drops away. */
+@media (max-width: 64rem) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .phone {
+    display: none;
+  }
+}
+
+/* ---- The phones --------------------------------------------------------- */
+
+/* Two devices, overlapped and counter-rotated. A flat `rotate()` rather than a
+   3D `rotateY`: perspective foreshortens the far edge and shrinks the type on
+   the screen, which defeats the point of showing a real screen. Turning them
+   opposite ways is what makes the pair read as arranged rather than as one
+   object cut in half. */
+.phone {
+  position: relative;
+  /* Sized by ratio rather than in pixels, so the pair scales with its column
+     instead of overflowing a laptop and vanishing on a tablet. */
+  aspect-ratio: 600 / 640;
+  width: 100%;
+  max-width: 32rem;
+  margin-inline: auto;
+}
+
+.phone-body {
+  position: absolute;
+  width: 47%;
+  aspect-ratio: 290 / 580;
+  border-radius: 12%;
+  padding: 1.6%;
+  background: linear-gradient(165deg, #3d4a44, #141c18);
+  /* Two inset lines, not one: light along the top edge and shadow along the
+     bottom is what reads as machined metal. A single inset reads as a border. */
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.2) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.5) inset,
+    0 24px 48px rgba(6, 41, 30, 0.34),
+    0 6px 14px rgba(6, 41, 30, 0.22);
+}
+
+.phone-back {
+  top: 13%;
+  left: 4%;
+  transform: rotate(6deg);
+  z-index: 1;
+  filter: brightness(0.95);
+}
+
+.phone-front {
+  top: 2%;
+  left: 46%;
+  transform: rotate(-6deg);
+  z-index: 2;
+}
+
+/* Contact shadow. Without one the pair hangs in space -- a shadow behind a
+   body never reads as the body resting on anything. */
+.phone-body::after {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: -4%;
+  height: 7%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(6, 41, 30, 0.36), transparent 72%);
+  filter: blur(7px);
+  z-index: -1;
+}
+
+.phone-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 10%;
+  background: var(--silk);
+  color: var(--ink);
+  padding: 4% 6% 6%;
+  overflow: hidden;
+}
+
+/* The island. The strongest single signal that this is a current phone --
+   without it the shape reads as a generic slab. */
+.ph-island {
+  position: absolute;
+  top: 3.5%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 34%;
+  aspect-ratio: 4 / 1;
+  border-radius: 999px;
+  background: #0d1512;
+  z-index: 3;
+}
+
+/* Glass: one diagonal sweep at low opacity. The detail that does the most work
+   to turn a rectangle into a screen, and the one most often left out. */
+.ph-gloss {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(
+    118deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0.08) 22%,
+    rgba(255, 255, 255, 0) 44%
+  );
+}
+
+.ph-btn {
+  position: absolute;
+  width: 1.4%;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #4a5751, #232e29);
+}
+
+.ph-btn-vol {
+  left: -1.1%;
+  top: 22%;
+  height: 11%;
+}
+
+.ph-btn-pwr {
+  right: -1.1%;
+  top: 28%;
+  height: 8%;
+}
+
+.ph-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.5rem;
+  color: var(--muted);
+  padding-top: 10%;
+  padding-bottom: 5%;
+  position: relative;
+  z-index: 2;
+}
+
+.ph-dots {
+  width: 15%;
+  height: 0.28rem;
+  border-radius: 999px;
+  background: var(--border);
+  opacity: 0.6;
+}
+
+.ph-eyebrow {
+  display: block;
+  font-size: 0.4375rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--copper);
+}
+
+.ph-head strong {
+  display: block;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 0.8125rem;
+  margin-top: 0.15rem;
+}
+
+.ph-total {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  margin-block: 0.3rem 0.6rem;
+}
+
+.ph-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.ph-line strong {
+  display: block;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 0.625rem;
+}
+
+.ph-line span {
+  display: block;
+  font-size: 0.5rem;
+  color: var(--muted);
+}
+
+.ph-amount {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--board);
+  flex: none;
+}
+
+.ph-line-quiet {
+  opacity: 0.7;
+}
+
+.ph-cta {
+  margin-top: 0.5rem;
+  background: var(--board);
+  color: #ffffff;
+  border-radius: 0.5rem;
+  text-align: center;
+  padding-block: 0.5rem;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.ph-note {
+  text-align: center;
+  font-size: 0.4375rem;
+  color: var(--muted);
+  margin-top: 0.35rem;
+}
+
+.ph-viewfinder {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 0.5rem;
+  margin-top: 0.4rem;
+  background: linear-gradient(150deg, #23302a, #101715);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.ph-frame {
+  width: 62%;
+  height: 58%;
+  border: 2px solid var(--copper);
+  border-radius: 0.25rem;
+  opacity: 0.85;
+}
+
+.ph-reading {
+  text-align: center;
+  font-size: 0.4375rem;
+  color: var(--copper);
+  margin-top: 0.4rem;
+}
+
+/* Different periods, so the two never move in lockstep -- that is what stops a
+   floating pair reading as one rigid image. The rotation repeats inside each
+   keyframe because a transform replaces the element's own, it does not add. */
+.js .phone {
+  animation: rise 900ms cubic-bezier(0.16, 1, 0.3, 1) 420ms backwards;
+}
+
+.js .phone-back {
+  animation: float-back 8s ease-in-out 1.6s infinite;
+}
+
+.js .phone-front {
+  animation: float-front 7s ease-in-out 1.4s infinite;
+}
+
+@keyframes float-back {
+  50% {
+    transform: rotate(6deg) translateY(-12px);
+  }
+}
+
+@keyframes float-front {
+  50% {
+    transform: rotate(-6deg) translateY(-10px);
+  }
+}
+
+.js .ph-frame {
+  animation: focus-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes focus-pulse {
+  50% {
+    transform: scale(0.94);
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js .phone,
+  .js .phone-back,
+  .js .phone-front,
+  .js .ph-frame {
+    animation: none;
+  }
+}
+
+/* ---- The illustration in the about block -------------------------------- */
+
+.about-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  border-radius: var(--radius-card);
+  background: radial-gradient(circle at 50% 42%, #ffffff, var(--surface-alt));
+  border: 1px solid var(--border);
+  aspect-ratio: 4 / 5;
+}
+
+.hero-scene {
+  width: 100%;
+  height: auto;
+  max-width: 22rem;
+}
+
+/* The drifting leaf, as in the app -- the one moving part of the drawing.
+   Reanimated there, a keyframe here. */
+.js .hero-leaf {
+  transform-origin: 178px 46px;
+  animation: leaf-drift 5.5s ease-in-out infinite;
+}
+
+@keyframes leaf-drift {
+  50% {
+    transform: translateY(-7px) rotate(-7deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js .hero-leaf {
+    animation: none;
+  }
+}
