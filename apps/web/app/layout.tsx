@@ -43,7 +43,8 @@ function brandVariables(): string {
   const rem = (px: number) => `${px / 16}rem`;
   return `:root{
     --board:${c.board};--board-deep:${c.boardDeep};--silk:${c.silk};
-    --surface:${c.surface};--surface-alt:${c.surfaceAlt};
+    --surface:${c.surface};--surface-alt:${c.surfaceAlt};--surface-warm:${c.surfaceWarm};
+    --success:${c.success};
     --ink:${c.ink};--ink-2:${c.inkSecondary};--muted:${c.muted};
     --border:${c.border};--divider:${c.divider};
     --copper:${c.copper};--gold:${c.gold};--danger:${c.danger};

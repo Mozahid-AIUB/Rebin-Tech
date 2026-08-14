@@ -30,6 +30,10 @@ export function BoardField() {
       aria-hidden="true"
       focusable="false"
     >
+      {/* The substrate carries its own dimming so the signal below it does not
+          inherit it. Opacity on the whole <svg> would drag the one bright thing
+          down with the quiet ones. */}
+      <g className="field-static">
       <g
         fill="none"
         stroke="var(--copper)"
@@ -66,6 +70,33 @@ export function BoardField() {
         <rect x="452" y="114" width="14" height="12" rx="1" />
         <rect x="452" y="204" width="14" height="12" rx="1" />
       </g>
+      </g>
+
+      {/* One signal, on one net.
+       *
+       * A trace exists to carry something. Drawn static it is a picture of a
+       * board; with a pulse running the length of it, it is a board doing its
+       * job -- so this is the object telling the truth about itself rather than
+       * an effect laid over it. It is also the only thing on the page that
+       * moves after the page has finished loading, which is what the hero was
+       * missing: everything else animates in on scroll and the hero, being
+       * already on screen, simply sat there.
+       *
+       * One net, not seven. Seven would be a light show.
+       *
+       * `pathLength="1"` normalises the route so the dash pattern is a fraction
+       * of it regardless of the real geometry -- the pulse is 5% of the net's
+       * length whatever that length happens to be. */}
+      <path
+        className="field-signal"
+        d="M600 40 L470 40 L430 80 L430 190 L400 220 L180 220"
+        pathLength="1"
+        fill="none"
+        stroke="var(--copper)"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        vectorEffect="non-scaling-stroke"
+      />
     </svg>
   );
 }

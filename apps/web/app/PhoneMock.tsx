@@ -1,3 +1,5 @@
+import { Docket } from "./Docket";
+
 /**
  * The app's quote screen, in a phone, in the hero.
  *
@@ -81,6 +83,15 @@ export function PhoneMock() {
 
           <div className="ph-cta">Use this quote</div>
           <div className="ph-note">Priced against today&rsquo;s catalog</div>
+
+          {/* What accepting the quote produces, on the same screen that offers
+              it. The lower half of this screen was empty -- a mock that runs
+              out of content halfway down reads as an unfinished screen rather
+              than as a real one, and the app has something true to put there.
+              It runs off the bottom edge, because a document on a phone does. */}
+          <div className="ph-docket">
+            <Docket stamp="Quoted" />
+          </div>
         </div>
       </div>
     </div>

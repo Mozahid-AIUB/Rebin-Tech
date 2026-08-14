@@ -13,6 +13,88 @@ const PHONE_DISPLAY = "(555) 010-0000";
 const PHONE_HREF = "tel:+15550100000";
 const EMAIL = "hello@rebintech.com";
 
+/**
+ * The mark: a via, and the trace leaving it.
+ *
+ * A bare copper ring was the first attempt and it was not a mark -- a circle
+ * outline belongs to any company that wants one, and it said nothing about
+ * boards or about this business. What makes it specific is the second half: a
+ * plated through-hole with a routed trace coming out of it, stepping up at 45
+ * degrees the way copper actually turns on a board.
+ *
+ * That is also the company, drawn. Equipment goes in, is routed, and leaves on
+ * a higher level with a record attached -- which is why the trace exits toward
+ * the name rather than away from it. The mark leads into the word instead of
+ * sitting beside it.
+ *
+ * Drawn rather than lettered: sharp at any size, a couple of hundred bytes, and
+ * it follows the palette rather than freezing a hex into an asset.
+ *
+ * If the client has or commissions a real mark, this function is the only thing
+ * to replace.
+ */
+function Mark() {
+  return (
+    <svg
+      className="wordmark-mark"
+      viewBox="0 0 30 24"
+      aria-hidden="true"
+      focusable="false"
+      fill="none"
+      stroke="var(--copper)"
+    >
+      {/* The trace runs *through*, and that is the whole difference between a
+          mark and a mistake. Drawn with the route leaving on one side only, the
+          ring and its tail fused into a single silhouette and the thing read as
+          a key. A line that enters and exits cannot be read as anything but
+          something routed through a hole. */}
+      <path
+        d="M0 15 H4"
+        strokeWidth="2.5"
+        strokeLinecap="square"
+      />
+      {/* Heavier than the trace, because an annular ring is heavier than a
+          trace on a real board. */}
+      <circle cx="10" cy="15" r="4.5" strokeWidth="3" />
+      {/* Out, then up one layer, then away: what the company does to what it
+          collects. dx equals dy on the diagonal -- a trace that turns at
+          anything but 45 degrees is not one anybody would etch. */}
+      <path
+        d="M16 15 H18 L23 10 H30"
+        strokeWidth="2.5"
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+      />
+    </svg>
+  );
+}
+
+/**
+ * The lockup: mark, name, and -- where there is room for it -- the strapline.
+ *
+ * The strapline is off the nav bar, and the reason is a measurement rather than
+ * a preference. Stacked under the name it wants to align to it on both edges,
+ * which is what makes two lines read as one drawn mark instead of two things
+ * sitting near each other. `Rebin Tech` sets 98px at 1.375rem; `COLLECT ·
+ * RECOVER · RECORD` sets 146px at 8px with only 0.10em of tracking. Matching
+ * them needs -0.13em -- letters overlapping -- or a 36px name, which is not a
+ * size a nav bar can carry. Twenty-six characters will not sit under ten.
+ *
+ * So the bar gets mark and name, and the footer keeps the strapline, where it
+ * has a column to itself and nothing to line up against.
+ */
+function Wordmark({ strapline = false }: { strapline?: boolean }) {
+  return (
+    <>
+      <Mark />
+      <span className="wordmark-text">
+        <span className="wordmark-name">Rebin Tech</span>
+        {strapline ? <small>Collect · Recover · Record</small> : null}
+      </span>
+    </>
+  );
+}
+
 export function Nav() {
   return (
     <>
@@ -31,8 +113,8 @@ export function Nav() {
 
       <nav className="nav">
         <div className="shell nav-inner">
-          <Link href="/" className="wordmark">
-            Rebin Tech <small>Collect · Recover · Record</small>
+          <Link href="/" className="wordmark" aria-label="Rebin Tech — home">
+            <Wordmark />
           </Link>
           <div className="nav-links">
             <a href="/#about">About</a>
@@ -104,7 +186,7 @@ export function Foot() {
       <div className="shell foot-grid">
         <div>
           <span className="wordmark">
-            Rebin Tech <small>Collect · Recover · Record</small>
+            <Wordmark strapline />
           </span>
           <p className="foot-note">
             We collect retired IT equipment across the United States, recover the materials inside

@@ -145,13 +145,40 @@ The app uses it wherever something genuinely **connects**:
       ○  Collected
 ```
 
-Used on the request timeline and the job stages, and nowhere else. It is not a
-divider and not an ornament: a trace draws a connection, and those screens are
+In the app: the request timeline and the job stages, and nowhere else. It is not
+a divider and not an ornament: a trace draws a connection, and those screens are
 the only places one exists. A hairline under a heading would be decoration
 wearing the same costume.
 
 Section headings get a short copper trace stub with one elbow, four rules per
 screen at most.
+
+**On the website, one more place: the hero** (`apps/web/app/HeroStory.tsx`). The
+scene there is a collection happening — two people hand equipment across a dock
+into a van, and the van leaves — and **the road it leaves on is the trace**. It
+is drawn by the departure rather than already there: the route does not exist
+until the collection makes it, and the vias fill as the van passes them.
+
+This is not an exception to the rule above, it is the rule applied. A collection
+connects a loading dock to a record, which is a connection the trace can honestly
+draw. It is also the answer to a specific trap: a van pulling away down a strip
+of asphalt is the animation every logistics site ships, and §11 exists to catch
+exactly that kind of default. Routing it as copper is what makes the sequence
+this company's rather than the category's.
+
+An earlier draft of this section described the hero trace as a route running past
+the headline and terminating at the docket. That was written before either
+existed, and neither ended up where it says: the docket is now rendered on the
+phone in the chain-of-custody section, where it reads as the output of the
+sequence rather than as an outcome shown ahead of its cause.
+
+The test it had to pass is the one the rule exists for — *does it connect
+something, or is it a pattern?* The routing already behind the hero
+(`BoardField`) fails that test and was dimmed to 0.11 accordingly. It is
+substrate: the other nets on the board, present because a board has them, not
+carrying meaning. Two coppers at similar strength read as one pattern and the
+meaning is lost inside it, so the structural trace is the only one at full
+strength.
 
 ### The docket
 
@@ -212,8 +239,16 @@ Built on `react-native-reanimated` 4, already a dependency.
   Android an agent carries in a warehouse.
 - Not on text. Animated copy is never easier to read.
 - Not on navigation beyond the platform transition.
-- Nothing over 500ms. A field agent taps and moves; a slow animation is a
-  slow app.
+- Nothing over 500ms **in the app**. A field agent taps and moves; a slow
+  animation is a slow app.
+
+  The marketing hero is the one place this cap does not apply, and it is the
+  only exception in the codebase. The trace draws over 900ms and the stamp lands
+  after it (`apps/web/app/globals.css`, `trace-draw` / `stamp-land`). The cap
+  exists to protect someone mid-task; a visitor meeting the company for the
+  first time is not mid-task, and the draw is the argument rather than
+  decoration around it. Everything in that sequence is `aria-hidden`, so no
+  content waits on it — with JavaScript off the trace is simply already drawn.
 
 ### Non-negotiables
 
