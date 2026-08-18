@@ -34,12 +34,17 @@ From the client conversation, verbatim where it matters:
   `businesses.ein` column is already nullable for exactly this case (0011:
   *"sole proprietors operate on an SSN and have no EIN to give at signup"*),
   and nothing here changes that.
-- **No agent removal, yet.** The agent app goes unused once suppliers land,
-  but it is woven through `PortalKey` (packages/ui), `PORTAL_BY_ROLE`
-  (packages/api), `RoleGuard`, the context picker, a signup edge function,
-  and thirteen test files. Removing it is its own change, taken last, when a
-  failing test can only mean one thing. Unused code is not urgent; a
-  half-removed portal is.
+- **No agent removal, yet — and the console keeps agents regardless.** The
+  agent *app* goes unused once suppliers land, but the console screen at
+  `/admin/agents` stays: somebody still collects from organizations, and an
+  operator still has to see who is out and mark the job done. What is being
+  dropped is the agent's phone, not the agent.
+
+  Removing the mobile portal is its own change, taken last. It is woven
+  through `PortalKey` (packages/ui), `PORTAL_BY_ROLE` (packages/api),
+  `RoleGuard`, the context picker, a signup edge function, and thirteen test
+  files, and it should be removed when a failing test can only mean one
+  thing. Unused code is not urgent; a half-removed portal is.
 - **No enum deletion.** Postgres cannot drop an enum value, and
   `price_grade_enum`'s `working`/`broken` are referenced by five accepted
   quotes recording real offers Rebin made. The values stay and go unused,
@@ -75,6 +80,14 @@ The mobile signup picker gains a third card. Its copy says what a supplier
 is in the client's own terms — someone who collects e-waste and sells it on
 — because the word alone will not tell a shop owner whether it means them.
 
+Registration reuses the business form rather than copying it. The two differ
+by two fields out of six, so a second form would be five-sixths duplication
+that drifts the first time a validation rule changes. The existing form
+already branches on the chosen role; supplier is a third branch that hides
+the EIN field and fixes `business_type`, and `create_business_with_owner`
+takes the same arguments it takes today — `p_ein` is already nullable, and
+passing null is what a sole proprietor was always meant to do.
+
 ### No pickup
 
 The RPC that files a pickup request must refuse a supplier. The check
@@ -106,19 +119,30 @@ records what a laptop *should* weigh.
 Putting the number in the catalog makes it a value an operator owns, can
 correct, and can be held to.
 
-### Weight is stored in ounces
+### Weight is stored in grams
 
 `quantity` and `actual_units` are `integer`. Four and a half pounds in an
 integer column is four, or five. Across a fifty-pound load that is real
 money, and it is the kind of error a vendor notices before Rebin does.
 
-So weight is stored in ounces, integer — exactly as money is stored in
-cents, and for the same reason. Floating point is not an option for a value
-that multiplies into a payment.
+So weight is an integer in a smaller unit — exactly as money is an integer
+number of cents, and for the same reason. Floating point is not an option
+for a value that multiplies into a payment.
+
+**The unit is grams, because the codebase already decided.**
+`packages/shared/src/weight.ts` has carried `gramsToLbs`, `lbsToGrams` and
+`formatWeight` since before this feature, `packages/ui` renders them through
+a `WeightText` atom, and both are tested. Introducing ounces alongside would
+give the product two integer weight units and a conversion bug waiting to
+happen; the interesting question was never which unit is tidier but which
+one is already here.
+
+New columns are therefore named `_g`, and every display goes through the
+existing `formatWeight`.
 
 ### Schema
 
-- `price_items` gains `avg_weight_oz integer`, nullable so existing rows stay
+- `price_items` gains `avg_weight_g integer`, nullable so existing rows stay
   valid.
 - Catalog v3: the eighteen distinct components, each once, `parts` grade and
   `lb` unit, with a rate per pound and an average weight.
