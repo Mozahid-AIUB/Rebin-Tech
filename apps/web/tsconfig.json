@@ -17,9 +17,16 @@
         "name": "next"
       }
     ],
+    // Declared here, not inherited. `baseUrl` resolves relative to the config
+    // that sets it, so the repo-root `.` in tsconfig.base.json would point
+    // every `paths` entry below at the monorepo root instead of this app.
+    "baseUrl": ".",
     "paths": {
       "@rebin/shared": [
         "../../packages/shared/src"
+      ],
+      "@rebin/api/src/types.gen": [
+        "../../packages/api/src/types.gen"
       ],
       "@/*": [
         "./*"

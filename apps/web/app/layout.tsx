@@ -2,6 +2,12 @@ import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, IBM_Plex_Sans_Condensed } from "next/font/google";
 import { BRAND } from "@rebin/shared";
 import "./globals.css";
+// Imported here rather than from the pages that use it. Next names a route's
+// CSS chunk after its path, and the console lives under route groups --
+// `app/admin/(entry)/login` -- so the generated URL carried literal
+// parentheses and came back 404. The console then rendered as unstyled HTML.
+// The root layout has no group in its path, so the chunk gets a plain name.
+import "./admin/styles/console.css";
 
 // The same three faces the app loads, in the same three roles: condensed for
 // display, regular for sentences, mono for the data layer. See

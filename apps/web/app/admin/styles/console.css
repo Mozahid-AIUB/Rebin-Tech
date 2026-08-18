@@ -1,0 +1,786 @@
+/* The console.
+ *
+ * The marketing site is dark, roomy, and paced -- it is arguing. This is the
+ * opposite brief: two or three operators, every working day, looking for the
+ * row that needs them. So the surface goes light, the scale drops, and the
+ * density goes up. It reads as the same product because it is built from the
+ * same tokens the root layout emits from BRAND (--board, --copper, the Plex
+ * family); it does not read as the same page, because it is not doing the
+ * same job.
+ *
+ * Every machine-written value -- ids, counts, timestamps, statuses -- is set
+ * in mono. Not for texture: it is what makes a column of them scannable
+ * vertically, which is the whole activity here. */
+
+.admin {
+  --line: color-mix(in srgb, var(--board) 12%, transparent);
+  --line-soft: color-mix(in srgb, var(--board) 7%, transparent);
+  --row-hover: color-mix(in srgb, var(--board) 4%, transparent);
+
+  /* Status carries the only saturated colour on the page, so the eye can find
+     state without reading. Four tones, because there are four things a
+     request can be doing: waiting on us, moving, finished, stopped. */
+  --tone-waiting: var(--gold);
+  --tone-active: var(--copper);
+  --tone-done: var(--success);
+  --tone-stopped: var(--muted);
+
+  min-height: 100vh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.875rem;
+}
+
+/* ---------------------------------------------------------------- chrome */
+
+.admin-bar {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0 1.5rem;
+  height: 3.25rem;
+  background: var(--board);
+  color: var(--silk);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.admin-mark {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  letter-spacing: -0.01em;
+  color: var(--silk);
+  text-decoration: none;
+}
+
+/* "Console", not "Admin". It names the thing the operator is sitting at. */
+.admin-mark span {
+  font-family: var(--font-mono), monospace;
+  font-weight: 500;
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--copper);
+  margin-left: 0.5rem;
+}
+
+.admin-nav {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+  align-items: center;
+}
+
+.admin-nav a {
+  padding: 0.4rem 0.75rem;
+  border-radius: 5px;
+  color: color-mix(in srgb, var(--silk) 72%, transparent);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.admin-nav a:hover {
+  background: color-mix(in srgb, var(--silk) 10%, transparent);
+  color: var(--silk);
+}
+
+.admin-nav a[aria-current="page"] {
+  background: color-mix(in srgb, var(--silk) 14%, transparent);
+  color: var(--silk);
+}
+
+.admin-who {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding-left: 1rem;
+  margin-left: 0.5rem;
+  border-left: 1px solid color-mix(in srgb, var(--silk) 18%, transparent);
+}
+
+.admin-who-name {
+  font-size: 0.8125rem;
+  color: color-mix(in srgb, var(--silk) 80%, transparent);
+}
+
+.admin-who-role {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--copper);
+}
+
+.admin-main {
+  padding: 1.75rem 1.5rem 4rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ----------------------------------------------------------------- heads */
+
+.admin-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.875rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.admin-h1 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+
+.admin-count {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.admin-sub {
+  color: var(--ink-2);
+  margin: -0.5rem 0 1.25rem;
+  max-width: 60ch;
+  line-height: 1.5;
+}
+
+/* ----------------------------------------------------------------- tiles */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.tile {
+  background: var(--surface-alt);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: 0.875rem 1rem;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: border-color 140ms ease, transform 140ms ease;
+}
+
+a.tile:hover {
+  border-color: color-mix(in srgb, var(--copper) 45%, transparent);
+  transform: translateY(-1px);
+}
+
+.tile-label {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 0.375rem;
+}
+
+.tile-value {
+  font-family: var(--font-mono), monospace;
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A tile at zero is not news; one with work in it is. Only the second earns
+   colour, so a glance at the row finds the queue that needs an operator. */
+.tile-value[data-zero="true"] {
+  color: var(--muted);
+}
+
+.tile-value[data-zero="false"] {
+  color: var(--copper);
+}
+
+/* ---------------------------------------------------------------- tables */
+
+.table-wrap {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  overflow-x: auto;
+  background: var(--surface-alt);
+}
+
+table.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.admin-table th {
+  text-align: left;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.admin-table td {
+  padding: 0.6875rem 0.875rem;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: middle;
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table tbody tr {
+  transition: background 120ms ease;
+}
+
+.admin-table tbody tr:hover {
+  background: var(--row-hover);
+}
+
+.cell-mono {
+  font-family: var(--font-mono), monospace;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cell-name {
+  font-weight: 600;
+}
+
+.cell-name a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.cell-name a:hover {
+  color: var(--copper);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.cell-dim {
+  color: var(--ink-2);
+}
+
+.cell-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- status */
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.status[data-tone="waiting"] { color: var(--tone-waiting); }
+.status[data-tone="active"]  { color: var(--tone-active); }
+.status[data-tone="done"]    { color: var(--tone-done); }
+.status[data-tone="stopped"] { color: var(--tone-stopped); }
+
+/* ------------------------------------------------------------------ rail */
+
+/* The signature element: a request's position on the pipeline the database
+ * actually enforces. `advance_pickup_request` allows one step at a time along
+ * a fixed line, so the line is drawn, and the request sits on it. A cancelled
+ * request leaves the line entirely -- it is not a stage, so it gets no stop. */
+
+.rail {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  margin: 0 0 1.5rem;
+  padding: 1rem 0 0;
+  list-style: none;
+  overflow-x: auto;
+}
+
+.rail-stop {
+  flex: 1 1 0;
+  min-width: 86px;
+  position: relative;
+  padding-top: 1.125rem;
+  text-align: center;
+}
+
+/* The connecting line, drawn between dots rather than through them. */
+.rail-stop:not(:first-child)::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  right: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--line);
+}
+
+.rail-stop[data-passed="true"]:not(:first-child)::before {
+  background: color-mix(in srgb, var(--copper) 55%, transparent);
+}
+
+.rail-dot {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  z-index: 1;
+}
+
+.rail-stop[data-passed="true"] .rail-dot {
+  background: var(--copper);
+  border-color: var(--copper);
+}
+
+.rail-stop[data-current="true"] .rail-dot {
+  background: var(--copper);
+  border-color: var(--copper);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--copper) 22%, transparent);
+}
+
+.rail-label {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+}
+
+.rail-stop[data-passed="true"] .rail-label {
+  color: var(--ink-2);
+}
+
+.rail-stop[data-current="true"] .rail-label {
+  color: var(--copper);
+  font-weight: 600;
+}
+
+/* A cancelled request gets a plain statement instead of a rail. Drawing it on
+   a line it left would say it is somewhere on the way to being collected. */
+.rail-stopped {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface-alt);
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+}
+
+/* --------------------------------------------------------------- buttons */
+
+.btn {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.4375rem 0.875rem;
+  border-radius: var(--radius-button);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, opacity 140ms ease;
+  background: none;
+  color: inherit;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 2px;
+}
+
+.btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--board);
+  color: var(--silk);
+}
+
+.btn-primary:hover:not([disabled]) {
+  background: var(--board-deep);
+}
+
+.btn-ghost {
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.btn-ghost:hover:not([disabled]) {
+  border-color: var(--board);
+  background: var(--row-hover);
+}
+
+/* Reject and cancel read as quiet until hovered. They are legitimate moves,
+   not warnings -- but they are not the move an operator makes by default. */
+.btn-danger {
+  border-color: var(--line);
+  color: var(--ink-2);
+}
+
+.btn-danger:hover:not([disabled]) {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 6%, transparent);
+}
+
+.btn-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-sm {
+  font-size: 0.75rem;
+  padding: 0.3125rem 0.625rem;
+}
+
+/* --------------------------------------------------------------- filters */
+
+.filters {
+  display: flex;
+  gap: 0.375rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.filter {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.375rem 0.6875rem;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  text-decoration: none;
+  transition: border-color 140ms ease, color 140ms ease;
+}
+
+.filter:hover {
+  border-color: var(--board);
+  color: var(--ink);
+}
+
+.filter[aria-current="true"] {
+  background: var(--board);
+  border-color: var(--board);
+  color: var(--silk);
+}
+
+/* ----------------------------------------------------------------- panel */
+
+.panel {
+  background: var(--surface-alt);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.panel-title {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 0.875rem;
+  font-weight: 500;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem 1.5rem;
+  margin: 0;
+}
+
+.fact dt {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.1875rem;
+}
+
+.fact dd {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.fact dd.mono {
+  font-family: var(--font-mono), monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ misc */
+
+.empty {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: var(--ink-2);
+}
+
+.empty strong {
+  display: block;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 1rem;
+  color: var(--ink);
+  margin-bottom: 0.25rem;
+}
+
+.notice {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-card);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  background: color-mix(in srgb, var(--danger) 7%, transparent);
+  color: var(--danger);
+  font-size: 0.8125rem;
+  margin-bottom: 1rem;
+}
+
+.back {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-decoration: none;
+  display: inline-block;
+  margin-bottom: 0.75rem;
+}
+
+.back:hover {
+  color: var(--copper);
+}
+
+.kind {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.1875rem 0.4375rem;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+}
+
+/* ----------------------------------------------------------------- login */
+
+/* One screen an operator sees every morning, so it is built to feel like
+ * equipment rather than a form: a dark board, a card lifted off it, and the
+ * routing drawn faintly behind. The green is solder mask and the accent is
+ * trace copper -- the same two materials the company's whole identity is
+ * taken from, used here at the smallest scale they appear anywhere. */
+
+.login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      1100px 620px at 50% -10%,
+      color-mix(in srgb, var(--board) 82%, white) 0%,
+      transparent 62%
+    ),
+    linear-gradient(170deg, var(--board) 0%, var(--board-deep) 100%);
+}
+
+/* The routing, sized to the viewport and pinned behind the card. `currentColor`
+   on the group means one declaration here controls every trace and via. */
+.login-board {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  color: color-mix(in srgb, var(--copper) 26%, transparent);
+  pointer-events: none;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 372px;
+  padding: 2rem 1.875rem 1.75rem;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--silk) 14%, transparent);
+  /* Slightly lighter than the board behind it, so the card reads as a part
+     seated on the board rather than a panel floating over a photograph. */
+  background: color-mix(in srgb, var(--board) 72%, black);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--silk) 8%, transparent) inset,
+    0 24px 60px -20px rgb(0 0 0 / 0.65);
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+/* A via: the point where a trace changes layer. Small, and the only piece of
+   ornament on the screen. */
+.login-node {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2.5px solid var(--copper);
+  flex: none;
+}
+
+.login-mark {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 1.4375rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--silk);
+  margin: 0;
+}
+
+.login-sub {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--copper);
+  margin: 0.4375rem 0 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--silk) 11%, transparent);
+}
+
+.field {
+  margin-bottom: 0.875rem;
+}
+
+.field label {
+  display: block;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--silk) 55%, transparent);
+  margin-bottom: 0.4375rem;
+}
+
+.field input {
+  width: 100%;
+  padding: 0.6875rem 0.8125rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--silk) 16%, transparent);
+  background: color-mix(in srgb, black 22%, transparent);
+  color: var(--silk);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.9375rem;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.field input::placeholder {
+  color: color-mix(in srgb, var(--silk) 32%, transparent);
+}
+
+/* Copper on focus, with a ring rather than a heavier border, so the field
+   does not shift by a pixel when it takes focus. */
+.field input:focus {
+  outline: none;
+  border-color: var(--copper);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--copper) 22%, transparent);
+}
+
+.login .btn-primary {
+  width: 100%;
+  background: var(--silk);
+  color: var(--board);
+  padding: 0.6875rem;
+  margin-top: 1.125rem;
+  font-size: 0.875rem;
+  letter-spacing: 0.01em;
+  border-radius: 8px;
+}
+
+.login .btn-primary:hover:not([disabled]) {
+  background: #fff;
+}
+
+.login .btn-primary:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 3px;
+}
+
+.login-error {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #F0B4AE;
+  background: color-mix(in srgb, var(--danger) 26%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 52%, transparent);
+  padding: 0.625rem 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+/* Says how to get an account, because there is deliberately no sign-up link:
+   an operator account is issued by the platform owner, never self-registered.
+   Without this the screen looks like it is missing one. */
+.login-foot {
+  margin: 1.5rem 0 0;
+  padding-top: 1.125rem;
+  border-top: 1px solid color-mix(in srgb, var(--silk) 11%, transparent);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--silk) 46%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin *,
+  .login * {
+    transition: none !important;
+  }
+
+  a.tile:hover {
+    transform: none;
+  }
+}
