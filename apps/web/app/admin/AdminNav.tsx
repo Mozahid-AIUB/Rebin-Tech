@@ -7,10 +7,11 @@ import { usePathname } from "next/navigation";
  * The rail's sections.
  *
  * Each carries a glyph drawn from the same vocabulary as the rest of the
- * console: a via for the overview, a route for the queue, a contact pad for
- * accounts. They are marks rather than pictograms -- at 16px an icon that
- * tries to depict "organization" reads as noise, while a shape that matches
- * the board motif reads as part of the instrument.
+ * console: a via for the overview, a route for the queue, three linked vias
+ * for agents, a contact pad for accounts. They are marks rather than
+ * pictograms -- at 16px an icon that tries to depict "organization" (or a
+ * person, for an agent) reads as noise, while a shape that matches the board
+ * motif reads as part of the instrument.
  */
 const LINKS = [
   {
@@ -52,6 +53,18 @@ const LINKS = [
       <>
         <path d="M8 2v3.2M8 10.8V14" />
         <path d="M4.75 5.2h4.75a1.75 1.75 0 0 1 0 3.5h-3a1.75 1.75 0 0 0 0 3.5h4.75" />
+      </>
+    ),
+  },
+  {
+    href: "/admin/agents",
+    label: "Agents",
+    glyph: (
+      <>
+        <circle cx="4" cy="4.5" r="1.6" />
+        <circle cx="12" cy="4.5" r="1.6" />
+        <circle cx="8" cy="11.75" r="1.6" />
+        <path d="M5.3 5.5 7 10.4M10.7 5.5 9 10.4M5.6 4.5h4.8" />
       </>
     ),
   },
