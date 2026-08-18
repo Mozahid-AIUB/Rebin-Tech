@@ -160,3 +160,15 @@ export const PORTAL_ACCENTS_SUBTLE = Object.freeze({
  * of the API package install the whole Expo tree.
  */
 export type PortalKey = keyof typeof PORTAL_ACCENTS;
+
+/**
+ * Where a supplier ships their collection.
+ *
+ * Lives here rather than inline in a screen because the console needs the same
+ * string in a later stage, and a constant duplicated into two apps is one that
+ * drifts the first time either changes.
+ *
+ * PLACEHOLDER — this is not the real warehouse address. Replace before a
+ * supplier is told to actually ship anything here.
+ */
+export const WAREHOUSE_ADDRESS = "Rebin Tech Warehouse, 4100 Distribution Dr, Reno, NV 89506";

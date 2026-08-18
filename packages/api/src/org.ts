@@ -1,4 +1,4 @@
-import type { AccountStatus, PickupRequestInput, RequestStatus } from "@rebin/shared";
+import type { AccountStatus, BusinessType, PickupRequestInput, RequestStatus } from "@rebin/shared";
 import { supabase } from "./client";
 
 export type OrgSummary = {
@@ -42,6 +42,10 @@ export type BusinessSummary = {
   id: string;
   name: string;
   status: AccountStatus;
+  // Distinguishes a supplier from every other business type. Loaded here, not
+  // behind a second query -- a supplier and a repair shop are both biz_owner,
+  // so the role can never tell them apart and the dashboard needs this to.
+  businessType: BusinessType;
 };
 
 export type AgentProfile = {
@@ -147,7 +151,7 @@ export async function getBusinessDetail(businessId: string): Promise<BusinessDet
     id: data.id,
     name: data.name,
     status: data.status as AccountStatus,
-    businessType: data.business_type as string,
+    businessType: data.business_type as BusinessType,
     ein: data.ein ?? null,
     address: { street: data.street, city: data.city, state: data.state, zip: data.zip },
   };
@@ -950,12 +954,17 @@ export async function getOrgSummary(orgId: string): Promise<OrgSummary2> {
 export async function getBusiness(businessId: string): Promise<BusinessSummary | null> {
   const { data, error } = await supabase
     .from("businesses")
-    .select("id, name, status")
+    .select("id, name, status, business_type")
     .eq("id", businessId)
     .maybeSingle();
   if (error) throw asError(error.message);
   if (!data) return null;
-  return { id: data.id, name: data.name, status: data.status as AccountStatus };
+  return {
+    id: data.id,
+    name: data.name,
+    status: data.status as AccountStatus,
+    businessType: data.business_type as BusinessType,
+  };
 }
 
 /**
