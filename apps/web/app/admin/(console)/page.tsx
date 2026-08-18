@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PIPELINE, STATUS_LABEL } from "@/lib/transitions";
-import { effectiveQuoteStatus } from "@/lib/quotes";
 import { StatusDot, When, Empty } from "../ui";
 import { PageIn, Stagger, StaggerItem, Tally } from "../Motion";
 import type { RequestStatus } from "@/lib/supabase/types";
@@ -18,46 +17,77 @@ export const dynamic = "force-dynamic";
 export default async function OverviewPage() {
   const supabase = await createClient();
 
-  const [pendingAccounts, requests, quotes, catalogVersions] = await Promise.all([
-    supabase.from("pending_accounts").select("kind"),
-    supabase.from("pickup_requests").select("id, status, unit_count, created_at, dock_address"),
-    supabase.from("quotes").select("status, expires_at"),
-    supabase.from("price_catalog_versions").select("id, status"),
+  // Every count on this screen must be an exact PostgREST count
+  // (`{ count: "exact", head: true }`), not `data.length` over a fetched
+  // array: `supabase/config.toml` caps `max_rows` at 1000, so past that many
+  // rows a JS-side count would silently under-report with no error. A `head`
+  // request asks Postgres for the count and returns no rows at all, so this
+  // is not merely more correct than the old approach, it is cheaper too.
+  //
+  // The pipeline tiles need one exact count per status, so those run
+  // alongside the two queue counts and the offered-quotes count.
+  const nonPipelineCounts = await Promise.all([
+    // `pending_accounts` unions organizations, businesses and agents (0015).
+    // Agents have their own tile below, linking to their own screen, so this
+    // tile counts only the other two kinds -- otherwise one pending agent
+    // would be claimed by both tiles and the two numbers on the overview
+    // would not reconcile against the view's total. This also has to match
+    // what `/admin/accounts` itself now counts, since that screen filters
+    // agents out at the query with the same `.neq("kind", "agent")`.
+    supabase.from("pending_accounts").select("*", { count: "exact", head: true }).neq("kind", "agent"),
+    supabase.from("pending_accounts").select("*", { count: "exact", head: true }).eq("kind", "agent"),
+    // "Offered" is not a raw column value: a quote whose `status` is
+    // `offered` but whose `expires_at` has passed reads as `expired`
+    // everywhere else in the console, via `effectiveQuoteStatus` in
+    // `lib/quotes.ts`. A `head: true` count can't call that helper, so the
+    // same rule is expressed as query filters instead -- strictly greater
+    // than `now()`, matching the helper's own boundary (`expires_at <= now`
+    // is expired), so this count agrees with what `/admin/quotes` displays
+    // for the same rows. The helper stays the single source of truth for
+    // display; this only has to agree with it.
+    supabase
+      .from("quotes")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "offered")
+      .gt("expires_at", new Date().toISOString()),
+    supabase.from("price_catalog_versions").select("id, status").eq("status", "active").limit(1),
   ]);
+  const [pendingAccountsCount, pendingAgentsCount, offeredQuotesCount, activeCatalog] = nonPipelineCounts;
 
-  // `pending_accounts` unions organizations, businesses and agents (0015).
-  // Agents now have their own tile below, linking to their own screen, so the
-  // accounts tile counts only the other two kinds -- otherwise one pending
-  // agent would be claimed by both tiles and the two numbers on the overview
-  // would not reconcile against the view's total.
-  const pendingRows = pendingAccounts.data ?? [];
-  const accountCount = pendingRows.filter((r) => r.kind !== "agent").length;
-  const pendingAgentCount = pendingRows.filter((r) => r.kind === "agent").length;
-
-  // A quote counts as "offered" here only if it still effectively is: an
-  // `offered` row whose `expires_at` has passed reads as expired on the
-  // Quotes screen (via the same `effectiveQuoteStatus`), so counting the raw
-  // column here would make this tile disagree with that screen.
-  const offeredQuoteCount = (quotes.data ?? []).filter(
-    (q) => effectiveQuoteStatus(q.status, q.expires_at) === "offered",
-  ).length;
-
-  const hasActiveCatalog = (catalogVersions.data ?? []).some((v) => v.status === "active");
-
-  const rows = requests.data ?? [];
-
+  const pipelineCounts = await Promise.all(
+    PIPELINE.map((status) =>
+      supabase.from("pickup_requests").select("*", { count: "exact", head: true }).eq("status", status),
+    ),
+  );
   const byStatus = new Map<RequestStatus, number>();
-  for (const row of rows) {
-    byStatus.set(row.status, (byStatus.get(row.status) ?? 0) + 1);
-  }
+  pipelineCounts.forEach((result, i) => {
+    byStatus.set(PIPELINE[i]!, result.count ?? 0);
+  });
 
   // The requests an operator can actually act on today: everything still on
-  // the line. Completed and cancelled ones are history, not work.
-  const open = rows
-    .filter((r) => r.status !== "completed" && r.status !== "cancelled")
-    .sort((a, b) => a.created_at.localeCompare(b.created_at));
+  // the line. Completed and cancelled ones are history, not work. This table
+  // itself stays an unpaginated list -- out of scope for the 1000-row limit
+  // fix, which is about the *counts* the tiles report, not this table.
+  const openRequests = await supabase
+    .from("pickup_requests")
+    .select("id, status, unit_count, created_at, dock_address")
+    .in("status", PIPELINE.filter((s) => s !== "completed"))
+    .order("created_at", { ascending: true });
 
-  const error = pendingAccounts.error ?? requests.error ?? quotes.error ?? catalogVersions.error;
+  const accountCount = pendingAccountsCount.count ?? 0;
+  const pendingAgentCount = pendingAgentsCount.count ?? 0;
+  const offeredQuoteCount = offeredQuotesCount.count ?? 0;
+  const hasActiveCatalog = (activeCatalog.data ?? []).length > 0;
+
+  const open = [...(openRequests.data ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at));
+
+  const error =
+    pendingAccountsCount.error ??
+    pendingAgentsCount.error ??
+    offeredQuotesCount.error ??
+    activeCatalog.error ??
+    pipelineCounts.find((r) => r.error)?.error ??
+    openRequests.error;
 
   return (
     <PageIn>

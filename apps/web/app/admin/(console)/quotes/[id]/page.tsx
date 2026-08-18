@@ -35,7 +35,10 @@ export default async function QuoteDetailPage({
 
   if (!quote) notFound();
 
-  const [{ data: business }, { data: items }] = await Promise.all([
+  const [
+    { data: business, error: businessError },
+    { data: items, error: itemsError },
+  ] = await Promise.all([
     supabase.from("businesses").select("name, city, state").eq("id", quote.business_id).maybeSingle(),
     supabase
       .from("quote_items")
@@ -57,6 +60,19 @@ export default async function QuoteDetailPage({
         <h1 className="admin-h1">{business?.name ?? "Quote"}</h1>
         <QuoteStatusDot status={status} />
       </div>
+
+      {businessError && (
+        <p className="notice">
+          Could not load the business for this quote: {businessError.message}. The name above may be
+          missing even though the account exists.
+        </p>
+      )}
+      {itemsError && (
+        <p className="notice">
+          Could not load the line items for this quote: {itemsError.message}. The total below is real,
+          but the items table beneath it is not -- treat "Items: {rows.length}" as unknown, not zero.
+        </p>
+      )}
 
       <div className="panel">
         <h2 className="panel-title">Offer</h2>

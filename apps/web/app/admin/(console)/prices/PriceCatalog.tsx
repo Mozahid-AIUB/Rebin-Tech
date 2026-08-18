@@ -174,10 +174,18 @@ export function PriceCatalog({
             disabled={pending}
             onClick={() => setShowNewDraft(true)}
           >
-            Start a draft from this
+            Start a new draft
           </button>
         ) : (
           <div className="draft-start">
+            {/* `create_price_catalog_draft` always seeds from whatever version
+                is active, never from the version currently selected in this
+                list (0021_price_catalog.sql:99-104) -- said plainly here so
+                selecting a retired version and clicking "Create draft" does
+                not read as "seed from that one". */}
+            <p className="cell-dim" style={{ margin: "0 0 0.5rem" }}>
+              Seeds from the active version, not the one selected above.
+            </p>
             <label htmlFor="draft-note">Note (optional)</label>
             <input
               id="draft-note"
@@ -253,7 +261,7 @@ export function PriceCatalog({
                   <table className="admin-table">
                     <thead>
                       <tr>
-                        <th colSpan={isDraft ? 6 : 5}>{CATEGORY_LABEL[category]}</th>
+                        <th colSpan={5}>{CATEGORY_LABEL[category]}</th>
                       </tr>
                       <tr>
                         <th>Component</th>

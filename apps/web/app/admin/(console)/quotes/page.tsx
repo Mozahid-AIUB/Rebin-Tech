@@ -62,9 +62,9 @@ export default async function QuotesPage({
   }));
 
   const businessIds = [...new Set(quotes.map((q) => q.business_id))];
-  const { data: businesses } = businessIds.length
+  const { data: businesses, error: businessesError } = businessIds.length
     ? await supabase.from("businesses").select("id, name").in("id", businessIds)
-    : { data: [] };
+    : { data: [], error: null };
   const nameFor = new Map((businesses ?? []).map((b) => [b.id, b.name]));
 
   const rows = filter ? quotes.filter((q) => q.status === filter) : quotes;
@@ -101,6 +101,12 @@ export default async function QuotesPage({
       </div>
 
       {error && <p className="notice">Could not load quotes: {error.message}</p>}
+      {!error && businessesError && (
+        <p className="notice">
+          Quotes loaded, but business names could not: {businessesError.message}. Every row below falls
+          back to "—" for the business, not because the name is unknown.
+        </p>
+      )}
 
       <div className="table-wrap">
         {rows.length === 0 ? (

@@ -45,9 +45,13 @@ function isStatus(value: string | undefined): value is AccountStatus {
  * reads `agent_profiles` joined to `profiles`, and writes through
  * `set_agent_status` (0015), the one RPC that can move an agent's status.
  *
- * Live work comes from `job_assignments` (0024): any assignment not
- * `cancelled` is what the agent is doing right now, joined in here so an
- * operator can see who is mid-collection without a second screen.
+ * Live work comes from `job_assignments` (0024, extended in 0026): a job in
+ * `claimed`, `en_route` or `on_site` is what the agent is doing right now,
+ * joined in here so an operator can see who is mid-collection without a
+ * second screen. `collected` is deliberately excluded -- it is a finished
+ * job, not a current one. Since 0026 a job hangs off either a pickup request
+ * or a paid collection (a quote), never both, so both are resolved to a
+ * human-readable place: a pickup's dock, or a paid collection's business.
  */
 export default async function AgentsPage({
   searchParams,
@@ -77,26 +81,76 @@ export default async function AgentsPage({
   const rows = filter ? all.filter((row) => row.profiles.status === filter) : all;
 
   const agentIds = all.map((row) => row.user_id);
-  const { data: jobs } = agentIds.length
+
+  // "Current job" means live work, not history: since 0026, `collected` is a
+  // terminal status (the job is done), so an agent who finished last week
+  // must not still read as busy under this heading. `claim_collection` claims
+  // the most recent one first only in the sense that ties are broken by
+  // `claimed_at`, ordered below -- an agent legitimately holding more than
+  // one live job shows the one claimed most recently.
+  const LIVE_JOB_STATUSES = ["claimed", "en_route", "on_site"] as const;
+  const { data: jobs, error: jobsError } = agentIds.length
     ? await supabase
         .from("job_assignments")
-        .select("agent_id, status, request_id")
+        .select("agent_id, status, request_id, quote_id, claimed_at")
         .in("agent_id", agentIds)
-        .neq("status", "cancelled")
-    : { data: [] };
+        .in("status", LIVE_JOB_STATUSES)
+        .order("claimed_at", { ascending: false })
+    : { data: [], error: null };
 
+  // Since 0026, a job hangs off either a pickup request or a paid collection
+  // (a quote), never both -- `request_id` is nullable and a paid collection
+  // has none, so resolving only `pickup_requests` left every collection's
+  // cell blank. Both sides are resolved here: a pickup's dock (falling back
+  // to the organization's street, the same `coalesce(nullif(..), ..)` rule
+  // `list_my_jobs`/`list_available_jobs` apply in 0026, so an empty
+  // `dock_address` doesn't render an empty cell) and a collection's business
+  // name via `quote_id` -> `quotes.business_id` -> `businesses.name`.
   const requestIds = [...new Set((jobs ?? []).map((j) => j.request_id).filter((id): id is string => !!id))];
-  const { data: requests } = requestIds.length
-    ? await supabase.from("pickup_requests").select("id, dock_address").in("id", requestIds)
-    : { data: [] };
-  const dockFor = new Map((requests ?? []).map((r) => [r.id, r.dock_address]));
+  const quoteIds = [...new Set((jobs ?? []).map((j) => j.quote_id).filter((id): id is string => !!id))];
 
-  const jobFor = new Map(
-    (jobs ?? []).map((j) => [
-      j.agent_id,
-      { status: j.status, dock: j.request_id ? dockFor.get(j.request_id) : undefined },
-    ]),
+  const [{ data: requests, error: requestsError }, { data: quotes, error: quotesError }] = await Promise.all([
+    requestIds.length
+      ? supabase.from("pickup_requests").select("id, dock_address, org_id").in("id", requestIds)
+      : Promise.resolve({ data: [], error: null }),
+    quoteIds.length
+      ? supabase.from("quotes").select("id, business_id").in("id", quoteIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  const orgIds = [...new Set((requests ?? []).map((r) => r.org_id))];
+  const businessIds = [...new Set((quotes ?? []).map((q) => q.business_id))];
+
+  const [{ data: orgs, error: orgsError }, { data: businesses, error: businessesError }] = await Promise.all([
+    orgIds.length
+      ? supabase.from("organizations").select("id, street").in("id", orgIds)
+      : Promise.resolve({ data: [], error: null }),
+    businessIds.length
+      ? supabase.from("businesses").select("id, name").in("id", businessIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  const streetForOrg = new Map((orgs ?? []).map((o) => [o.id, o.street]));
+  const dockFor = new Map(
+    (requests ?? []).map((r) => [r.id, r.dock_address || streetForOrg.get(r.org_id) || ""]),
   );
+  const nameForBusiness = new Map((businesses ?? []).map((b) => [b.id, b.name]));
+  const businessForQuote = new Map((quotes ?? []).map((q) => [q.id, nameForBusiness.get(q.business_id)]));
+
+  // `jobs` is already ordered by `claimed_at` descending, so the first row
+  // seen per agent in this `Map` build is deterministically the most
+  // recently claimed live job, not whichever happened to sort last.
+  const jobFor = new Map<
+    string,
+    { status: string; label: string | undefined }
+  >();
+  for (const j of jobs ?? []) {
+    if (jobFor.has(j.agent_id)) continue;
+    const label = j.request_id ? dockFor.get(j.request_id) : businessForQuote.get(j.quote_id!);
+    jobFor.set(j.agent_id, { status: j.status, label });
+  }
+
+  const secondaryError = jobsError ?? requestsError ?? quotesError ?? orgsError ?? businessesError;
 
   return (
     <PageIn>
@@ -130,6 +184,12 @@ export default async function AgentsPage({
       </div>
 
       {error && <p className="notice">Could not load agents: {error.message}</p>}
+      {!error && secondaryError && (
+        <p className="notice">
+          Agents loaded, but current jobs could not: {secondaryError.message}. The
+          "Current job" column below may be incomplete.
+        </p>
+      )}
 
       <div className="table-wrap">
         {rows.length === 0 ? (
@@ -168,7 +228,7 @@ export default async function AgentsPage({
                       <AccountStatusDot status={row.profiles.status} />
                     </td>
                     <td className="cell-dim">
-                      {job ? (job.dock ?? job.status.replace(/_/g, " ")) : "—"}
+                      {job ? (job.label ?? job.status.replace(/_/g, " ")) : "—"}
                     </td>
                     <td>
                       <When value={row.profiles.created_at} />
