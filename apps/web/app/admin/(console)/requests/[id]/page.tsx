@@ -26,7 +26,7 @@ export default async function RequestDetailPage({
     return (
       <>
         <Link href="/admin/requests" className="back">
-          ← Requests
+          <span className="back-arrow" aria-hidden="true">←</span> Requests
         </Link>
         <p className="notice">Could not load this request: {error.message}</p>
       </>
@@ -55,7 +55,7 @@ export default async function RequestDetailPage({
   return (
     <PageIn>
       <Link href="/admin/requests" className="back">
-        ← Requests
+        <span className="back-arrow" aria-hidden="true">←</span> Requests
       </Link>
 
       <div className="admin-head">

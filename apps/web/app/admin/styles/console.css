@@ -881,19 +881,63 @@ table.admin-table {
   margin-bottom: 1rem;
 }
 
+/* The way back out of a detail page.
+ *
+ * It was bare text in --muted, which gave it no affordance at all: the one
+ * control on the screen that returns an operator to their queue looked like
+ * a caption. It becomes a real control -- a panel-surfaced pill, the same
+ * material as everything else on the page, at a weight that reads as
+ * clickable. */
 .back {
   font-family: var(--font-mono), monospace;
   font-size: 0.6875rem;
-  letter-spacing: 0.05em;
+  font-weight: 600;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--board) 78%, transparent);
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4375rem 0.8125rem 0.4375rem 0.6875rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, white 62%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--board) 9%, transparent),
+    0 1px 2px -1px color-mix(in srgb, var(--board) 14%, transparent);
+  transition:
+    color 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease;
+}
+
+/* The arrow is a separate element so it can travel on hover without dragging
+   the label with it -- the small movement is what says "this goes back". */
+.back-arrow {
   display: inline-block;
-  margin-bottom: 0.75rem;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .back:hover {
   color: var(--copper);
+  background: color-mix(in srgb, white 88%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--copper) 32%, transparent),
+    0 2px 6px -2px color-mix(in srgb, var(--board) 20%, transparent);
+}
+
+.back:hover .back-arrow {
+  transform: translateX(-3px);
+}
+
+.back:active {
+  transform: scale(0.985);
+}
+
+.back:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 2px;
 }
 
 .kind {
