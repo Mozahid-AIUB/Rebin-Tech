@@ -31,11 +31,20 @@ begin
   on conflict (id) do update
     set status = 'active';
 
-  -- platform_owner rather than platform_ops: the owner role additionally reads
-  -- role_assignments, which is what lets one operator see who else has access.
-  -- is_platform_staff() accepts either, so both can work the queues.
+  -- Both roles, and the second one is not optional.
+  --
+  -- is_platform_staff() (0015) accepts platform_owner or platform_ops, so an
+  -- owner can call every admin RPC. But the read policies in 0008 admit only
+  -- platform_ops and platform_support -- platform_owner is not in any of
+  -- them. An owner alone can therefore write rows it cannot see: the console
+  -- signs in, the role check passes, and every queue reads back empty.
+  --
+  -- platform_owner is still worth holding: it is the only role the
+  -- role_assignments read policy admits, which is what lets one operator see
+  -- who else has access.
   insert into role_assignments (user_id, role, scope_type, granted_by)
-  values (v_user, 'platform_owner', 'platform', v_user)
+  select v_user, r, 'platform', v_user
+    from unnest(array['platform_owner', 'platform_ops']::role_enum[]) as r
   on conflict do nothing;
 
   raise notice 'Granted platform_owner to % (%)', v_email, v_user;

@@ -13,9 +13,9 @@
  * vertically, which is the whole activity here. */
 
 .admin {
-  --line: color-mix(in srgb, var(--board) 12%, transparent);
-  --line-soft: color-mix(in srgb, var(--board) 7%, transparent);
-  --row-hover: color-mix(in srgb, var(--board) 4%, transparent);
+  --line: color-mix(in srgb, var(--board) 11%, transparent);
+  --line-soft: color-mix(in srgb, var(--board) 6%, transparent);
+  --row-hover: color-mix(in srgb, var(--board) 3.5%, transparent);
 
   /* Status carries the only saturated colour on the page, so the eye can find
      state without reading. Four tones, because there are four things a
@@ -25,11 +25,49 @@
   --tone-done: var(--success);
   --tone-stopped: var(--muted);
 
+  /* The material system.
+   *
+   * Depth here is translucency and layering rather than gloss. A console is
+   * read for hours at a time, and a specular highlight that looks expensive
+   * in a screenshot is glare by the third hour. So panels are frosted glass
+   * over a canvas that carries a very slight tint, and separation is done
+   * with hairlines and a single soft shadow -- the surface recedes and the
+   * data sits on top of it. */
+  --canvas: #F7F9F7;
+  --panel: color-mix(in srgb, white 74%, transparent);
+  --panel-solid: color-mix(in srgb, white 92%, var(--canvas));
+  --hairline: color-mix(in srgb, var(--board) 10%, transparent);
+  --lift:
+    0 0 0 1px color-mix(in srgb, var(--board) 6%, transparent),
+    0 1px 2px -1px color-mix(in srgb, var(--board) 12%, transparent),
+    0 12px 28px -16px color-mix(in srgb, var(--board) 30%, transparent);
+
   min-height: 100vh;
-  background: var(--surface);
   color: var(--ink);
   font-family: var(--font-body), system-ui, sans-serif;
   font-size: 0.875rem;
+  /* Tabular figures everywhere. A column of counts whose digits change width
+     as the numbers change is the single loudest tell that a data table was
+     not designed; this one line fixes it for the whole console. */
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+
+  /* Two very wide, very faint washes -- copper at the top left where the rail
+     meets the content, board green at the bottom right. Neither is visible as
+     a colour; together they stop a full screen of near-white from reading as
+     flat paper. */
+  background:
+    radial-gradient(
+      900px 500px at 12% -5%,
+      color-mix(in srgb, var(--copper) 5%, transparent) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      1000px 600px at 100% 105%,
+      color-mix(in srgb, var(--board) 6%, transparent) 0%,
+      transparent 70%
+    ),
+    var(--canvas);
 }
 
 /* ---------------------------------------------------------------- chrome */
@@ -53,9 +91,21 @@
   flex-direction: column;
   gap: 1.75rem;
   padding: 1.375rem 0.875rem 1rem;
-  background: var(--board);
   color: var(--silk);
-  border-right: 1px solid color-mix(in srgb, black 22%, transparent);
+  /* Lit from the top left, the way the rest of the depth on this page is.
+     The inner hairline on the right edge is the highlight where the glass
+     turns -- it is what separates the rail from the canvas without drawing
+     a border heavy enough to read as a line. */
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--board) 96%, white) 0%,
+      var(--board) 42%,
+      var(--board-deep) 100%
+    );
+  box-shadow:
+    inset -1px 0 0 color-mix(in srgb, white 8%, transparent),
+    1px 0 24px -8px color-mix(in srgb, var(--board-deep) 55%, transparent);
 }
 
 .admin-mark {
@@ -243,9 +293,10 @@
 
 .admin-h1 {
   font-family: var(--font-display), system-ui, sans-serif;
-  font-size: 1.375rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  letter-spacing: -0.015em;
+  /* Tightened as the size goes up, the way an optical size would do it. */
+  letter-spacing: -0.025em;
   margin: 0;
 }
 
@@ -272,19 +323,56 @@
 }
 
 .tile {
-  background: var(--surface-alt);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card);
-  padding: 0.875rem 1rem;
+  position: relative;
+  background: var(--panel);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: none;
+  border-radius: 12px;
+  padding: 0.9375rem 1rem 1rem;
   text-decoration: none;
   color: inherit;
   display: block;
-  transition: border-color 140ms ease, transform 140ms ease;
+  box-shadow: var(--lift);
+  /* The spring is the Apple detail that survives translation: a curve that
+     overshoots slightly and settles, rather than a linear slide. */
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The top highlight: one hairline of white along the upper edge, which is
+   what makes a translucent panel read as glass rather than as a flat tint. */
+.tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding-top: 1px;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, white 85%, transparent),
+    transparent 40%
+  );
+  -webkit-mask:
+    linear-gradient(black, black) content-box,
+    linear-gradient(black, black);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 a.tile:hover {
-  border-color: color-mix(in srgb, var(--copper) 45%, transparent);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--copper) 30%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--board) 16%, transparent),
+    0 18px 36px -18px color-mix(in srgb, var(--board) 38%, transparent);
+}
+
+a.tile:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 3px;
 }
 
 .tile-label {
@@ -299,9 +387,10 @@ a.tile:hover {
 
 .tile-value {
   font-family: var(--font-mono), monospace;
-  font-size: 1.75rem;
+  font-size: 1.875rem;
   font-weight: 600;
   line-height: 1;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
@@ -317,11 +406,16 @@ a.tile:hover {
 
 /* ---------------------------------------------------------------- tables */
 
+/* `overflow-x: auto` with a radius clips its own corners square once the table
+   is wider than the box, so the radius is re-asserted on the scroll container
+   itself and the panel keeps its shape at every width. */
 .table-wrap {
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card);
+  border-radius: 12px;
   overflow-x: auto;
-  background: var(--surface-alt);
+  background: var(--panel-solid);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  box-shadow: var(--lift);
 }
 
 table.admin-table {
@@ -334,17 +428,21 @@ table.admin-table {
   text-align: left;
   font-family: var(--font-mono), monospace;
   font-size: 0.625rem;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 500;
-  padding: 0.625rem 0.875rem;
-  border-bottom: 1px solid var(--line);
+  padding: 0.75rem 1rem;
+  background: color-mix(in srgb, var(--board) 3%, transparent);
+  border-bottom: 1px solid var(--hairline);
   white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .admin-table td {
-  padding: 0.6875rem 0.875rem;
+  padding: 0.8125rem 1rem;
   border-bottom: 1px solid var(--line-soft);
   vertical-align: middle;
 }
@@ -353,12 +451,16 @@ table.admin-table {
   border-bottom: none;
 }
 
+/* The row highlight is drawn with a box-shadow inset rather than a background
+   so it sits under the frosted panel's own tint instead of replacing it, and
+   a copper edge marks which row the pointer is on without moving anything. */
 .admin-table tbody tr {
-  transition: background 120ms ease;
+  transition: box-shadow 130ms ease, background 130ms ease;
 }
 
 .admin-table tbody tr:hover {
   background: var(--row-hover);
+  box-shadow: inset 2px 0 0 var(--copper);
 }
 
 .cell-mono {
@@ -429,10 +531,15 @@ table.admin-table {
   display: flex;
   align-items: flex-start;
   gap: 0;
-  margin: 0 0 1.5rem;
-  padding: 1rem 0 0;
+  margin: 0 0 0.875rem;
+  padding: 1.5rem 1.375rem 1.25rem;
   list-style: none;
   overflow-x: auto;
+  background: var(--panel);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border-radius: 12px;
+  box-shadow: var(--lift);
 }
 
 .rail-stop {
@@ -454,8 +561,15 @@ table.admin-table {
   background: var(--line);
 }
 
+/* The travelled line is a gradient rather than a fill: it arrives at full
+   copper under the stop it has reached and fades back toward the one before,
+   so the eye reads direction along the rail, not just a coloured segment. */
 .rail-stop[data-passed="true"]:not(:first-child)::before {
-  background: color-mix(in srgb, var(--copper) 55%, transparent);
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--copper) 35%, transparent),
+    var(--copper)
+  );
 }
 
 .rail-dot {
@@ -463,23 +577,30 @@ table.admin-table {
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
-  background: var(--surface);
-  border: 2px solid var(--line);
+  background: var(--canvas);
+  border: 2px solid color-mix(in srgb, var(--board) 18%, transparent);
   z-index: 1;
+  transition: box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .rail-stop[data-passed="true"] .rail-dot {
   background: var(--copper);
   border-color: var(--copper);
+  box-shadow: 0 1px 3px -1px color-mix(in srgb, var(--copper) 60%, transparent);
 }
 
+/* The one stop that is happening now carries a halo, so the request's
+   position is findable in a glance from across the desk. */
 .rail-stop[data-current="true"] .rail-dot {
   background: var(--copper);
   border-color: var(--copper);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--copper) 22%, transparent);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--copper) 18%, transparent),
+    0 0 0 8px color-mix(in srgb, var(--copper) 8%, transparent),
+    0 2px 6px -1px color-mix(in srgb, var(--copper) 55%, transparent);
 }
 
 .rail-label {
@@ -521,13 +642,24 @@ table.admin-table {
   font-family: var(--font-body), system-ui, sans-serif;
   font-size: 0.8125rem;
   font-weight: 600;
-  padding: 0.4375rem 0.875rem;
-  border-radius: var(--radius-button);
+  padding: 0.5rem 0.9375rem;
+  border-radius: 8px;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: background 140ms ease, border-color 140ms ease, opacity 140ms ease;
   background: none;
   color: inherit;
+  /* Buttons compress very slightly on press. It is 1% and nobody notices it
+     consciously, which is the point -- it is the difference between a control
+     that responds and an image of a control. */
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 90ms ease;
+}
+
+.btn:active:not([disabled]) {
+  transform: scale(0.985);
 }
 
 .btn:focus-visible {
@@ -536,27 +668,38 @@ table.admin-table {
 }
 
 .btn[disabled] {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .btn-primary {
-  background: var(--board);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--board) 92%, white),
+    var(--board)
+  );
   color: var(--silk);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 16%, transparent),
+    0 1px 2px color-mix(in srgb, var(--board) 25%, transparent);
 }
 
 .btn-primary:hover:not([disabled]) {
-  background: var(--board-deep);
+  background: linear-gradient(to bottom, var(--board), var(--board-deep));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 14%, transparent),
+    0 3px 10px -3px color-mix(in srgb, var(--board) 50%, transparent);
 }
 
 .btn-ghost {
-  border-color: var(--line);
+  border-color: var(--hairline);
+  background: color-mix(in srgb, white 55%, transparent);
   color: var(--ink);
 }
 
 .btn-ghost:hover:not([disabled]) {
-  border-color: var(--board);
-  background: var(--row-hover);
+  border-color: color-mix(in srgb, var(--board) 26%, transparent);
+  background: color-mix(in srgb, white 85%, transparent);
 }
 
 /* Reject and cancel read as quiet until hovered. They are legitimate moves,
@@ -619,11 +762,13 @@ table.admin-table {
 /* ----------------------------------------------------------------- panel */
 
 .panel {
-  background: var(--surface-alt);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card);
-  padding: 1.25rem;
-  margin-bottom: 1rem;
+  background: var(--panel);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border-radius: 12px;
+  padding: 1.25rem 1.375rem 1.375rem;
+  margin-bottom: 0.875rem;
+  box-shadow: var(--lift);
 }
 
 .panel-title {
@@ -889,7 +1034,17 @@ table.admin-table {
     transition: none !important;
   }
 
-  a.tile:hover {
+  a.tile:hover,
+  .btn:active:not([disabled]) {
     transform: none;
+  }
+}
+
+/* Where backdrop-filter is unavailable the frosted panels would fall back to
+   a 74%-white wash over the canvas, which is legible but muddy. Giving them
+   an opaque surface instead keeps the contrast the type was set against. */
+@supports not (backdrop-filter: blur(1px)) {
+  .admin {
+    --panel: var(--panel-solid);
   }
 }
