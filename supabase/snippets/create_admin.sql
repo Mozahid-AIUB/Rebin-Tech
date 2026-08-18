@@ -13,7 +13,7 @@
 
 do $$
 declare
-  v_email text := 'CHANGE-ME@example.com';
+  v_email text := 'admin@rebin.test';
   v_user  uuid;
 begin
   select id into v_user from auth.users where lower(email) = lower(v_email);
@@ -27,7 +27,7 @@ begin
   -- profiles.id references auth.users(id); the console reads full_name from
   -- here for the operator's name in the top bar.
   insert into profiles (id, full_name, status)
-  values (v_user, split_part(v_email, '@', 1), 'active')
+  values (v_user, 'Platform Owner', 'active')
   on conflict (id) do update
     set status = 'active';
 

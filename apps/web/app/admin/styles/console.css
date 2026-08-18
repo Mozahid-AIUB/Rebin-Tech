@@ -34,92 +34,201 @@
 
 /* ---------------------------------------------------------------- chrome */
 
-.admin-bar {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 0 1.5rem;
-  height: 3.25rem;
-  background: var(--board);
-  color: var(--silk);
+/* A left rail rather than a top bar. The sections are a short fixed list an
+ * operator moves between all day, so they stay in one place at one size,
+ * and the tables beside them keep the full width of the screen for columns
+ * -- which is what a queue actually needs. */
+
+.admin {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+}
+
+.admin-rail {
   position: sticky;
   top: 0;
-  z-index: 10;
+  align-self: start;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  padding: 1.375rem 0.875rem 1rem;
+  background: var(--board);
+  color: var(--silk);
+  border-right: 1px solid color-mix(in srgb, black 22%, transparent);
 }
 
 .admin-mark {
+  display: flex;
+  align-items: center;
+  gap: 0.5625rem;
+  padding: 0 0.5rem;
+  text-decoration: none;
+  color: var(--silk);
+}
+
+/* The same via that marks the sign-in card, at the same size. */
+.admin-mark-node {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2.5px solid var(--copper);
+  flex: none;
+}
+
+.admin-mark-text {
   font-family: var(--font-display), system-ui, sans-serif;
   font-weight: 700;
-  font-size: 0.9375rem;
-  letter-spacing: -0.01em;
-  color: var(--silk);
-  text-decoration: none;
+  font-size: 1rem;
+  letter-spacing: -0.015em;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
 }
 
 /* "Console", not "Admin". It names the thing the operator is sitting at. */
-.admin-mark span {
+.admin-mark-text em {
   font-family: var(--font-mono), monospace;
+  font-style: normal;
   font-weight: 500;
-  font-size: 0.6875rem;
-  letter-spacing: 0.08em;
+  font-size: 0.5625rem;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--copper);
-  margin-left: 0.5rem;
 }
 
 .admin-nav {
   display: flex;
-  gap: 0.25rem;
-  margin-left: auto;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.125rem;
 }
 
 .admin-nav a {
-  padding: 0.4rem 0.75rem;
-  border-radius: 5px;
-  color: color-mix(in srgb, var(--silk) 72%, transparent);
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 7px;
+  color: color-mix(in srgb, var(--silk) 66%, transparent);
   text-decoration: none;
   font-size: 0.8125rem;
   font-weight: 500;
   transition: background 140ms ease, color 140ms ease;
 }
 
+.admin-nav a svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  opacity: 0.75;
+}
+
 .admin-nav a:hover {
-  background: color-mix(in srgb, var(--silk) 10%, transparent);
+  background: color-mix(in srgb, var(--silk) 8%, transparent);
   color: var(--silk);
 }
 
 .admin-nav a[aria-current="page"] {
-  background: color-mix(in srgb, var(--silk) 14%, transparent);
+  background: color-mix(in srgb, var(--silk) 13%, transparent);
   color: var(--silk);
 }
 
+.admin-nav a[aria-current="page"] svg {
+  color: var(--copper);
+  opacity: 1;
+}
+
+/* Pushed to the bottom of the rail: who you are is reference, not navigation. */
 .admin-who {
+  margin-top: auto;
   display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  padding-left: 1rem;
-  margin-left: 0.5rem;
-  border-left: 1px solid color-mix(in srgb, var(--silk) 18%, transparent);
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.75rem 0.625rem 0;
+  border-top: 1px solid color-mix(in srgb, var(--silk) 12%, transparent);
 }
 
 .admin-who-name {
   font-size: 0.8125rem;
-  color: color-mix(in srgb, var(--silk) 80%, transparent);
+  font-weight: 500;
+  color: color-mix(in srgb, var(--silk) 85%, transparent);
 }
 
 .admin-who-role {
   font-family: var(--font-mono), monospace;
-  font-size: 0.625rem;
-  letter-spacing: 0.06em;
+  font-size: 0.5625rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--copper);
 }
 
+.admin-signout {
+  margin-top: 0.5rem;
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.75rem;
+  color: color-mix(in srgb, var(--silk) 50%, transparent);
+  cursor: pointer;
+  transition: color 140ms ease;
+}
+
+.admin-signout:hover:not([disabled]) {
+  color: var(--silk);
+}
+
+.admin-signout:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
 .admin-main {
-  padding: 1.75rem 1.5rem 4rem;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 1.75rem 2rem 4rem;
+  max-width: 1360px;
+  min-width: 0;
+}
+
+/* Below this the rail would eat the table. It becomes a top strip instead,
+   with the sections in a row and the identity block folded in beside them. */
+@media (max-width: 820px) {
+  .admin {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-rail {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border-right: none;
+    border-bottom: 1px solid color-mix(in srgb, black 22%, transparent);
+    flex-wrap: wrap;
+  }
+
+  .admin-nav {
+    flex-direction: row;
+  }
+
+  .admin-who {
+    margin-top: 0;
+    margin-left: auto;
+    padding: 0 0 0 1rem;
+    border-top: none;
+    border-left: 1px solid color-mix(in srgb, var(--silk) 12%, transparent);
+  }
+
+  .admin-signout {
+    margin-top: 0.125rem;
+  }
+
+  .admin-main {
+    padding: 1.25rem 1rem 3rem;
+  }
 }
 
 /* ----------------------------------------------------------------- heads */
