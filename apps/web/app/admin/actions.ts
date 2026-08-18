@@ -33,7 +33,7 @@ function explain(code: string | undefined, fallback: string): string {
     case "42501":
       return "Your account is not permitted to do that.";
     case "22023":
-      return "That move is not allowed from the current status. Reload to see where the request is now.";
+      return "That's not allowed right now. Reload the page to see the current state before trying again.";
     case "P0002":
       return "That record no longer exists.";
     default:

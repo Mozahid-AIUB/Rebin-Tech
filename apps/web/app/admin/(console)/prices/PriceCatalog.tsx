@@ -222,7 +222,8 @@ export function PriceCatalog({
                   type="button"
                   className="btn btn-primary btn-sm"
                   style={{ marginLeft: "auto" }}
-                  disabled={pending}
+                  disabled={pending || items.length === 0}
+                  title={items.length === 0 ? "Add at least one item before publishing." : undefined}
                   onClick={() => setConfirming(true)}
                 >
                   Publish
@@ -231,6 +232,16 @@ export function PriceCatalog({
             </div>
 
             {selected.note && <p className="admin-sub" style={{ margin: "-0.5rem 0 1.25rem" }}>{selected.note}</p>}
+
+            {/* The RPC refuses an empty catalog outright (a quote priced at
+                nothing reads as a working $0 offer, not a misconfiguration),
+                so this is caught before the click rather than after -- the
+                title attribute alone is easy to miss on a disabled button. */}
+            {isDraft && items.length === 0 && (
+              <p className="notice">
+                This draft has no items yet. Add at least one before it can be published.
+              </p>
+            )}
 
             {grouped.length === 0 && !addingTo ? (
               <p className="cell-dim" style={{ padding: "1rem 0" }}>
@@ -318,7 +329,6 @@ function EditableRow({
   pending: boolean;
 }) {
   const [displayName, setDisplayName] = useState(item.display_name);
-  const [grade, setGrade] = useState<PriceGrade>(item.grade);
   const [unit, setUnit] = useState<PriceUnit>(item.unit);
   const [price, setPrice] = useState((item.unit_price_cents / 100).toFixed(2));
   const [priceError, setPriceError] = useState(false);
@@ -335,7 +345,14 @@ function EditableRow({
       componentKey: item.component_key,
       displayName: displayName.trim() || item.display_name,
       category: item.category,
-      grade,
+      // Not the edited state -- there isn't one. `set_price_item` upserts on
+      // (catalog_version_id, component_key, grade), so grade is the third
+      // part of this row's identity, same as componentKey and category
+      // above it: changing it would not reclassify the row, it would fork a
+      // second one and leave this one behind as stale, unnoticed pricing.
+      // Reclassifying a component's grade is adding a new item, which
+      // `NewItemForm` already does with a real, editable grade selector.
+      grade: item.grade,
       unit,
       unitPriceCents: cents,
     });
@@ -355,23 +372,11 @@ function EditableRow({
           }}
         />
       </td>
-      <td>
-        <select
-          className="cell-input"
-          value={grade}
-          disabled={pending}
-          onChange={(e) => {
-            setGrade(e.target.value as PriceGrade);
-            setDirty(true);
-          }}
-        >
-          {PRICE_GRADES.map((g) => (
-            <option key={g} value={g}>
-              {GRADE_LABEL[g]}
-            </option>
-          ))}
-        </select>
-      </td>
+      {/* Grade is part of this row's identity in the database, not an
+          editable field -- see the comment in commit() above. Shown as
+          plain text, at the same weight a read-only version's row uses, so
+          an operator can still tell what it is without it inviting a click. */}
+      <td>{GRADE_LABEL[item.grade]}</td>
       <td>
         <select
           className="cell-input"
