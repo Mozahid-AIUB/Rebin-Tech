@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { When, Empty, AccountStatusDot } from "../../ui";
+import { PageIn } from "../../Motion";
 import { AccountActions } from "./AccountActions";
 import type { AccountStatus } from "@/lib/supabase/types";
 
@@ -28,7 +29,7 @@ export default async function AccountsPage() {
   );
 
   return (
-    <>
+    <PageIn>
       <div className="admin-head">
         <h1 className="admin-h1">Accounts</h1>
         <span className="admin-count">{rows.length} waiting</span>
@@ -81,6 +82,6 @@ export default async function AccountsPage() {
           </table>
         )}
       </div>
-    </>
+    </PageIn>
   );
 }

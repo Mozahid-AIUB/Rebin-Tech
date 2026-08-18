@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PIPELINE, STATUS_LABEL } from "@/lib/transitions";
 import { StatusDot, When, Empty } from "../ui";
+import { PageIn, Stagger, StaggerItem, Tally } from "../Motion";
 import type { RequestStatus } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +39,7 @@ export default async function OverviewPage() {
   const error = pendingAccounts.error ?? requests.error;
 
   return (
-    <>
+    <PageIn>
       <div className="admin-head">
         <h1 className="admin-h1">Overview</h1>
       </div>
@@ -49,30 +50,33 @@ export default async function OverviewPage() {
         </p>
       )}
 
-      <div className="tiles">
-        <Link href="/admin/accounts" className="tile">
-          <span className="tile-label">Accounts waiting</span>
-          <span className="tile-value" data-zero={accountCount === 0}>
-            {accountCount}
-          </span>
-        </Link>
+      <Stagger className="tiles">
+        <StaggerItem>
+          <Link href="/admin/accounts" className="tile">
+            <span className="tile-label">Accounts waiting</span>
+            <span className="tile-value" data-zero={accountCount === 0}>
+              <Tally value={accountCount} />
+            </span>
+          </Link>
+        </StaggerItem>
 
         {PIPELINE.filter((s) => s !== "completed").map((status) => {
           const count = byStatus.get(status) ?? 0;
           return (
-            <Link
-              key={status}
-              href={`/admin/requests?status=${status}`}
-              className="tile"
-            >
-              <span className="tile-label">{STATUS_LABEL[status]}</span>
-              <span className="tile-value" data-zero={count === 0}>
-                {count}
-              </span>
-            </Link>
+            <StaggerItem key={status}>
+              <Link
+                href={`/admin/requests?status=${status}`}
+                className="tile"
+              >
+                <span className="tile-label">{STATUS_LABEL[status]}</span>
+                <span className="tile-value" data-zero={count === 0}>
+                  <Tally value={count} />
+                </span>
+              </Link>
+            </StaggerItem>
           );
         })}
-      </div>
+      </Stagger>
 
       <div className="admin-head">
         <h2 className="admin-h1">Open requests</h2>
@@ -120,6 +124,6 @@ export default async function OverviewPage() {
           </table>
         )}
       </div>
-    </>
+    </PageIn>
   );
 }

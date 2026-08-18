@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PIPELINE, STATUS_LABEL } from "@/lib/transitions";
 import { StatusDot, When } from "../../../ui";
 import { RequestActions } from "./RequestActions";
+import { PageIn } from "../../../Motion";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,7 @@ export default async function RequestDetailPage({
   const cancelled = request.status === "cancelled";
 
   return (
-    <>
+    <PageIn>
       <Link href="/admin/requests" className="back">
         ← Requests
       </Link>
@@ -167,6 +168,6 @@ export default async function RequestDetailPage({
           </dl>
         </div>
       )}
-    </>
+    </PageIn>
   );
 }

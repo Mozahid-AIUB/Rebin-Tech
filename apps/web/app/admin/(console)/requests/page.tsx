@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { STATUS_LABEL } from "@/lib/transitions";
 import { StatusDot, When, Empty } from "../../ui";
+import { PageIn } from "../../Motion";
 import type { RequestStatus } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
@@ -41,7 +42,7 @@ export default async function RequestsPage({
   const rows = data ?? [];
 
   return (
-    <>
+    <PageIn>
       <div className="admin-head">
         <h1 className="admin-h1">Requests</h1>
         <span className="admin-count">
@@ -116,6 +117,6 @@ export default async function RequestsPage({
           </table>
         )}
       </div>
-    </>
+    </PageIn>
   );
 }
