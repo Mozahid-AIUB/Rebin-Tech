@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { decideQuote, getBusiness, getQuote, useSessionStore, type QuoteDetail } from "@rebin/api";
-import { formatCents, formatUsDate, scanDisposition, SUPPLIER_BUSINESS_TYPE } from "@rebin/shared";
+import { formatCents, formatUsDate, scanDisposition, SUPPLIER_BUSINESS_TYPE, WAREHOUSE_ADDRESS } from "@rebin/shared";
 import {
   AppText,
   Card,
@@ -206,14 +206,31 @@ export default function QuoteDetailScreen() {
       {quote.status === "accepted" && !outcome ? (
         <Card accentBorder style={{ gap: tokens.space[1] }}>
           <AppText variant="h3">What happens next</AppText>
-          <AppText variant="bodySm" tone="secondary">
-            We&apos;ll be in touch to arrange collection and payment.
-          </AppText>
-          {/* Shipping labels and payouts are the next two features. Saying so
-              plainly beats a disabled button that implies they exist. */}
-          <AppText variant="bodySm" tone="muted">
-            Shipping labels and payouts arrive in a coming release.
-          </AppText>
+          {isSupplier ? (
+            <>
+              {/* Nobody is collecting from a supplier -- they ship. Saying
+                  "collection" here would be false in the one word that
+                  matters, right after they've just committed to this total. */}
+              <AppText variant="bodySm" tone="secondary">
+                Ship it to the Rebin Tech warehouse. We weigh and sort it on
+                arrival, and your payout follows within seven days.
+              </AppText>
+              <AppText variant="bodySm" tone="muted" selectable>
+                {WAREHOUSE_ADDRESS}
+              </AppText>
+            </>
+          ) : (
+            <>
+              <AppText variant="bodySm" tone="secondary">
+                We&apos;ll be in touch to arrange collection and payment.
+              </AppText>
+              {/* Shipping labels and payouts are the next two features. Saying so
+                  plainly beats a disabled button that implies they exist. */}
+              <AppText variant="bodySm" tone="muted">
+                Shipping labels and payouts arrive in a coming release.
+              </AppText>
+            </>
+          )}
         </Card>
       ) : null}
 
