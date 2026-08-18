@@ -195,6 +195,10 @@ export const AUTH_ROLE_ACCENTS = Object.freeze({
   org: "#6FD39B",
   business: "#E6C25C",
   agent: "#D9915B",
+  // A fourth material distinct from business's gold: a supplier is quoted at
+  // the same rate as a business, but the card sits next to it on the picker
+  // and needs its own color to stay tappable-at-a-glance.
+  supplier: "#7FB6D9",
 });
 
 

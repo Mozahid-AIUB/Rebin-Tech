@@ -41,3 +41,15 @@ export function AgentIcon({ color }: { color: string }) {
     </Svg>
   );
 }
+
+/** Supplier: a loaded box, ready to ship out rather than be collected. */
+export function SupplierIcon({ color }: { color: string }) {
+  return (
+    <Svg {...S}>
+      <Path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z" stroke={color} {...STROKE} />
+      <Path d="M3 8.5V17l9 4.5V13" stroke={color} {...STROKE} />
+      <Path d="M21 8.5V17l-9 4.5" stroke={color} {...STROKE} />
+      <Path d="M7.5 6.25 16.5 10.75" stroke={color} {...STROKE} />
+    </Svg>
+  );
+}
