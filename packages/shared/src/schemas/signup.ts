@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { AGENT_VEHICLES, BUSINESS_TYPES, ORG_TYPES } from "../enums";
+import { AGENT_VEHICLES, BUSINESS_TYPES, ORG_TYPES, SUPPLIER_BUSINESS_TYPE } from "../enums";
 import { passwordSchema } from "./auth";
 import type { OrgSignupInput } from "./org";
 import type { AgentSignupInput, BusinessSignupInput } from "./roles";
 
-/** The three self-service signup paths, as chosen on the role picker. */
-export const SIGNUP_ROLES = ["organization", "business", "agent"] as const;
+/** The four self-service signup paths, as chosen on the role picker. */
+export const SIGNUP_ROLES = ["organization", "business", "agent", "supplier"] as const;
 export type SignupRole = (typeof SIGNUP_ROLES)[number];
 
 const usPhone = z.string().regex(/^\d{10}$/, "Enter a 10-digit US phone number");
@@ -31,7 +31,7 @@ const passwordsMatch = {
 };
 
 /**
- * One form, three shapes.
+ * One form, four shapes.
  *
  * A discriminated union rather than one flat object with optional fields: it
  * makes "an agent has no EIN" a type error instead of a runtime convention,
@@ -68,6 +68,16 @@ export const signupFormSchema = z
       ein: z.string().regex(/^\d{9}$/, "Enter a 9-digit EIN").optional().or(z.literal("")),
     }),
     z.object({
+      role: z.literal("supplier"),
+      ...commonFields,
+      entityName: z.string().min(2, "Your name or trading name is required"),
+      street: z.string().min(3, "Street address is required"),
+      // No EIN and no business type. A supplier is frequently one person
+      // working out of a garage -- asking for a federal tax number at signup
+      // turns away the exact audience this role exists to reach, and
+      // businesses.ein has been nullable since 0011 for this case.
+    }),
+    z.object({
       role: z.literal("agent"),
       ...commonFields,
       // No entity name and no street: an agent is a person, and what routing
@@ -81,11 +91,12 @@ export const signupFormSchema = z
 export type SignupFormInput = z.infer<typeof signupFormSchema>;
 
 // -- Adapters -----------------------------------------------------------
-// The three signup endpoints predate this shared form and each own their
-// payload shape (and their Edge Function + RPC). Rather than reshaping three
-// backend contracts to match one UI, the form maps outward here. That keeps
-// the seam in one readable place instead of scattering field renames through
-// the screen.
+// The signup endpoints predate this shared form and each own their payload
+// shape (and their Edge Function + RPC). Rather than reshaping those backend
+// contracts to match one UI, the form maps outward here. That keeps the seam
+// in one readable place instead of scattering field renames through the
+// screen. Supplier is the exception: it has no endpoint of its own -- it
+// reuses the business endpoint with businessType fixed to "supplier".
 
 export function toOrgSignupInput(v: Extract<SignupFormInput, { role: "organization" }>): OrgSignupInput {
   return {
@@ -116,6 +127,23 @@ export function toBusinessSignupInput(v: Extract<SignupFormInput, { role: "busin
     businessName: v.entityName,
     businessType: v.businessType,
     ein: v.ein ?? "",
+    contactName: v.contactName,
+    workEmail: v.email,
+    phone: v.phone,
+    street: v.street,
+    city: v.city,
+    state: v.state,
+    zip: v.zip,
+    password: v.password,
+    confirmPassword: v.confirmPassword,
+  };
+}
+
+export function toSupplierSignupInput(v: Extract<SignupFormInput, { role: "supplier" }>): BusinessSignupInput {
+  return {
+    businessName: v.entityName,
+    businessType: SUPPLIER_BUSINESS_TYPE,
+    ein: "",
     contactName: v.contactName,
     workEmail: v.email,
     phone: v.phone,

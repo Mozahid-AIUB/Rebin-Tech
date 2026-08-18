@@ -7,6 +7,7 @@ import {
   toAgentSignupInput,
   toBusinessSignupInput,
   toOrgSignupInput,
+  toSupplierSignupInput,
   type SignupFormInput,
   type SignupRole,
 } from "@rebin/shared";
@@ -44,6 +45,7 @@ function parseRole(raw: string | string[] | undefined): SignupRole {
 const ENTITY_LABEL: Record<Exclude<SignupRole, "agent">, { label: string; placeholder: string }> = {
   organization: { label: "Organization name", placeholder: "e.g. Riverside Medical Center" },
   business: { label: "Business name", placeholder: "e.g. Eastside Electronics Repair" },
+  supplier: { label: "Your name or trading name", placeholder: "e.g. Rakib Collection" },
 };
 
 const ADDRESS_HEADING: Record<SignupRole, { title: string; hint: string }> = {
@@ -53,6 +55,9 @@ const ADDRESS_HEADING: Record<SignupRole, { title: string; hint: string }> = {
   // can cover, and asking a driver for their home address at signup is both
   // more intrusive and less useful.
   agent: { title: "Service area", hint: "Where you can take pickups." },
+  // A supplier ships to the warehouse rather than being collected from, but
+  // still needs a return/contact address on file, same as a business.
+  supplier: { title: "Your address", hint: "Where you ship from." },
 };
 
 type Values = Partial<Record<keyof SignupFormInput | "entityName" | "orgType" | "businessType" | "ein" | "street" | "vehicle" | "hasDriversLicense", unknown>>;
@@ -112,10 +117,13 @@ export default function SignupRegister() {
     setServerError(null);
     try {
       // Each role still has its own endpoint (and its own Edge Function + RPC
-      // transaction); the shared form maps outward at this one seam.
+      // transaction); the shared form maps outward at this one seam. Supplier
+      // is the exception: it has no endpoint of its own and reuses the
+      // business one, with businessType fixed to "supplier" by the converter.
       const input = parsed.data;
       if (input.role === "organization") await signUpOrganization(toOrgSignupInput(input));
       else if (input.role === "business") await signUpBusiness(toBusinessSignupInput(input));
+      else if (input.role === "supplier") await signUpBusiness(toSupplierSignupInput(input));
       else await signUpAgent(toAgentSignupInput(input));
       setDone(true);
     } catch (e) {

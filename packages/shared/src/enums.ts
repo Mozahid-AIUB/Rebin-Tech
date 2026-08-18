@@ -18,8 +18,11 @@ export type RequestStatus = (typeof REQUEST_STATUSES)[number];
 export const ORG_TYPES = ["k12_school", "university", "hospital", "municipal_office", "corporate_hq", "other"] as const;
 export type OrgType = (typeof ORG_TYPES)[number];
 
-export const BUSINESS_TYPES = ["repair_shop", "electronics_retailer", "scrap_dealer", "it_reseller", "refurbisher", "other"] as const;
+export const BUSINESS_TYPES = ["repair_shop", "electronics_retailer", "scrap_dealer", "it_reseller", "refurbisher", "supplier", "other"] as const;
 export type BusinessType = (typeof BUSINESS_TYPES)[number];
+
+/** The business_type every supplier is registered under. See 0033. */
+export const SUPPLIER_BUSINESS_TYPE = "supplier" as const;
 
 /** How an agent covers pickups. Drives routing, so it's a fixed set, not free text. */
 export const AGENT_VEHICLES = ["car", "van", "box_truck", "none"] as const;

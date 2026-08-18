@@ -1,4 +1,4 @@
-import { SIZE_TIERS, orgSignupSchema, pickupRequestSchema, passwordSchema } from "../index";
+import { SIZE_TIERS, orgSignupSchema, pickupRequestSchema, passwordSchema, signupFormSchema } from "../index";
 
 const validRequest = {
   sizeTier: "tier_10_30" as const,
@@ -117,5 +117,41 @@ describe("orgSignupSchema", () => {
 
   it("rejects a ZIP that is not 5 or 9 digits", () => {
     expect(orgSignupSchema.safeParse({ ...valid, zip: "021" }).success).toBe(false);
+  });
+});
+
+describe("supplier signup", () => {
+  const base = {
+    contactName: "Rakib Hasan",
+    email: "rakib@example.com",
+    phone: "5550100099",
+    password: "RebinTech2026!",
+    confirmPassword: "RebinTech2026!",
+  };
+
+  it("accepts a supplier without an EIN", () => {
+    const parsed = signupFormSchema.safeParse({
+      ...base,
+      role: "supplier",
+      entityName: "Rakib Collection",
+      street: "88 Kirby St",
+      city: "Cleveland",
+      state: "OH",
+      zip: "44114",
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it("still requires a name", () => {
+    const parsed = signupFormSchema.safeParse({
+      ...base,
+      role: "supplier",
+      entityName: "",
+      street: "88 Kirby St",
+      city: "Cleveland",
+      state: "OH",
+      zip: "44114",
+    });
+    expect(parsed.success).toBe(false);
   });
 });
