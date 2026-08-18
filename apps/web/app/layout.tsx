@@ -43,7 +43,8 @@ function brandVariables(): string {
   const rem = (px: number) => `${px / 16}rem`;
   return `:root{
     --board:${c.board};--board-deep:${c.boardDeep};--silk:${c.silk};
-    --surface:${c.surface};--surface-alt:${c.surfaceAlt};
+    --surface:${c.surface};--surface-alt:${c.surfaceAlt};--surface-warm:${c.surfaceWarm};
+    --success:${c.success};
     --ink:${c.ink};--ink-2:${c.inkSecondary};--muted:${c.muted};
     --border:${c.border};--divider:${c.divider};
     --copper:${c.copper};--gold:${c.gold};--danger:${c.danger};
@@ -57,7 +58,17 @@ function brandVariables(): string {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
+    /* `suppressHydrationWarning` covers the `js` class the inline script below
+       adds to this element before React hydrates. The mismatch is the point of
+       that script -- it has to run before first paint, so the server can never
+       have emitted the class -- and without this React logs a hydration error
+       on every load for a difference we are causing deliberately. It suppresses
+       only this element's own attributes, not anything inside it. */
+    <html
+      lang="en"
+      className={`${display.variable} ${body.variable} ${mono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <style dangerouslySetInnerHTML={{ __html: brandVariables() }} />
         {/* Marks the document as scripted before anything paints, so the

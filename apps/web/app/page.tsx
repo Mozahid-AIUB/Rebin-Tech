@@ -1,7 +1,7 @@
 import { BoardField } from "./BoardField";
 import { HeroScene } from "./HeroScene";
+import { HeroStory } from "./HeroStory";
 import { PhoneMock } from "./PhoneMock";
-import { Seam } from "./Seam";
 import { Foot, Nav, PhotoSlot } from "./Chrome";
 import { NavShadow } from "./NavShadow";
 import { Reveal } from "./Reveal";
@@ -27,52 +27,62 @@ export default function Home() {
       <Nav />
 
       <header className="hero">
+        {/* Substrate: the other routing on the board, well below the one route
+            that carries meaning. Two different jobs, so two very different
+            strengths -- if they read as equals the structural trace is back to
+            being a pattern. */}
         <BoardField />
-        <div className="shell hero-grid">
-          <div className="hero-inner">
-          <span className="eyebrow">Free, compliant e-waste recycling</span>
-          <h1>
-            Retired equipment, <em>documented</em> out the door.
-          </h1>
-          <p className="hero-lede">
-            Somebody has to deal with the pile of old machines in the back room, and it has
-            probably ended up being you. We come and take them, recover what is inside, and hand
-            you a record of every device — so when someone asks where it all went, you have the
-            answer.
-          </p>
+        {/* Light, so whatever stands in the right column is lit rather than
+            pasted on. One soft source behind it, which is the whole reason a
+            physical object photographs as expensive and a flat rectangle does
+            not. */}
+        <div className="hero-glow" aria-hidden="true" />
 
-          <div className="hero-actions">
-            <a className="btn btn-light" href="#services">
-              Book a collection
-            </a>
-            <a className="btn btn-line" href="#contact">
-              Talk to someone
-            </a>
+        {/* Words one side, the thing they describe the other.
+         *
+         * The right column used to hold the docket, which has gone down to the
+         * chain section where it reads as the output of a sequence rather than
+         * as an outcome shown before its cause. What stands here instead is the
+         * cause: the collection itself. */}
+        <div className="shell hero-split">
+          <div className="hero-copy">
+            <span className="eyebrow">Free, compliant e-waste recycling</span>
+
+            {/* The break is explicit. Left to wrap on its own the line put
+                `documented` alone in the middle in copper, which reads as a
+                fault rather than as emphasis. The copper word now opens a line
+                instead of being stranded on one. */}
+            <h1 className="hero-title">
+              Retired equipment,
+              <br />
+              <em>documented</em> out the door.
+            </h1>
+
+            {/* One sentence. It was a paragraph, and the rest of it is said
+                properly in the section below rather than twice. */}
+            <p className="hero-lede">
+              We take it away, recover what is inside, and hand you a record of every device that
+              left the building.
+            </p>
+
+            <div className="hero-actions">
+              <a className="btn btn-light" href="#services">
+                Book a collection
+              </a>
+              {/* Quiet, because it is the second choice. Two bordered buttons
+                  of equal weight make the reader decide before they have
+                  read. */}
+              <a className="hero-link" href="#contact">
+                Talk to someone <span aria-hidden="true">&rarr;</span>
+              </a>
+            </div>
           </div>
 
-          {/* Facts a visitor can check rather than numbers we made up. */}
-          <div className="hero-facts">
-            <div className="fact">
-              <strong className="mono">10+</strong>
-              <span>Devices for a free organization pickup</span>
-            </div>
-            <div className="fact">
-              <strong className="mono">7 days</strong>
-              <span>A scrap quote holds at the rate you were given</span>
-            </div>
-            <div className="fact">
-              <strong>Every device</strong>
-              <span>Listed on the record we hand back</span>
-            </div>
-            </div>
-          </div>
-
-          {/* The product itself, rather than a picture of recycling. */}
-          <PhoneMock />
+          {/* What the whole service actually is, before any of the paperwork
+              exists. */}
+          <HeroStory />
         </div>
       </header>
-
-      <Seam />
 
       <Reveal as="section" className="section" id="about">
         <div className="shell about">
@@ -201,10 +211,16 @@ export default function Home() {
             </p>
           </div>
 
-          {/* A genuine sequence, which is the only thing that earns a
-              sequential structure. The vias mark which stages write something
-              down and which are only a movement. */}
-          <ol className="chain">
+          {/* The phones moved here from the hero. They belong beside the chain
+              rather than above it: what they show is the first two stages
+              happening -- photograph the stock, get it priced and listed -- so
+              here they are evidence for the sequence instead of a product shot
+              competing with the record it produces. */}
+          <div className="process-grid">
+            {/* A genuine sequence, which is the only thing that earns a
+                sequential structure. The vias mark which stages write something
+                down and which are only a movement. */}
+            <ol className="chain">
             <Stage
               label="Manifest"
               title="Everything is counted before it moves"
@@ -228,7 +244,10 @@ export default function Home() {
               body="Boards, memory and drives are separated and sent for recovery. The record closes with what was received against what was collected."
               records
             />
-          </ol>
+            </ol>
+
+            <PhoneMock />
+          </div>
         </div>
       </Reveal>
 

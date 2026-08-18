@@ -140,13 +140,23 @@ ul {
   transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
 }
 
+/* Board green, not copper.
+ *
+ * This was a filled copper pill, and it was the loudest thing in the bar --
+ * louder than the company's own name, which is the wrong order. It also gave
+ * the site two primary colours: copper in the nav, silk-on-green in the hero,
+ * so nothing said which button was *the* button.
+ *
+ * Green is the primary in both places now; only the ground changes. And copper
+ * goes back to being what §4 says it is -- a trace, which is a line. Filling a
+ * shape with it was the one use the direction never had in mind. */
 .btn-primary {
-  background: var(--copper);
-  color: #ffffff;
+  background: var(--board);
+  color: var(--silk);
 }
 
 .btn-primary:hover {
-  background: #9c5f2f;
+  background: var(--board-deep);
 }
 
 .btn-light {
@@ -155,7 +165,7 @@ ul {
 }
 
 .btn-light:hover {
-  background: #ffffff;
+  background: var(--surface);
 }
 
 .btn-line {
@@ -178,10 +188,14 @@ ul {
 
 /* ---- Top bar and navigation --------------------------------------------- */
 
+/* A utility strip, and it should read as one: small, tracked out, quiet. The
+   phone number is the only thing on it anybody comes looking for, so that is
+   the only thing set in mono. */
 .topbar {
   background: var(--board-deep);
-  color: #9db8ab;
+  color: color-mix(in srgb, var(--silk) 62%, var(--board-deep));
   font-size: var(--size-body-sm);
+  letter-spacing: 0.01em;
 }
 
 .topbar-inner {
@@ -196,12 +210,21 @@ ul {
   color: var(--silk);
 }
 
+/* Opaque, deliberately. §7 allows translucency only where content passing
+   underneath is *meant* to be seen, and rules navigation out by name: a label
+   competing with whatever happens to scroll behind it is a label you cannot
+   read. A frosted bar is also the move every site makes this year.
+ *
+ * The bottom edge is a copper hairline rather than the grey divider used
+ * everywhere else on the page. It is the one rule on the site that marks where
+ * the board ends, which is what the edge of a bar over a board-green hero
+ * actually is. */
 .nav {
   position: sticky;
   top: 0;
   z-index: 20;
   background: var(--surface);
-  border-bottom: 1px solid var(--divider);
+  border-bottom: 1px solid color-mix(in srgb, var(--copper) 34%, transparent);
 }
 
 .nav-inner {
@@ -212,15 +235,42 @@ ul {
 }
 
 .wordmark {
-  font-family: var(--font-display), system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 1.375rem;
-  letter-spacing: -0.01em;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.5rem;
 }
 
+/* Tall enough to span both lines of the lockup, so the trace leaves the via at
+   the height of the name and points into it. */
+.wordmark-mark {
+  flex: none;
+  display: block;
+  /* 30:24, the viewBox ratio, so the route is never squashed. */
+  width: 2.0625rem;
+  height: 1.65rem;
+}
+
+.wordmark-text {
+  display: flex;
+  flex-direction: column;
+  /* Not the default `stretch`: both lines have to size to their own text, or
+     the shorter one silently inherits the longer one's width and there is
+     nothing to align. */
+  align-items: flex-start;
+  gap: 0.1875rem;
+}
+
+.wordmark-name {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.375rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* Footer only -- see the note on `Wordmark` in Chrome.tsx for why it is not in
+   the nav. Tracked out because it is a strapline rather than a sentence, and at
+   8px the letters need the air to stay separable. */
 .wordmark small {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 0.5rem;
@@ -228,40 +278,168 @@ ul {
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 500;
+  line-height: 1;
 }
 
 .nav-links {
   display: flex;
   gap: 1.75rem;
   margin-left: auto;
-  font-size: var(--size-body-sm);
+  font-size: var(--size-body);
   font-weight: 500;
 }
 
-.nav-links a:hover {
+.nav-links a {
+  position: relative;
+  padding-block: 0.375rem;
+}
+
+/* A copper trace stub, drawn under the link the moment it is pointed at. The
+   same gesture the section eyebrows use when they arrive, at the scale of a
+   nav item -- reusing the page's own move rather than inventing a second one is
+   what makes a set of parts read as one system. */
+.nav-links a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  height: 2px;
+  background: var(--copper);
+  transition: width 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-links a:hover,
+.nav-links a:focus-visible {
   color: var(--copper);
+}
+
+.nav-links a:hover::after,
+.nav-links a:focus-visible::after {
+  width: 100%;
 }
 
 /* ---- Hero --------------------------------------------------------------- */
 
+/* The hero owns the screen. It used to be as tall as its contents made it,
+   which is why it read as a band at the top of a page rather than as an
+   opening -- the single cheapest thing a layout can do is refuse itself room.
+   Capped in rem as well as vh so it does not become absurd on a tall monitor. */
 .hero {
   position: relative;
-  background: var(--board);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: min(84vh, 46rem);
+  /* Not a flat fill. A single value across a field this large reads as a slab,
+     and a slab is the difference between a page that is clean and one that
+     looks made -- dark surfaces get their quality from tonal range, not from
+     the colour being correct. Both stops are the palette's own greens, so this
+     is depth rather than a new colour. */
+  background: linear-gradient(
+    158deg,
+    var(--board-deep) 0%,
+    var(--board) 44%,
+    var(--board-deep) 100%
+  );
   color: var(--silk);
   overflow: hidden;
 }
 
+/* One soft source, behind the drawing in the right column. An object with light
+   falling on it reads as a thing in a room; the same object flat-filled reads
+   as a rectangle, and no amount of shadow underneath fixes that. Sits above the
+   substrate routing and below everything that carries meaning.
+ *
+ * Low, at 60%, because what it is lighting is a dock at ground level rather
+ * than a sheet of paper held up at the middle of the column. */
+.hero-glow {
+  position: absolute;
+  left: 68%;
+  top: 60%;
+  width: min(52rem, 100%);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle at center,
+    color-mix(in srgb, var(--silk) 22%, transparent) 0%,
+    transparent 58%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+@media (max-width: 62rem) {
+  .hero-glow {
+    left: 50%;
+    top: 68%;
+  }
+}
+
+/* A vignette, doing two jobs. It frames a centred composition, which otherwise
+   sat in a flat field with all its texture bunched on one side. And it dims the
+   substrate routing towards the edges, where `slice` crops traces mid-run --
+   line ends that stop in mid-air read as rendering faults until something takes
+   them down into the background. */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 115% 85% at 50% 44%,
+    transparent 38%,
+    color-mix(in srgb, var(--board-deep) 88%, transparent) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
 /* The routing sits behind everything, anchored right so it never runs under
-   the headline -- the type is left-aligned and needs a clean field. Faint
-   enough to read as the surface the words are printed on. */
+   the headline -- the type is left-aligned and needs a clean field.
+ *
+ * Dimmer than it was. It used to be the only routing on the page and could
+ * afford to be seen; now there is a trace that actually connects something, and
+ * two coppers at similar strength would read as one pattern with the meaning
+ * lost inside it. This is substrate -- the other nets on the board -- and
+ * substrate is meant to sit under. */
 .board-field {
   position: absolute;
   top: 0;
   right: 0;
   width: min(56%, 40rem);
   height: 100%;
-  opacity: 0.2;
   pointer-events: none;
+}
+
+.field-static {
+  opacity: 0.16;
+}
+
+/* Hidden unless it can move. A signal that has stopped is just one trace
+   brighter than its neighbours for no reason, so with scripting off -- or with
+   reduced motion asked for -- it is not drawn at all. Nothing is lost: it
+   carries no information, only life. */
+.field-signal {
+  opacity: 0;
+}
+
+/* Brighter than the substrate it runs on, but nowhere near the docket. Ambient
+   -- something you notice on the second look, not something competing with the
+   headline.
+ *
+ * The pulse is 5% of the net; the rest of the dash pattern is the gap it
+ * travels through. Long and linear, because a signal does not ease. */
+.js .field-signal {
+  opacity: 0.5;
+  stroke-dasharray: 0.05 0.95;
+  stroke-dashoffset: 1;
+  animation: field-signal 7s linear infinite;
+}
+
+@keyframes field-signal {
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 @media (max-width: 60rem) {
@@ -270,92 +448,1097 @@ ul {
   }
 }
 
-.hero-inner {
+/* The words take the larger share. The drawing beside them is wide rather than
+   tall and holds up small; the copy is what the page is for. */
+.hero-split {
   position: relative;
   z-index: 1;
-  padding-block: clamp(3.5rem, 8vw, 6.5rem);
-  max-width: 46rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.86fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: center;
+  padding-block: clamp(2rem, 5vh, 3.5rem);
 }
 
-.hero h1 {
-  font-size: clamp(2.25rem, 6vw, 4rem);
-  line-height: 1.04;
-  margin-block: 1rem 1.375rem;
+.hero-copy {
+  max-width: 34rem;
 }
 
-.hero h1 em {
+/* Condensed bold, set large and tight -- the face was chosen because it is
+   engineered and compressed, and at a small size that is a claim nobody can
+   see. Sized down from 5rem all the same: at that size it swamped the sentence
+   and the buttons under it, and a headline that leaves everything else looking
+   undernourished is loud rather than confident. */
+.hero-title {
+  margin-block: 1.25rem 0;
+  font-size: clamp(2rem, 4.6vw, 3.25rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.hero-title em {
   font-style: normal;
   color: var(--copper);
 }
 
 .hero-lede {
-  font-size: clamp(var(--size-body), 1.8vw, 1.125rem);
-  color: #c9d6ce;
-  max-width: 36rem;
+  margin-top: 1.125rem;
+  max-width: 34rem;
+  font-size: clamp(1.0625rem, 1.6vw, 1.1875rem);
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--silk) 78%, var(--board));
 }
 
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 2rem;
+  align-items: center;
+  gap: 0.75rem 1.75rem;
+  margin-top: 1.75rem;
 }
 
-/* Facts a visitor can check, not numbers we made up. Each is a property of how
-   the service works rather than a claim about how popular it is -- the layout
-   this follows puts a review count and a customer total here, and inventing
-   either for a company that has neither is a false statement to a customer. */
-.hero-facts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-  gap: 1.25rem 2rem;
-  margin-top: 2.75rem;
-  padding-top: 2rem;
-  border-top: 1px solid rgba(237, 239, 233, 0.16);
-  max-width: 42rem;
+/* The second choice, and it should look like one. A bordered twin of the
+   primary button asks the reader to make a decision before they have finished
+   reading the sentence above it. */
+.hero-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  font-weight: 600;
+  color: var(--silk);
+  text-decoration: none;
+  transition: gap 200ms ease, color 200ms ease;
 }
 
-.fact strong {
-  display: block;
-  font-family: var(--font-display), system-ui, sans-serif;
-  font-size: 1.75rem;
-  line-height: 1;
+.hero-link:hover {
+  color: var(--copper);
+  gap: 0.6875rem;
 }
 
-.fact span {
-  display: block;
-  margin-top: 0.375rem;
-  font-size: var(--size-body-sm);
-  color: #a9bfb4;
-}
+/* ---- The collection, in the hero ---------------------------------------- */
 
-/* ---- The seam: where the trace crosses ---------------------------------- */
-
-.seam {
-  line-height: 0;
-}
-
-.seam-svg {
+.hero-story {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
-  height: 108px;
+  max-width: 34rem;
+  height: auto;
+  justify-self: end;
 }
 
-/* One orchestrated moment rather than scattered effects: the trace draws
-   itself once, on load, the way a route is laid down. Length is over-estimated
-   on purpose -- measuring the exact path needs JS, and overshooting only means
-   the line finishes slightly before the animation does. */
-.seam-trace {
-  stroke-dasharray: 700;
-  stroke-dashoffset: 700;
-  animation: draw 1100ms cubic-bezier(0.16, 1, 0.3, 1) 180ms forwards;
+/* The people. The van stays the brightest thing in the scene because it is the
+   subject, and two figures at full silk would make this a group photograph --
+   so they are still held back, but by far less than they were.
+ *
+ * This was 0.52, and the argument for that number was written when the figures
+ * were stick silhouettes that needed suppressing. They are drawn people now, and
+ * 0.52 silk over board green resolves to about #809992 -- darker than the
+ * darkest part of the van's own flank, which is how two members of staff came to
+ * read as apparitions standing in the lamplight rather than as the reason the
+ * scene is happening. §11 is the general case of the same mistake: on a dark
+ * surface, separation needs far more contrast than a palette swatch suggests,
+ * and five percent of lightness apart reads as one flat wall.
+ *
+ * 0.70 lands them near #A9B9B0 -- the tone of the van's shaded lower third, so
+ * they are unmistakably solid and just as unmistakably not the subject. The
+ * van's crown highlight is a full-strength near-white and stays the brightest
+ * value in the frame. The hi-vis band composites at the same 0.70 and needed no
+ * retuning: it arrives at roughly copper's own strength, which is where a hi-vis
+ * band belongs, and it is a marker on a person rather than a light source. */
+.cs-figure {
+  fill: var(--silk);
+  opacity: 0.7;
 }
 
-@keyframes draw {
-  to {
+.cs-label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  fill: var(--copper);
+}
+
+.cs-num {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 30px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  fill: var(--silk);
+}
+
+/* The static state is the *last* frame of the loop, not the first: dock
+   cleared, count final, route on the board. That is the frame the drawing
+   argues with, so it is the one a reader gets when nothing can move -- with
+   scripting off, or with reduced motion asked for. The count no longer needs
+   anything hidden: the digit column rests on 03, so the window already reads
+   the closing figure. Only the devices, which by then are in the van. */
+.cs-item {
+  opacity: 0;
+}
+
+/* ---- and the twelve seconds of it --------------------------------------- */
+
+/* One duration on every element, so the whole sequence is one timeline and the
+   count can never drift out of step with the loading. Percentages are the
+   score: on the dock by 6.7, load 15-39, shutter to 48.3, away by 69.2, still
+   from there to the end.
+ *
+ * `design-direction.md` §5 caps motion at 500ms and names the marketing hero as
+ * the single exception, on the grounds that the cap protects someone mid-task
+ * and a visitor meeting the company is not mid-task. This spends that exception
+ * -- and spends it once, on the only sequence on the site. §5 also asks that
+ * motion confirm, orient or reveal and never decorate, which is the test every
+ * beat below had to pass: the wheels and the springs are what make this a
+ * vehicle being loaded rather than a shape being slid, the counter says what was
+ * counted, and the trace reveals the route. Nothing here is here to be pretty.
+ *
+ * A third of the loop is a held still frame. That is the part that makes an
+ * infinite animation survivable beside a headline: the movement is slow, all in
+ * one direction, and then it stops for three and a half seconds. It is also the
+ * frame a visitor actually reads, so everything it holds -- the route, the two
+ * vias, the final count -- is cleared at the *head* of the next cycle rather
+ * than at the tail of this one. Fading them out of the still frame to make the
+ * seam work was paying for the transition with the thing the transition exists
+ * to arrive at. */
+.js .cs-van {
+  animation: cs-van 12s linear infinite;
+}
+
+/* The same 330 units twice: onto the dock and off it. That puts the rear face
+   at 536 in a 480-unit frame, so the loop's first and last positions are
+   identical and the seam costs nothing -- no fade, no cut.
+ *
+ * It used to open at `translateX(0)` and fade up, which was survivable when the
+ * van was four rectangles and reads as a van materialising at a dock now that it
+ * is not. Arriving backwards is also simply what happens: the rear opening faces
+ * the dock, and the only way it gets there is in reverse. */
+@keyframes cs-van {
+  0% {
+    transform: translateX(330px);
+    /* Constant deceleration, which is the curve braking actually makes.
+       Anything sharper spends the whole 330 units in the first fifth of a
+       second and the five holes in the rim strobe against their own rotation. */
+    animation-timing-function: cubic-bezier(0.5, 1, 0.89, 1);
+  }
+  6.7%,
+  48.3% {
+    transform: translateX(0);
+    /* Pulling away, so it leaves slowly and is gone quickly. */
+    animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0.35);
+  }
+  69.2%,
+  100% {
+    transform: translateX(330px);
+  }
+}
+
+/* A 20-unit tyre rolls 125.66 units per turn, so a unit travelled is 2.865
+   degrees and the full 330 is 945.4 of them. Getting that number right is the
+   whole exercise: a van that slides with its wheels still is the most obvious
+   tell in the scene, and one whose wheels turn at some invented rate is the
+   second. Both curves below are copied from `cs-van` -- the right distance on
+   the wrong ease still reads as skidding, just intermittently. */
+.js .cs-rim-rear,
+.js .cs-rim-front {
+  animation: cs-rim 12s linear infinite;
+}
+
+@keyframes cs-rim {
+  0% {
+    transform: rotate(0deg);
+    animation-timing-function: cubic-bezier(0.5, 1, 0.89, 1);
+  }
+  6.7%,
+  48.3% {
+    /* Negative, because reversing onto the dock turns them backwards. */
+    transform: rotate(-945.4deg);
+    animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0.35);
+  }
+  69.2%,
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+/* The body on its springs, and never more than two units of it. Every one has a
+   cause: the dip as it stops reversing, one compression per device going in, and
+   the lift as it takes up drive. Small enough to be felt rather than watched --
+   this is what separates a drawing that moves from a vehicle being loaded, and
+   it only works while nobody notices it happening.
+ *
+ * Affordable because the wheel wells are drawn four units larger than the arches
+ * cut in the body above them, so the shell can move on the axles without opening
+ * a gap at the arch lip. */
+.js .cs-sprung {
+  animation: cs-sprung 12s linear infinite;
+}
+
+@keyframes cs-sprung {
+  0%,
+  6.7% {
+    transform: translateY(0);
+  }
+  8.3% {
+    transform: translateY(1.7px);
+  }
+  10% {
+    transform: translateY(-0.5px);
+  }
+  11.6%,
+  22.5% {
+    transform: translateY(0);
+  }
+  23.9% {
+    transform: translateY(1.1px);
+  }
+  25.6%,
+  30% {
+    transform: translateY(0.6px);
+  }
+  31.4% {
+    transform: translateY(1.7px);
+  }
+  33.1%,
+  39% {
+    transform: translateY(1.2px);
+  }
+  40.4% {
+    transform: translateY(2.3px);
+  }
+  42.1%,
+  48.3% {
+    transform: translateY(1.8px);
+  }
+  52% {
+    transform: translateY(0.5px);
+  }
+  /* Back to ride height only once the whole sprung mass is past x=480, at
+     68.3%. A loaded van does not get lighter; it just stops being on screen,
+     and the seam needs it back where it started. */
+  56%,
+  70% {
+    transform: translateY(1.2px);
+  }
+  76%,
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* Each item arcs rather than slides: a thing carried by a person goes up before
+   it goes in. The three deltas are measured -- +207/-23, +139/-26, +77/-42 --
+   and every one of them lands its item on the centre of the rear opening at
+   (229, 254). The previous set were guesses against an older deck, which is why
+   all three used to stop short of the van and fade out in mid-air.
+ *
+ * Each also turns a few degrees and loses about a sixth of its size on the way
+ * in. The scale is depth, not decoration: the opening is further from the viewer
+ * than the deck is, and an object that crosses that distance at a constant size
+ * reads as being dragged across a flat picture. It fades at the opening instead
+ * of vanishing at it, because side-on there is nothing behind that edge to
+ * disappear into.
+ *
+ * They leave at 15, 23.5 and 32.5, which is deliberately uneven, with the
+ * longest pause before the laptop -- the one that has to be picked up off the
+ * deck first. Three even intervals read as a conveyor, and two people passing
+ * things across are not one.
+ *
+ * Every keyframe carries the same three transform functions in the same order.
+ * A list that changes shape between stops falls back to matrix interpolation,
+ * which takes the rotation and the arc somewhere neither was asked to go. */
+.js .cs-item-1 {
+  animation: cs-item-1 12s linear infinite;
+}
+.js .cs-item-2 {
+  animation: cs-item-2 12s linear infinite;
+}
+.js .cs-item-3 {
+  animation: cs-item-3 12s linear infinite;
+}
+
+@keyframes cs-item-1 {
+  0% {
+    opacity: 0;
+    transform: translate(0, 8px) rotate(0deg) scale(0.98);
+  }
+  4%,
+  15% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  18% {
+    transform: translate(72px, -42px) rotate(-3deg) scale(0.96);
+  }
+  20.5% {
+    opacity: 1;
+    transform: translate(150px, -40px) rotate(-5deg) scale(0.9);
+  }
+  22.5%,
+  100% {
+    opacity: 0;
+    transform: translate(207px, -23px) rotate(-6deg) scale(0.84);
+  }
+}
+
+@keyframes cs-item-2 {
+  0% {
+    opacity: 0;
+    transform: translate(0, 8px) rotate(0deg) scale(0.98);
+  }
+  5.5%,
+  23.5% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  26% {
+    transform: translate(52px, -46px) rotate(4deg) scale(0.96);
+  }
+  28.2% {
+    opacity: 1;
+    transform: translate(104px, -42px) rotate(6deg) scale(0.9);
+  }
+  30%,
+  100% {
+    opacity: 0;
+    transform: translate(139px, -26px) rotate(7deg) scale(0.85);
+  }
+}
+
+@keyframes cs-item-3 {
+  0% {
+    opacity: 0;
+    transform: translate(0, 8px) rotate(0deg) scale(0.98);
+  }
+  6.7%,
+  32.5% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  35% {
+    transform: translate(26px, -66px) rotate(-5deg) scale(0.96);
+  }
+  37.2% {
+    opacity: 1;
+    transform: translate(56px, -62px) rotate(-8deg) scale(0.9);
+  }
+  39%,
+  100% {
+    opacity: 0;
+    transform: translate(77px, -42px) rotate(-10deg) scale(0.85);
+  }
+}
+
+/* The contact shadow is drawn inside the item group, so without this it lifts
+   with the device -- a dark patch travelling through the air underneath a flying
+   monitor, which is precisely the class of tell this pass exists to remove. It
+   carries no class of its own, but there is exactly one ellipse in each of the
+   three groups, so a type selector reaches all three and nothing else. Going out
+   as the device leaves the deck is also simply what a contact shadow does.
+ *
+ * Three keyframe sets rather than one on a delay: a delay would carry the return
+ * to 0.34 along with it, and that has to happen while the parent group is still
+ * at zero opacity -- which, for the second and third devices, a delay puts after
+ * they are back on the deck and visible. */
+.js .cs-item-1 ellipse {
+  animation: cs-shadow-1 12s linear infinite;
+}
+.js .cs-item-2 ellipse {
+  animation: cs-shadow-2 12s linear infinite;
+}
+.js .cs-item-3 ellipse {
+  animation: cs-shadow-3 12s linear infinite;
+}
+
+@keyframes cs-shadow-1 {
+  0%,
+  15% {
+    opacity: 0.34;
+  }
+  17.5%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes cs-shadow-2 {
+  0%,
+  23.5% {
+    opacity: 0.34;
+  }
+  26%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes cs-shadow-3 {
+  0%,
+  32.5% {
+    opacity: 0.34;
+  }
+  35%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* The shoulders do the handover and the lean follows them, which is the right
+   way round: the lean used to stand in for an arm swing because there was no arm
+   to swing, and a body that tips towards a van while its arms hang is a body
+   losing its balance.
+ *
+ * Zero here is the arm hanging at 68 degrees -- the rest angle is an attribute
+ * on a parent group -- and -58 puts the hand out at ten degrees below
+ * horizontal. Reaching, not waving.
+ *
+ * It does not go all the way back to rest between the first two devices. There
+ * is 0.12s between them, which is not long enough to drop an arm and lift it
+ * again, and attempting it reads as a twitch. It drops properly after the third.
+ *
+ * The two figures run the same pair of keyframes 180ms apart, which is the whole
+ * story of a handover: one lets go, the other has already started. A positive
+ * delay rather than the negative one this used to carry -- at -2.6s the second
+ * figure's lean landed at 96% of the cycle, in the middle of the still frame,
+ * with nothing in the scene to explain it. */
+.js .cs-arm-a {
+  animation: cs-arm 12s linear infinite;
+}
+
+.js .cs-arm-b {
+  animation: cs-arm 12s linear infinite 0.18s;
+}
+
+.js .cs-figure-a {
+  animation: cs-lean 12s linear infinite;
+}
+
+.js .cs-figure-b {
+  animation: cs-lean 12s linear infinite 0.18s;
+}
+
+@keyframes cs-arm {
+  0%,
+  13.5% {
+    transform: rotate(0deg);
+  }
+  16.5%,
+  21.5% {
+    transform: rotate(-58deg);
+  }
+  23.5% {
+    transform: rotate(-14deg);
+  }
+  25.5%,
+  29% {
+    transform: rotate(-58deg);
+  }
+  32% {
+    transform: rotate(-14deg);
+  }
+  34.5%,
+  38% {
+    transform: rotate(-58deg);
+  }
+  42%,
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+/* Three and a half degrees: enough that the item leaving their hands has a
+   cause, little enough that nobody reads it as a stumble. */
+@keyframes cs-lean {
+  0%,
+  14% {
+    transform: rotate(0deg);
+  }
+  17%,
+  21% {
+    transform: rotate(3.5deg);
+  }
+  23.5% {
+    transform: rotate(1deg);
+  }
+  26%,
+  29% {
+    transform: rotate(3.5deg);
+  }
+  32% {
+    transform: rotate(1deg);
+  }
+  35%,
+  38% {
+    transform: rotate(3.5deg);
+  }
+  42%,
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+/* The shutter comes down over the loaded rear. Scaled from its top edge rather
+   than slid, because a roller shutter is stored in the roof -- there is no
+   second copy of it above the van to slide in from.
+ *
+ * What a scale costs is that the slat pitch stretches as the shutter descends,
+ * which is not what slats do. The proper fix is a counter-scaled child and there
+ * is no element in the drawing to counter-scale, so the fall curve does the work
+ * instead: a shutter this heavy accelerates, and the intermediate states -- the
+ * only ones where the stretch is legible -- are the ones it spends least time
+ * in. It then hits the sill and rebounds three units, which is the beat that
+ * says the thing has weight. */
+.js .cs-shutter {
+  animation: cs-shutter 12s linear infinite;
+}
+
+@keyframes cs-shutter {
+  0%,
+  40% {
+    transform: scaleY(0);
+    /* Free fall is ease-in-quad. Nothing else looks like gravity. */
+    animation-timing-function: cubic-bezier(0.11, 0, 0.5, 0);
+  }
+  46.6% {
+    transform: scaleY(1);
+  }
+  47.4% {
+    transform: scaleY(0.965);
+  }
+  48.3%,
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+/* The count, which is the point of counting before it moves. One column of four
+   numerals rolling behind a clipped window, 40 units to the pitch: 120 shows 00
+   and 0 shows 03, and counting up moves the column up, the direction a drum
+   turns. It used to be four numerals cross-fading in place, which is the idea
+   without the mechanism -- a number that dissolves into the next one is a number
+   being replaced, and a counter is a thing that has been advanced.
+ *
+ * Each digit snaps over, runs three units past its detent and rocks back. Three
+ * and not four: the resting numeral clears the top of the window by 3.06 units
+ * at this cap height, and an overshoot larger than that clips the glyph on the
+ * way through.
+ *
+ * The window is the one element whose still-frame state cannot be reset by
+ * rolling -- the column has no numeral above 03 to roll on to, and rolling back
+ * down would read as counting devices off again. So it fades, in the same 3% at
+ * the head of the cycle as the route and the vias. */
+.js .cs-digits {
+  animation: cs-digits 12s linear infinite;
+}
+
+@keyframes cs-digits {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  3% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  3.01% {
+    opacity: 0;
+    transform: translateY(120px);
+  }
+  6.7%,
+  22.5% {
+    opacity: 1;
+    transform: translateY(120px);
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  24.2% {
+    transform: translateY(77px);
+    animation-timing-function: cubic-bezier(0.4, 0, 0.3, 1);
+  }
+  25.6%,
+  30% {
+    transform: translateY(80px);
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  31.7% {
+    transform: translateY(37px);
+    animation-timing-function: cubic-bezier(0.4, 0, 0.3, 1);
+  }
+  33.1%,
+  39% {
+    transform: translateY(40px);
+    animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+  }
+  40.7% {
+    transform: translateY(-3px);
+    animation-timing-function: cubic-bezier(0.4, 0, 0.3, 1);
+  }
+  42.1%,
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Headlamp and rear cluster. Both carry an inline `opacity: 0` in the markup --
+   a parked van has its lights off -- and an inline declaration is beaten by a
+   keyframe and not by a plain rule, which is why nothing anywhere turns them on
+   statically.
+ *
+ * Up before the shutter is fully down, and lit through the departure, the still
+ * frame and the reverse back onto the dock. That last stretch is what makes the
+ * seam free, and it is also the truthful reading: backing onto a bay is the one
+ * manoeuvre during which a van's lamps are certainly on. They go out once it is
+ * parked and the loading starts. */
+.js .cs-lamp-head,
+.js .cs-lamp-rear {
+  animation: cs-lamp 12s linear infinite;
+}
+
+@keyframes cs-lamp {
+  0%,
+  6.7% {
+    opacity: 1;
+  }
+  10%,
+  43% {
+    opacity: 0;
+  }
+  47%,
+  100% {
+    opacity: 1;
+  }
+}
+
+/* The route, drawn by the departure that makes it, on the departure's own
+   curve -- the same distance on a different ease and the line either runs out
+   ahead of the van or trails it home. The drawing edge stays about thirty units
+   behind the van's rear face for the whole run, which is the gap that lets it be
+   seen at all: directly under the van it would be laid in secret.
+ *
+ * The reset is a jump from drawn to undrawn, taken at zero opacity and held
+ * undrawn for five percent afterwards, so no frame can catch the line half
+ * erased. */
+.js .cs-trace {
+  stroke-dasharray: 1;
+  animation: cs-trace 12s linear infinite;
+}
+
+@keyframes cs-trace {
+  0% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  3% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+  3.01% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  8%,
+  48.3% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0.35);
+  }
+  69.2%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+/* The hot end of the line. Same path, same `pathLength`, one two-percent dash on
+   it, and deliberately the *same* dashoffset values and the same curve as
+   `cs-trace` above -- at offset `o` the route is drawn as far as `1 - o` and the
+   dash occupies `1 - o` to `1.02 - o`, so it leads the copper by two percent for
+   the whole run and slides off the end of the path exactly as the route lands.
+   Any other pair of values and the bright segment drifts against the edge it is
+   supposed to be riding.
+ *
+ * Two animations and not one. The opacity needs stops inside the drawing span,
+ * and a keyframe declaring only `opacity` would land in the middle of the
+ * dashoffset's single eased interval -- which is the one place the spec is
+ * genuinely open about which timing function that interval keeps. Splitting them
+ * leaves nothing to interpret.
+ *
+ * The markup carries `opacity: 0` inline, so a plain rule cannot turn this on;
+ * only a keyframe outranks an inline declaration. That is also the fallback that
+ * makes the still frame correct -- with nothing moving, nothing is being drawn,
+ * and a bright stub parked on a finished route reads as a rendering fault. */
+.js .cs-trace-head {
+  animation:
+    cs-trace-head 12s linear infinite,
+    cs-trace-head-lit 12s linear infinite;
+}
+
+@keyframes cs-trace-head {
+  0%,
+  48.3% {
+    stroke-dashoffset: 1;
+    animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0.35);
+  }
+  69.2%,
+  100% {
     stroke-dashoffset: 0;
   }
 }
+
+/* Lit for the departure and nothing else: up as the first units are laid, out
+   over the last three percent of the draw, dark for the third of the loop the
+   still frame holds. The two ends of the cycle are both at zero, which is what
+   lets the dashoffset above snap back across the seam unseen. */
+@keyframes cs-trace-head-lit {
+  0%,
+  48.3% {
+    opacity: 0;
+  }
+  49.8%,
+  66% {
+    opacity: 1;
+  }
+  69.2%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* The rings first, so the route has somewhere to arrive. A hollow via is a stage
+   not yet reached, which only means anything if it is on screen before the trace
+   gets to it. */
+.js .cs-ring {
+  animation: cs-ring 12s linear infinite;
+}
+
+@keyframes cs-ring {
+  0% {
+    opacity: 1;
+  }
+  3%,
+  48.3% {
+    opacity: 0;
+  }
+  51%,
+  100% {
+    opacity: 1;
+  }
+}
+
+/* The vias land as the route reaches them, which is the only reason they are
+   here: a stage that wrote something down. When it reaches them is arithmetic
+   rather than taste -- the near via sits 6.34% along the path and the far one
+   91.12%, and read back through the departure's ease-in those are 55.9% and
+   68.7% of the cycle.
+ *
+ * Two keyframe sets and not one with a delay. The old version offset the far via
+ * by 1.6s, which was close enough while it sat at 80% of a shorter route; a
+ * delay also drags the seam reset along with it, and at this offset that would
+ * leave the far via lit through the whole of the loading.
+ *
+ * Each lands past its size and settles back, because a via is a hole filling
+ * with metal, not an indicator coming on. */
+.js .cs-via-a {
+  animation: cs-via-a 12s linear infinite;
+}
+
+.js .cs-via-b {
+  animation: cs-via-b 12s linear infinite;
+}
+
+@keyframes cs-via-a {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  3% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  3.01%,
+  55.9% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  57.2% {
+    opacity: 1;
+    transform: scale(1.28);
+  }
+  58.9%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes cs-via-b {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  3% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  3.01%,
+  68.7% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.28);
+  }
+  71.7%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* SVG shapes have no CSS box, so a transform would otherwise be measured from
+   the origin of the whole drawing -- which throws every rotation and scale
+   across the frame. `fill-box` puts each one back on its own geometry. */
+.cs-figure,
+.cs-shutter,
+.cs-via,
+.cs-item {
+  transform-box: fill-box;
+}
+
+.cs-figure {
+  /* At the feet, so a lean is a lean and not a topple. */
+  transform-origin: 50% 100%;
+}
+
+.cs-shutter {
+  transform-origin: 50% 0;
+}
+
+.cs-via {
+  transform-origin: 50% 50%;
+}
+
+/* With every one of these stopped, the drawing is its own markup again: van at
+   the dock, shutter closed, lamps off at their inline zero, the column resting
+   on 03, route drawn, both vias filled. Nothing below needs a value putting
+   back except the dash pattern, because nothing below applies one outside a
+   keyframe. */
+@media (prefers-reduced-motion: reduce) {
+  .js .cs-van,
+  .js .cs-rim-rear,
+  .js .cs-rim-front,
+  .js .cs-sprung,
+  .js .cs-item-1,
+  .js .cs-item-2,
+  .js .cs-item-3,
+  .js .cs-item-1 ellipse,
+  .js .cs-item-2 ellipse,
+  .js .cs-item-3 ellipse,
+  .js .cs-arm-a,
+  .js .cs-arm-b,
+  .js .cs-figure-a,
+  .js .cs-figure-b,
+  .js .cs-shutter,
+  .js .cs-digits,
+  .js .cs-lamp-head,
+  .js .cs-lamp-rear,
+  .js .cs-trace,
+  .js .cs-trace-head,
+  .js .cs-ring,
+  .js .cs-via-a,
+  .js .cs-via-b {
+    animation: none;
+  }
+
+  /* The dash pattern is applied outside the animation, so stopping the
+     animation alone would leave the route permanently undrawn. */
+  .js .cs-trace {
+    stroke-dasharray: none;
+  }
+}
+
+/* ---- The docket --------------------------------------------------------- */
+
+/* Square because paper is, and warm because it is paper and not a panel. Sized
+   by its container, because the only place it appears on this page is inside a
+   phone screen (see `.ph-docket`) and that screen is fluid. */
+.docket {
+  position: relative;
+  width: 100%;
+  margin: 0;
+}
+
+/* The shadow lives on the sheet so it follows the torn edge. `drop-shadow`
+   reads the element's alpha silhouette, which includes the mask that cuts the
+   perforation; `box-shadow` only knows the box. */
+/* Square to its container, and lightly lifted off it.
+ *
+ * This used to be tilted half a degree, on the argument that paper put down
+ * somewhere never sits exactly square to the room. True of paper on a desk, and
+ * wrong here: the docket is now rendered *by* the app, on a screen, and nothing
+ * a phone draws is off-axis. A tilted document inside a straight bezel reads as
+ * a rendering fault, not as a physical object.
+ *
+ * The shadow stays, because the app does elevate the sheet, and it lives here
+ * so it follows the torn edge -- `drop-shadow` reads the element's alpha
+ * silhouette, which includes the mask that cuts the perforation, where
+ * `box-shadow` only knows the box. Small values: this is a card on a screen
+ * now, not an object in a room. */
+.docket-sheet {
+  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--ink) 16%, transparent));
+}
+
+/* Lit from above, faintly. Paper under a light source is brighter at the top
+   edge than at the bottom, and the two-stop gradient is the whole difference
+   between an object and a filled rectangle. Both stops are the palette's own
+   paper tones -- this is light, not a second colour. The white top edge reads
+   because the screen behind it is silk rather than white. */
+.docket-paper {
+  background: linear-gradient(
+    to bottom,
+    var(--surface) 0%,
+    var(--surface-warm) 42%,
+    color-mix(in srgb, var(--surface-warm) 92%, var(--ink)) 100%
+  );
+  color: var(--ink);
+  border-radius: 0;
+  padding: 1.375rem 1.5rem 1.125rem;
+}
+
+.docket-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.docket-title {
+  font-size: var(--size-label);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--copper);
+}
+
+/* Printed on the form, in the register a form uses for its own markings. */
+.docket-specimen {
+  font-size: var(--size-label);
+  letter-spacing: 1.6px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 0.125rem 0.375rem;
+}
+
+.docket-rule {
+  display: block;
+  height: 1px;
+  background: var(--border);
+  margin-block: 0.75rem;
+}
+
+.docket-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--size-body-sm);
+  color: var(--ink-2);
+}
+
+.docket-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.625rem;
+  margin-top: 0.75rem;
+}
+
+/* Data rows separated by space rather than by rules -- design-direction.md §3
+   rations hairlines, and a rule under every line is the broadsheet default. */
+.docket-line {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr auto;
+  gap: 0.75rem;
+  align-items: baseline;
+  font-size: var(--size-body-sm);
+}
+
+.docket-qty {
+  color: var(--muted);
+}
+
+.docket-item {
+  display: block;
+  color: var(--ink);
+}
+
+.docket-serial {
+  display: block;
+  margin-top: 0.125rem;
+  font-size: var(--size-label);
+  color: var(--muted);
+  letter-spacing: 0.4px;
+}
+
+.docket-grade {
+  font-size: var(--size-label);
+  letter-spacing: 0.6px;
+  color: var(--ink-2);
+}
+
+.docket-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.docket-total-label {
+  font-size: var(--size-label);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.docket-total strong {
+  font-size: 1.5rem;
+  line-height: 1;
+  /* Tabular so a two-digit count does not shift the column when the example
+     changes. */
+  font-variant-numeric: tabular-nums;
+}
+
+.docket-stampline {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.875rem;
+}
+
+/* A stamp, not a pill. Boxed, mono, and off-square by two degrees -- enough to
+   read as pressed by a person, little enough that nobody thinks it broke. */
+.docket-stamp {
+  font-size: var(--size-label);
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--success);
+  border: 1.5px solid var(--success);
+  padding: 0.25rem 0.625rem;
+  transform: rotate(-2deg);
+}
+
+/* The tear. A mask rather than an image, so it keeps the paper colour if the
+   palette moves. */
+.docket-perf {
+  display: block;
+  height: 8px;
+  /* Exactly where the paper's gradient ends, or the tear shows as a seam. */
+  background: color-mix(in srgb, var(--surface-warm) 92%, var(--ink));
+  -webkit-mask-image: radial-gradient(circle 4px at 7px 0, transparent 98%, black 100%);
+  mask-image: radial-gradient(circle 4px at 7px 0, transparent 98%, black 100%);
+  -webkit-mask-size: 14px 8px;
+  mask-size: 14px 8px;
+  -webkit-mask-repeat: repeat-x;
+  mask-repeat: repeat-x;
+}
+
 
 /* ---- About: photo slot, tabs, three points ------------------------------ */
 
@@ -734,8 +1917,47 @@ ul {
   padding-block: clamp(2.5rem, 5vw, 3.5rem);
 }
 
+/* The footer lockup is the full one, and it is set larger than the bar's for a
+   reason beyond hierarchy: a 26-character strapline cannot sit flush under a
+   10-character name at 22px -- matching them there needs negative tracking. At
+   36px the name is wide enough that the strapline reaches it on positive
+   tracking, so the two lines can end on the same vertical. That is the whole
+   argument for the size. */
 .foot .wordmark {
   color: var(--silk);
+  align-items: center;
+}
+
+.foot .wordmark-name {
+  font-size: 2.25rem;
+}
+
+.foot .wordmark-mark {
+  width: 2.75rem;
+  height: 2.2rem;
+}
+
+/* Optically justified to the name above it.
+ *
+ * `0.1728em` is not a round number and is not meant to be: it is the tracking
+ * at which `COLLECT · RECOVER · RECORD` measures 160.75px, which is what
+ * `Rebin Tech` measures at 2.25rem. Measured in the browser, not guessed --
+ * the first attempt at this used 0.238em picked by eye and was out by half the
+ * line. Two stacked lines ending on different verticals read as two things that
+ * happen to be near each other; flush on both edges they read as one mark
+ * somebody drew.
+ *
+ * Re-measure if the name, the strapline, or the display size changes.
+ *
+ * Colour: `--muted` is a grey chosen against white and on the deep board it is
+ * barely a step off the background, so silk pulled back into the ground
+ * instead. */
+.foot .wordmark small {
+  letter-spacing: 0.1728em;
+  /* Tracking adds a trailing space after the final D, which would push the line
+     one step past the name's right edge. */
+  margin-right: -0.1728em;
+  color: color-mix(in srgb, var(--silk) 58%, var(--board-deep));
 }
 
 .foot h4 {
@@ -887,16 +2109,13 @@ ul {
   }
 }
 
+
 /* The top bar carries the phone number and the hours. On a narrow screen the
    two halves stack instead of colliding. */
 @media (max-width: 40rem) {
   .topbar-inner {
     flex-direction: column;
     gap: 0.25rem;
-  }
-
-  .hero-facts {
-    gap: 1rem;
   }
 }
 
@@ -911,11 +2130,6 @@ ul {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-  }
-
-  .seam-trace {
-    stroke-dashoffset: 0;
-    animation: none;
   }
 }
 
@@ -1041,25 +2255,54 @@ ul {
   }
 }
 
-.js .hero-inner > * {
-  animation: rise 760ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+/* Named rather than `> *`: the trace and the docket are also children of the
+   stack and have their own timing, and two rules of equal specificity setting
+   `animation` on the same element is decided by source order, which is not a
+   thing to leave to chance.
+ *
+ * Slower and further apart than before. The old sequence was six things 70ms
+ * apart, which is brisk, and brisk reads as eager. The curve is a long
+ * decelerate -- everything arrives already slowing down. */
+.js .hero-copy > .eyebrow,
+.js .hero-copy > .hero-title,
+.js .hero-copy > .hero-lede,
+.js .hero-copy > .hero-actions {
+  animation: rise 900ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
-.js .hero-inner > *:nth-child(1) { animation-delay: 80ms; }
-.js .hero-inner > *:nth-child(2) { animation-delay: 150ms; }
-.js .hero-inner > *:nth-child(3) { animation-delay: 220ms; }
-.js .hero-inner > *:nth-child(4) { animation-delay: 290ms; }
-.js .hero-inner > *:nth-child(5) { animation-delay: 360ms; }
+.js .hero-copy > .eyebrow { animation-delay: 60ms; }
+.js .hero-copy > .hero-title { animation-delay: 160ms; }
+.js .hero-copy > .hero-lede { animation-delay: 280ms; }
+.js .hero-copy > .hero-actions { animation-delay: 400ms; }
 
-/* The three facts arrive after the block they sit in, so the eye reads the
-   headline before the detail underneath it. */
-.js .hero-facts .fact {
-  animation: rise 700ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+/* The drawing arrives last, after the sentence that promises it. It carries its
+   own fade on the inside as well -- the loop opens by bringing the van in --
+   and the two compose rather than fight: this one lifts the frame into place,
+   that one starts what happens inside it. */
+.js .hero-story {
+  animation: rise 900ms cubic-bezier(0.22, 1, 0.36, 1) 500ms backwards;
 }
 
-.js .hero-facts .fact:nth-child(1) { animation-delay: 460ms; }
-.js .hero-facts .fact:nth-child(2) { animation-delay: 530ms; }
-.js .hero-facts .fact:nth-child(3) { animation-delay: 600ms; }
+/* The one flourish the design direction calls earned: the stamp lands.
+ *
+ * Hung off the section's reveal rather than off page load. It used to fire
+ * 1560ms after the document appeared, which was right while the docket was in
+ * the hero and being looked at. The docket is on the phone now, most of a page
+ * further down -- a fixed delay would land the stamp minutes before anyone
+ * scrolled to it, which is a flourish spent on an empty room. */
+.reveal-in .docket-stamp {
+  animation: stamp-land 420ms cubic-bezier(0.22, 1, 0.36, 1) 620ms backwards;
+}
+
+/* The rotation repeats in the keyframe because a transform replaces the
+   element's own rather than adding to it -- without it the stamp animates from
+   square and settles crooked, which reads as a bug. */
+@keyframes stamp-land {
+  from {
+    opacity: 0;
+    transform: rotate(-2deg) scale(1.22);
+  }
+}
 
 /* The routing behind the hero fades up last and slowly. It is the surface, so
    it should feel like it was always there rather than like it arrived. */
@@ -1080,11 +2323,15 @@ ul {
    onto. A permanent shadow on a bar sitting at the top of a page is a shadow
    from nothing. */
 .nav {
-  transition: box-shadow 240ms ease, padding 240ms ease;
+  transition: box-shadow 240ms ease, border-color 240ms ease, padding 240ms ease;
 }
 
+/* Once there is page under the bar, the edge firms up and the bar casts. Both
+   change together because they are one fact -- the bar is now over something
+   rather than sitting at the top of it. */
 .nav-scrolled {
-  box-shadow: 0 6px 24px rgba(10, 59, 44, 0.09);
+  border-bottom-color: color-mix(in srgb, var(--copper) 75%, transparent);
+  box-shadow: 0 6px 24px color-mix(in srgb, var(--board) 12%, transparent);
 }
 
 .nav-scrolled .nav-inner {
@@ -1112,11 +2359,22 @@ ul {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .js .hero-inner > *,
-  .js .hero-facts .fact,
+  .js .hero-copy > .eyebrow,
+  .js .hero-copy > .hero-title,
+  .js .hero-copy > .hero-lede,
+  .js .hero-copy > .hero-actions,
+  .js .hero-story,
+  .reveal-in .docket-stamp,
   .js .board-field,
+  .js .field-signal,
   .reveal-in .eyebrow::before {
     animation: none;
+  }
+
+  /* Stopping the animation would leave the pulse frozen mid-net as a bright
+     stub. It goes entirely instead. */
+  .js .field-signal {
+    opacity: 0;
   }
 
   .nav,
@@ -1242,19 +2500,76 @@ ul {
 
 /* ---- Hero: copy on the left, the product on the right ------------------- */
 
-.hero-grid {
-  position: relative;
-  z-index: 1;
+/* On a short window the hero gives up its height rather than push the docket
+   off the bottom. A first screen that shows half an object is worse than one
+   that shows a smaller whole -- and on a 1366x768 laptop, which is still an
+   ordinary machine in an ordinary office, the stamp fell below the fold. The
+   stamp is the payoff; a hero that hides it has no reason to carry a docket.
+   The threshold is 52rem rather than 46rem for exactly that screen. */
+/* Side by side the hero is a good deal shorter than it was stacked, so a short
+   window no longer has to give up its height entirely -- it just tightens. The
+   previous rule dropped `min-height` to 0 here, which on a 768px laptop left
+   the hero looking like a banner strip rather than an opening. */
+@media (max-height: 52rem) {
+  .hero {
+    min-height: min(88vh, 34rem);
+  }
+
+  .hero-split {
+    padding-block: 1.5rem;
+  }
+
+  .hero-title {
+    font-size: clamp(1.75rem, 3.4vw, 2.375rem);
+  }
+
+  .hero-lede {
+    margin-top: 0.875rem;
+  }
+
+  .hero-actions {
+    margin-top: 1.375rem;
+  }
+
+  .docket-paper {
+    padding: 1.125rem 1.25rem 1rem;
+  }
+}
+
+/* Below this the two halves stack. Side by side the drawing would be a
+   thumbnail of a van, and a van you cannot read is not worth the column. It
+   keeps its own width underneath instead, and the measure comes off the copy --
+   a 34rem cap on a column narrower than 34rem only costs the type a line
+   break. */
+@media (max-width: 62rem) {
+  .hero-split {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-copy {
+    max-width: none;
+  }
+
+  .hero-story {
+    justify-self: start;
+    margin-top: 1.5rem;
+  }
+}
+
+/* ---- The chain, and the app performing it ------------------------------- */
+
+.process-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  gap: clamp(1.5rem, 4vw, 3.5rem);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr);
+  gap: clamp(1.5rem, 4vw, 3rem);
   align-items: center;
 }
 
-/* Below this the phones would be thumbnails beside a cramped column. The words
-   are what the page is for, so they keep the width and the pair drops away. */
+/* Below this the phones would be thumbnails beside a cramped column, so the
+   chain keeps the width and the pair drops away. The chain is the content; the
+   phones are evidence for it. */
 @media (max-width: 64rem) {
-  .hero-grid {
+  .process-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1481,6 +2796,103 @@ ul {
   font-size: 0.4375rem;
   color: var(--muted);
   margin-top: 0.35rem;
+}
+
+/* ---- The docket, on the screen ------------------------------------------ */
+
+/* The real `Docket` component, brought down to phone scale.
+ *
+ * Every size is re-stated rather than the whole thing being `transform:
+ * scale()`d. A transform would keep the proportions perfectly and shrink the
+ * hairlines and the perforation with them, and a 0.4px rule renders as nothing
+ * on half the displays that will see it. The rest of this mock is built the
+ * same way -- `.ph-line strong` is a size, not a scaled-down heading -- so this
+ * follows the file rather than introducing a second technique.
+ *
+ * It runs off the bottom of the screen, which `.phone-screen` clips. That is
+ * the correct behaviour and not an overflow: a document longer than a phone is
+ * exactly what scrolling is for, and a docket that ended tidily inside the
+ * bezel would be a docket drawn to fit a picture. */
+.ph-docket {
+  margin-top: 0.5rem;
+  position: relative;
+  z-index: 2;
+}
+
+.ph-docket .docket-paper {
+  padding: 0.5rem 0.5rem 0.4rem;
+}
+
+/* 0.4375rem is the floor the rest of this mock already uses -- `.ph-eyebrow`
+   and `.ph-note` are both set there. Nothing here goes under it. A docket typed
+   smaller than the screen it is drawn on would be the one element that stopped
+   being a screen and started being a texture. */
+.ph-docket .docket-title,
+.ph-docket .docket-specimen {
+  font-size: 0.4375rem;
+  letter-spacing: 0.08em;
+}
+
+.ph-docket .docket-specimen {
+  padding: 0.05rem 0.2rem;
+}
+
+.ph-docket .docket-rule {
+  margin-block: 0.3rem;
+}
+
+.ph-docket .docket-meta {
+  font-size: 0.4375rem;
+}
+
+.ph-docket .docket-lines {
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+}
+
+.ph-docket .docket-line {
+  grid-template-columns: 1rem 1fr auto;
+  gap: 0.3rem;
+  font-size: 0.5rem;
+}
+
+.ph-docket .docket-serial {
+  font-size: 0.4375rem;
+  margin-top: 0.05rem;
+}
+
+.ph-docket .docket-grade {
+  font-size: 0.4375rem;
+}
+
+.ph-docket .docket-total-label {
+  font-size: 0.4375rem;
+}
+
+.ph-docket .docket-total strong {
+  font-size: 0.875rem;
+}
+
+.ph-docket .docket-stampline {
+  margin-top: 0.35rem;
+}
+
+.ph-docket .docket-stamp {
+  font-size: 0.4375rem;
+  letter-spacing: 0.1em;
+  border-width: 1px;
+  padding: 0.1rem 0.25rem;
+}
+
+/* The tear, at screen scale. The teeth have to come down with the sheet or a
+   14px scallop on a 200px docket reads as a torn-off corner rather than as a
+   perforation. */
+.ph-docket .docket-perf {
+  height: 4px;
+  -webkit-mask-image: radial-gradient(circle 2px at 3.5px 0, transparent 98%, black 100%);
+  mask-image: radial-gradient(circle 2px at 3.5px 0, transparent 98%, black 100%);
+  -webkit-mask-size: 7px 4px;
+  mask-size: 7px 4px;
 }
 
 .ph-viewfinder {
