@@ -1,0 +1,1392 @@
+/* The console.
+ *
+ * The marketing site is dark, roomy, and paced -- it is arguing. This is the
+ * opposite brief: two or three operators, every working day, looking for the
+ * row that needs them. So the surface goes light, the scale drops, and the
+ * density goes up. It reads as the same product because it is built from the
+ * same tokens the root layout emits from BRAND (--board, --copper, the Plex
+ * family); it does not read as the same page, because it is not doing the
+ * same job.
+ *
+ * Every machine-written value -- ids, counts, timestamps, statuses -- is set
+ * in mono. Not for texture: it is what makes a column of them scannable
+ * vertically, which is the whole activity here. */
+
+.admin {
+  --line: color-mix(in srgb, var(--board) 11%, transparent);
+  --line-soft: color-mix(in srgb, var(--board) 6%, transparent);
+  --row-hover: color-mix(in srgb, var(--board) 3.5%, transparent);
+
+  /* Status carries the only saturated colour on the page, so the eye can find
+     state without reading. Four tones, because there are four things a
+     request can be doing: waiting on us, moving, finished, stopped. */
+  --tone-waiting: var(--gold);
+  --tone-active: var(--copper);
+  --tone-done: var(--success);
+  --tone-stopped: var(--muted);
+
+  /* The material system.
+   *
+   * Depth here is translucency and layering rather than gloss. A console is
+   * read for hours at a time, and a specular highlight that looks expensive
+   * in a screenshot is glare by the third hour. So panels are frosted glass
+   * over a canvas that carries a very slight tint, and separation is done
+   * with hairlines and a single soft shadow -- the surface recedes and the
+   * data sits on top of it. */
+  --canvas: #F7F9F7;
+  --panel: color-mix(in srgb, white 74%, transparent);
+  --panel-solid: color-mix(in srgb, white 92%, var(--canvas));
+  --hairline: color-mix(in srgb, var(--board) 10%, transparent);
+  --lift:
+    0 0 0 1px color-mix(in srgb, var(--board) 6%, transparent),
+    0 1px 2px -1px color-mix(in srgb, var(--board) 12%, transparent),
+    0 12px 28px -16px color-mix(in srgb, var(--board) 30%, transparent);
+
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.875rem;
+  /* Tabular figures everywhere. A column of counts whose digits change width
+     as the numbers change is the single loudest tell that a data table was
+     not designed; this one line fixes it for the whole console. */
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+
+  /* Two very wide, very faint washes -- copper at the top left where the rail
+     meets the content, board green at the bottom right. Neither is visible as
+     a colour; together they stop a full screen of near-white from reading as
+     flat paper. */
+  background:
+    radial-gradient(
+      900px 500px at 12% -5%,
+      color-mix(in srgb, var(--copper) 5%, transparent) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      1000px 600px at 100% 105%,
+      color-mix(in srgb, var(--board) 6%, transparent) 0%,
+      transparent 70%
+    ),
+    var(--canvas);
+}
+
+/* ---------------------------------------------------------------- chrome */
+
+/* A left rail rather than a top bar. The sections are a short fixed list an
+ * operator moves between all day, so they stay in one place at one size,
+ * and the tables beside them keep the full width of the screen for columns
+ * -- which is what a queue actually needs. */
+
+.admin {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+}
+
+.admin-rail {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  padding: 1.375rem 0.875rem 1rem;
+  color: var(--silk);
+  /* Lit from the top left, the way the rest of the depth on this page is.
+     The inner hairline on the right edge is the highlight where the glass
+     turns -- it is what separates the rail from the canvas without drawing
+     a border heavy enough to read as a line. */
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--board) 96%, white) 0%,
+      var(--board) 42%,
+      var(--board-deep) 100%
+    );
+  box-shadow:
+    inset -1px 0 0 color-mix(in srgb, white 8%, transparent),
+    1px 0 24px -8px color-mix(in srgb, var(--board-deep) 55%, transparent);
+}
+
+.admin-mark {
+  display: flex;
+  align-items: center;
+  gap: 0.5625rem;
+  padding: 0 0.5rem;
+  text-decoration: none;
+  color: var(--silk);
+}
+
+/* The same via that marks the sign-in card, at the same size. */
+.admin-mark-node {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2.5px solid var(--copper);
+  flex: none;
+}
+
+.admin-mark-text {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.015em;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+/* "Console", not "Admin". It names the thing the operator is sitting at. */
+.admin-mark-text em {
+  font-family: var(--font-mono), monospace;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 0.5625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--copper);
+}
+
+.admin-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.admin-nav a {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 7px;
+  color: color-mix(in srgb, var(--silk) 66%, transparent);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.admin-nav a svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  opacity: 0.75;
+}
+
+.admin-nav a:hover {
+  background: color-mix(in srgb, var(--silk) 8%, transparent);
+  color: var(--silk);
+}
+
+.admin-nav a[aria-current="page"] {
+  background: color-mix(in srgb, var(--silk) 13%, transparent);
+  color: var(--silk);
+}
+
+.admin-nav a[aria-current="page"] svg {
+  color: var(--copper);
+  opacity: 1;
+}
+
+/* Pushed to the bottom of the rail: who you are is reference, not navigation. */
+.admin-who {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.75rem 0.625rem 0;
+  border-top: 1px solid color-mix(in srgb, var(--silk) 12%, transparent);
+}
+
+.admin-who-name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--silk) 85%, transparent);
+}
+
+.admin-who-role {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.5625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--copper);
+}
+
+.admin-signout {
+  margin-top: 0.5rem;
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.75rem;
+  color: color-mix(in srgb, var(--silk) 50%, transparent);
+  cursor: pointer;
+  transition: color 140ms ease;
+}
+
+.admin-signout:hover:not([disabled]) {
+  color: var(--silk);
+}
+
+.admin-signout:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.admin-main {
+  padding: 1.75rem 2rem 4rem;
+  max-width: 1360px;
+  min-width: 0;
+}
+
+/* Below this the rail would eat the table. It becomes a top strip instead,
+   with the sections in a row and the identity block folded in beside them. */
+@media (max-width: 820px) {
+  .admin {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-rail {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border-right: none;
+    border-bottom: 1px solid color-mix(in srgb, black 22%, transparent);
+    flex-wrap: wrap;
+  }
+
+  .admin-nav {
+    flex-direction: row;
+  }
+
+  .admin-who {
+    margin-top: 0;
+    margin-left: auto;
+    padding: 0 0 0 1rem;
+    border-top: none;
+    border-left: 1px solid color-mix(in srgb, var(--silk) 12%, transparent);
+  }
+
+  .admin-signout {
+    margin-top: 0.125rem;
+  }
+
+  .admin-main {
+    padding: 1.25rem 1rem 3rem;
+  }
+}
+
+/* ----------------------------------------------------------------- heads */
+
+.admin-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.875rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.admin-h1 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  /* Tightened as the size goes up, the way an optical size would do it. */
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+
+.admin-count {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.admin-sub {
+  color: var(--ink-2);
+  margin: -0.5rem 0 1.25rem;
+  max-width: 60ch;
+  line-height: 1.5;
+}
+
+/* ----------------------------------------------------------------- tiles */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.tile {
+  position: relative;
+  background: var(--panel);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: none;
+  border-radius: 12px;
+  padding: 0.9375rem 1rem 1rem;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  box-shadow: var(--lift);
+  /* The spring is the Apple detail that survives translation: a curve that
+     overshoots slightly and settles, rather than a linear slide. */
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The top highlight: one hairline of white along the upper edge, which is
+   what makes a translucent panel read as glass rather than as a flat tint. */
+.tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding-top: 1px;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, white 85%, transparent),
+    transparent 40%
+  );
+  -webkit-mask:
+    linear-gradient(black, black) content-box,
+    linear-gradient(black, black);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+a.tile:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--copper) 30%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--board) 16%, transparent),
+    0 18px 36px -18px color-mix(in srgb, var(--board) 38%, transparent);
+}
+
+a.tile:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 3px;
+}
+
+.tile-label {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--board) 66%, transparent);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.4375rem;
+}
+
+.tile-value {
+  font-family: var(--font-mono), monospace;
+  font-size: 1.875rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A tile at zero is not news; one with work in it is. Only the second earns
+   colour, so a glance at the row finds the queue that needs an operator. */
+.tile-value[data-zero="true"] {
+  color: var(--muted);
+}
+
+.tile-value[data-zero="false"] {
+  color: var(--copper);
+}
+
+/* ---------------------------------------------------------------- tables */
+
+/* `overflow-x: auto` with a radius clips its own corners square once the table
+   is wider than the box, so the radius is re-asserted on the scroll container
+   itself and the panel keeps its shape at every width. */
+.table-wrap {
+  border-radius: 12px;
+  overflow-x: auto;
+  background: var(--panel-solid);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  box-shadow: var(--lift);
+}
+
+table.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+/* The header is the table's instrument panel: it names the columns and it is
+ * the thing an operator reads first to orient in a queue. Set in the same
+ * board green as the rail at full weight, on a tinted band with a copper
+ * hairline under it -- so the header belongs to the chrome and the rows below
+ * it are plainly the data. */
+.admin-table th {
+  text-align: left;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--board) 82%, transparent);
+  font-weight: 600;
+  padding: 0.875rem 1rem;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--board) 7%, transparent),
+    color-mix(in srgb, var(--board) 4%, transparent)
+  );
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--copper) 45%, transparent);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.admin-table td {
+  padding: 0.8125rem 1rem;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: middle;
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Rows arrive in sequence on first paint.
+ *
+ * Done in CSS rather than with the motion library because a table row cannot
+ * be wrapped in the div a motion component needs without breaking the table's
+ * own semantics -- and because an animation that runs once, on mount, with no
+ * state behind it, is exactly what a keyframe is for.
+ *
+ * The delay is capped at eight rows: past that the last row of a long queue
+ * would be waiting on a cascade nobody is watching. */
+@keyframes row-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.admin-table tbody tr {
+  animation: row-in 380ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  transition: box-shadow 130ms ease, background 130ms ease;
+}
+
+.admin-table tbody tr:nth-child(1) { animation-delay: 20ms; }
+.admin-table tbody tr:nth-child(2) { animation-delay: 45ms; }
+.admin-table tbody tr:nth-child(3) { animation-delay: 70ms; }
+.admin-table tbody tr:nth-child(4) { animation-delay: 95ms; }
+.admin-table tbody tr:nth-child(5) { animation-delay: 120ms; }
+.admin-table tbody tr:nth-child(6) { animation-delay: 145ms; }
+.admin-table tbody tr:nth-child(7) { animation-delay: 170ms; }
+.admin-table tbody tr:nth-child(n + 8) { animation-delay: 190ms; }
+
+.admin-table tbody tr:hover {
+  background: var(--row-hover);
+  box-shadow: inset 2px 0 0 var(--copper);
+}
+
+.cell-mono {
+  font-family: var(--font-mono), monospace;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cell-name {
+  font-weight: 600;
+}
+
+.cell-name a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.cell-name a:hover {
+  color: var(--copper);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Timestamps and other secondary values. Quieter than a name, but still a
+   value an operator reads -- `--muted` put them below the header labels,
+   which inverted the hierarchy. */
+.cell-dim {
+  color: color-mix(in srgb, var(--ink) 72%, transparent);
+}
+
+.cell-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- status */
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.status[data-tone="waiting"] { color: var(--tone-waiting); }
+.status[data-tone="active"]  { color: var(--tone-active); }
+.status[data-tone="done"]    { color: var(--tone-done); }
+.status[data-tone="stopped"] { color: var(--tone-stopped); }
+
+/* ------------------------------------------------------------------ rail */
+
+/* The signature element: a request's position on the pipeline the database
+ * actually enforces. `advance_pickup_request` allows one step at a time along
+ * a fixed line, so the line is drawn, and the request sits on it. A cancelled
+ * request leaves the line entirely -- it is not a stage, so it gets no stop. */
+
+.rail {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  margin: 0 0 0.875rem;
+  padding: 1.5rem 1.375rem 1.25rem;
+  list-style: none;
+  overflow-x: auto;
+  background: var(--panel);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border-radius: 12px;
+  box-shadow: var(--lift);
+}
+
+.rail-stop {
+  flex: 1 1 0;
+  min-width: 86px;
+  position: relative;
+  padding-top: 1.125rem;
+  text-align: center;
+}
+
+/* The connecting line, drawn between dots rather than through them. */
+.rail-stop:not(:first-child)::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  right: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--line);
+}
+
+/* The travelled line is a gradient rather than a fill: it arrives at full
+   copper under the stop it has reached and fades back toward the one before,
+   so the eye reads direction along the rail, not just a coloured segment. */
+.rail-stop[data-passed="true"]:not(:first-child)::before {
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--copper) 35%, transparent),
+    var(--copper)
+  );
+}
+
+.rail-dot {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--canvas);
+  border: 2px solid color-mix(in srgb, var(--board) 18%, transparent);
+  z-index: 1;
+  transition: box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.rail-stop[data-passed="true"] .rail-dot {
+  background: var(--copper);
+  border-color: var(--copper);
+  box-shadow: 0 1px 3px -1px color-mix(in srgb, var(--copper) 60%, transparent);
+}
+
+/* The one stop that is happening now carries a halo, so the request's
+   position is findable in a glance from across the desk. */
+.rail-stop[data-current="true"] .rail-dot {
+  background: var(--copper);
+  border-color: var(--copper);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--copper) 18%, transparent),
+    0 0 0 8px color-mix(in srgb, var(--copper) 8%, transparent),
+    0 2px 6px -1px color-mix(in srgb, var(--copper) 55%, transparent);
+}
+
+.rail-label {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+}
+
+.rail-stop[data-passed="true"] .rail-label {
+  color: var(--ink-2);
+}
+
+.rail-stop[data-current="true"] .rail-label {
+  color: var(--copper);
+  font-weight: 600;
+}
+
+/* A cancelled request gets a plain statement instead of a rail. Drawing it on
+   a line it left would say it is somewhere on the way to being collected. */
+.rail-stopped {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface-alt);
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+}
+
+/* --------------------------------------------------------------- buttons */
+
+.btn {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.5rem 0.9375rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: none;
+  color: inherit;
+  /* Buttons compress very slightly on press. It is 1% and nobody notices it
+     consciously, which is the point -- it is the difference between a control
+     that responds and an image of a control. */
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 90ms ease;
+}
+
+.btn:active:not([disabled]) {
+  transform: scale(0.985);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 2px;
+}
+
+.btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--board) 92%, white),
+    var(--board)
+  );
+  color: var(--silk);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 16%, transparent),
+    0 1px 2px color-mix(in srgb, var(--board) 25%, transparent);
+}
+
+.btn-primary:hover:not([disabled]) {
+  background: linear-gradient(to bottom, var(--board), var(--board-deep));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 14%, transparent),
+    0 3px 10px -3px color-mix(in srgb, var(--board) 50%, transparent);
+}
+
+.btn-ghost {
+  border-color: var(--hairline);
+  background: color-mix(in srgb, white 55%, transparent);
+  color: var(--ink);
+}
+
+.btn-ghost:hover:not([disabled]) {
+  border-color: color-mix(in srgb, var(--board) 26%, transparent);
+  background: color-mix(in srgb, white 85%, transparent);
+}
+
+/* Reject and cancel read as quiet until hovered. They are legitimate moves,
+   not warnings -- but they are not the move an operator makes by default. */
+.btn-danger {
+  border-color: var(--line);
+  color: var(--ink-2);
+}
+
+.btn-danger:hover:not([disabled]) {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 6%, transparent);
+}
+
+.btn-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-sm {
+  font-size: 0.75rem;
+  padding: 0.3125rem 0.625rem;
+}
+
+/* --------------------------------------------------------------- filters */
+
+.filters {
+  display: flex;
+  gap: 0.375rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.filter {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.375rem 0.6875rem;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  text-decoration: none;
+  transition: border-color 140ms ease, color 140ms ease;
+}
+
+.filter:hover {
+  border-color: var(--board);
+  color: var(--ink);
+}
+
+.filter[aria-current="true"] {
+  background: var(--board);
+  border-color: var(--board);
+  color: var(--silk);
+}
+
+/* ----------------------------------------------------------------- panel */
+
+.panel {
+  background: var(--panel);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border-radius: 12px;
+  padding: 1.25rem 1.375rem 1.375rem;
+  margin-bottom: 0.875rem;
+  box-shadow: var(--lift);
+}
+
+/* A panel's title earns a copper rule under it, the same mark the table
+   header carries, so the two read as the same kind of label. */
+.panel-title {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--board) 72%, transparent);
+  margin: 0 0 1rem;
+  padding-bottom: 0.625rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--copper) 28%, transparent);
+  font-weight: 600;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem 1.5rem;
+  margin: 0;
+}
+
+.fact dt {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--board) 60%, transparent);
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.fact dd {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.fact dd.mono {
+  font-family: var(--font-mono), monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A timestamp is dimmed in a table, where it competes with the row's name for
+   attention. In a fact list it *is* the value, so the dimming is dropped --
+   otherwise the window a van has to arrive in reads as less important than
+   the label above it. */
+.fact dd .cell-dim {
+  color: inherit;
+}
+
+/* ---------------------------------------------------------------- prices */
+
+/* Two panes: versions to pick from on the left, the selected version's items
+ * on the right. The same rail-and-content shape as the console itself, at a
+ * much smaller scale, because a catalog has the same structure a navigation
+ * does -- a short fixed list, and a lot of detail behind whichever one is
+ * current. */
+.prices-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.prices-versions {
+  background: var(--panel);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border-radius: 12px;
+  box-shadow: var(--lift);
+  padding: 1.125rem;
+  position: sticky;
+  top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.version-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.version-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3125rem;
+  padding: 0.5625rem 0.6875rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.version-item:hover {
+  background: var(--row-hover);
+}
+
+.version-item[data-selected="true"] {
+  background: color-mix(in srgb, var(--copper) 9%, transparent);
+  border-color: color-mix(in srgb, var(--copper) 30%, transparent);
+}
+
+.version-num {
+  font-family: var(--font-mono), monospace;
+  font-weight: 700;
+  font-size: 0.8125rem;
+}
+
+.version-date {
+  font-size: 0.6875rem;
+}
+
+.draft-start {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.draft-start label {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.draft-start input {
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, white 70%, transparent);
+  font-size: 0.8125rem;
+  color: var(--ink);
+}
+
+.prices-items {
+  min-width: 0;
+}
+
+/* An inline-editable cell. Framed only faintly at rest, so a draft's grid
+   reads as data first and a form second -- the border sharpens on focus,
+   which is when the distinction actually matters. */
+.cell-input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.375rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--board) 4%, transparent);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: var(--ink);
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.cell-input:hover {
+  border-color: var(--line);
+}
+
+.cell-input:focus {
+  outline: none;
+  border-color: var(--copper);
+  background: white;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--copper) 16%, transparent);
+}
+
+.cell-input-price {
+  font-family: var(--font-mono), monospace;
+  font-variant-numeric: tabular-nums;
+  max-width: 8ch;
+}
+
+.cell-input[aria-invalid="true"] {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 6%, transparent);
+}
+
+.price-error {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.6875rem;
+  color: var(--danger);
+  white-space: normal;
+}
+
+.new-item-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.875rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.new-item .field {
+  margin-bottom: 0;
+}
+
+.new-item .field label {
+  color: color-mix(in srgb, var(--board) 60%, transparent);
+}
+
+.new-item .field input,
+.new-item .field select {
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, white 70%, transparent);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: var(--ink);
+}
+
+.new-item .field input:focus,
+.new-item .field select:focus {
+  outline: none;
+  border-color: var(--copper);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--copper) 16%, transparent);
+}
+
+@media (max-width: 720px) {
+  .prices-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .prices-versions {
+    position: static;
+  }
+}
+
+/* ----------------------------------------------------------------- modal */
+
+/* The one confirmation dialog in the console, reserved for the one action
+   here that cannot be walked back: publishing. Everything else in this panel
+   is a single click on purpose -- a queue whose every row costs a modal is a
+   queue operators stop working through -- so this earns its weight by being
+   the only screen that spends it. */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: color-mix(in srgb, var(--board-deep) 55%, transparent);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: modal-fade 160ms ease;
+}
+
+@keyframes modal-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal {
+  width: 100%;
+  max-width: 420px;
+  background: var(--panel-solid);
+  border-radius: 14px;
+  padding: 1.5rem 1.625rem 1.375rem;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--board) 8%, transparent),
+    0 30px 70px -20px rgb(0 0 0 / 0.45);
+  animation: modal-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+.modal p {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+  margin: 0 0 1.25rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop,
+  .modal {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------------ misc */
+
+.empty {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: var(--ink-2);
+}
+
+.empty strong {
+  display: block;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 1rem;
+  color: var(--ink);
+  margin-bottom: 0.25rem;
+}
+
+.notice {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-card);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  background: color-mix(in srgb, var(--danger) 7%, transparent);
+  color: var(--danger);
+  font-size: 0.8125rem;
+  margin-bottom: 1rem;
+}
+
+/* The way back out of a detail page.
+ *
+ * It was bare text in --muted, which gave it no affordance at all: the one
+ * control on the screen that returns an operator to their queue looked like
+ * a caption. It becomes a real control -- a panel-surfaced pill, the same
+ * material as everything else on the page, at a weight that reads as
+ * clickable. */
+.back {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--board) 78%, transparent);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4375rem 0.8125rem 0.4375rem 0.6875rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, white 62%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--board) 9%, transparent),
+    0 1px 2px -1px color-mix(in srgb, var(--board) 14%, transparent);
+  transition:
+    color 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease;
+}
+
+/* The arrow is a separate element so it can travel on hover without dragging
+   the label with it -- the small movement is what says "this goes back". */
+.back-arrow {
+  display: inline-block;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.back:hover {
+  color: var(--copper);
+  background: color-mix(in srgb, white 88%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--copper) 32%, transparent),
+    0 2px 6px -2px color-mix(in srgb, var(--board) 20%, transparent);
+}
+
+.back:hover .back-arrow {
+  transform: translateX(-3px);
+}
+
+.back:active {
+  transform: scale(0.985);
+}
+
+.back:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 2px;
+}
+
+.kind {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.1875rem 0.4375rem;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+}
+
+/* ----------------------------------------------------------------- login */
+
+/* One screen an operator sees every morning, so it is built to feel like
+ * equipment rather than a form: a dark board, a card lifted off it, and the
+ * routing drawn faintly behind. The green is solder mask and the accent is
+ * trace copper -- the same two materials the company's whole identity is
+ * taken from, used here at the smallest scale they appear anywhere. */
+
+.login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      1100px 620px at 50% -10%,
+      color-mix(in srgb, var(--board) 82%, white) 0%,
+      transparent 62%
+    ),
+    linear-gradient(170deg, var(--board) 0%, var(--board-deep) 100%);
+}
+
+/* The routing, sized to the viewport and pinned behind the card. `currentColor`
+   on the group means one declaration here controls every trace and via. */
+.login-board {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  color: color-mix(in srgb, var(--copper) 26%, transparent);
+  pointer-events: none;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 372px;
+  padding: 2rem 1.875rem 1.75rem;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--silk) 14%, transparent);
+  /* Slightly lighter than the board behind it, so the card reads as a part
+     seated on the board rather than a panel floating over a photograph. */
+  background: color-mix(in srgb, var(--board) 72%, black);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--silk) 8%, transparent) inset,
+    0 24px 60px -20px rgb(0 0 0 / 0.65);
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+/* A via: the point where a trace changes layer. Small, and the only piece of
+   ornament on the screen. */
+.login-node {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2.5px solid var(--copper);
+  flex: none;
+}
+
+.login-mark {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 1.4375rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--silk);
+  margin: 0;
+}
+
+.login-sub {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--copper);
+  margin: 0.4375rem 0 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--silk) 11%, transparent);
+}
+
+.field {
+  margin-bottom: 0.875rem;
+}
+
+.field label {
+  display: block;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--silk) 55%, transparent);
+  margin-bottom: 0.4375rem;
+}
+
+.field input {
+  width: 100%;
+  padding: 0.6875rem 0.8125rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--silk) 16%, transparent);
+  background: color-mix(in srgb, black 22%, transparent);
+  color: var(--silk);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.9375rem;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.field input::placeholder {
+  color: color-mix(in srgb, var(--silk) 32%, transparent);
+}
+
+/* Copper on focus, with a ring rather than a heavier border, so the field
+   does not shift by a pixel when it takes focus. */
+.field input:focus {
+  outline: none;
+  border-color: var(--copper);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--copper) 22%, transparent);
+}
+
+.login .btn-primary {
+  width: 100%;
+  background: var(--silk);
+  color: var(--board);
+  padding: 0.6875rem;
+  margin-top: 1.125rem;
+  font-size: 0.875rem;
+  letter-spacing: 0.01em;
+  border-radius: 8px;
+}
+
+.login .btn-primary:hover:not([disabled]) {
+  background: #fff;
+}
+
+.login .btn-primary:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 3px;
+}
+
+.login-error {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #F0B4AE;
+  background: color-mix(in srgb, var(--danger) 26%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 52%, transparent);
+  padding: 0.625rem 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+/* Says how to get an account, because there is deliberately no sign-up link:
+   an operator account is issued by the platform owner, never self-registered.
+   Without this the screen looks like it is missing one. */
+.login-foot {
+  margin: 1.5rem 0 0;
+  padding-top: 1.125rem;
+  border-top: 1px solid color-mix(in srgb, var(--silk) 11%, transparent);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--silk) 46%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin *,
+  .login * {
+    transition: none !important;
+  }
+
+  a.tile:hover,
+  .btn:active:not([disabled]) {
+    transform: none;
+  }
+
+  .admin-table tbody tr {
+    animation: none;
+  }
+}
+
+/* Where backdrop-filter is unavailable the frosted panels would fall back to
+   a 74%-white wash over the canvas, which is legible but muddy. Giving them
+   an opaque surface instead keeps the contrast the type was set against. */
+@supports not (backdrop-filter: blur(1px)) {
+  .admin {
+    --panel: var(--panel-solid);
+  }
+}
