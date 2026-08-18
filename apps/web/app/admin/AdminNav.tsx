@@ -36,6 +36,16 @@ const LINKS = [
     ),
   },
   {
+    href: "/admin/quotes",
+    label: "Quotes",
+    glyph: (
+      <>
+        <rect x="3" y="2.5" width="10" height="11" rx="1.25" />
+        <path d="M5.25 5.75h5.5M5.25 8h5.5M5.25 10.25h3" />
+      </>
+    ),
+  },
+  {
     href: "/admin/prices",
     label: "Prices",
     glyph: (

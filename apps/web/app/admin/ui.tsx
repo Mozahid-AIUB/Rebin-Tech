@@ -1,5 +1,5 @@
 import { STATUS_LABEL, toneFor, type StatusTone } from "@/lib/transitions";
-import type { AccountStatus, RequestStatus } from "@/lib/supabase/types";
+import type { AccountStatus, RequestStatus, QuoteStatus } from "@/lib/supabase/types";
 
 /** A request's state, as a dot and a word. Colour is the only signal here. */
 export function StatusDot({ status }: { status: RequestStatus }) {
@@ -30,6 +30,36 @@ export function AccountStatusDot({ status }: { status: AccountStatus }) {
   return (
     <span className="status" data-tone={ACCOUNT_TONE[status]}>
       {ACCOUNT_LABEL[status]}
+    </span>
+  );
+}
+
+const QUOTE_TONE: Record<QuoteStatus, StatusTone> = {
+  offered: "active",
+  accepted: "done",
+  declined: "stopped",
+  expired: "stopped",
+};
+
+const QUOTE_LABEL: Record<QuoteStatus, string> = {
+  offered: "Offered",
+  accepted: "Accepted",
+  declined: "Declined",
+  expired: "Expired",
+};
+
+/**
+ * A quote's state, as a dot and a word.
+ *
+ * Takes the *effective* status -- already passed through
+ * `effectiveQuoteStatus` in `lib/quotes.ts` -- never the raw column. This
+ * component does not re-derive it, so every caller must do that derivation
+ * itself; that is the contract, not an oversight.
+ */
+export function QuoteStatusDot({ status }: { status: QuoteStatus }) {
+  return (
+    <span className="status" data-tone={QUOTE_TONE[status]}>
+      {QUOTE_LABEL[status]}
     </span>
   );
 }
