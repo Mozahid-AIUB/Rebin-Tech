@@ -36,6 +36,16 @@ const LINKS = [
     ),
   },
   {
+    href: "/admin/prices",
+    label: "Prices",
+    glyph: (
+      <>
+        <path d="M8 2v3.2M8 10.8V14" />
+        <path d="M4.75 5.2h4.75a1.75 1.75 0 0 1 0 3.5h-3a1.75 1.75 0 0 0 0 3.5h4.75" />
+      </>
+    ),
+  },
+  {
     href: "/admin/accounts",
     label: "Accounts",
     glyph: (

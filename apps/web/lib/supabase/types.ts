@@ -15,3 +15,9 @@ export type AccountStatus = Database["public"]["Enums"]["account_status_enum"];
 export type PickupRequest = Database["public"]["Tables"]["pickup_requests"]["Row"];
 export type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 export type PendingAccount = Database["public"]["Views"]["pending_accounts"]["Row"];
+
+export type DeviceCategory = Database["public"]["Enums"]["device_category_enum"];
+export type PriceGrade = Database["public"]["Enums"]["price_grade_enum"];
+export type PriceUnit = Database["public"]["Enums"]["price_unit_enum"];
+export type PriceCatalogVersion = Database["public"]["Tables"]["price_catalog_versions"]["Row"];
+export type PriceItem = Database["public"]["Tables"]["price_items"]["Row"];

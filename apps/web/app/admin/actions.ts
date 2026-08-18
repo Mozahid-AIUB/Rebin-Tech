@@ -2,7 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import type { AccountStatus, RequestStatus } from "@/lib/supabase/types";
+import type {
+  AccountStatus,
+  DeviceCategory,
+  PriceGrade,
+  PriceUnit,
+  RequestStatus,
+} from "@/lib/supabase/types";
 
 /**
  * Every mutation the console can perform, each one a single RPC call.
@@ -112,6 +118,80 @@ export async function setAccountStatus(
 
   revalidatePath("/admin/accounts");
   revalidatePath("/admin");
+  return { ok: true };
+}
+
+export type PriceDraftResult = { ok: true; versionId: string } | { ok: false; message: string };
+
+/**
+ * Starts a new draft, seeded from whatever is active.
+ *
+ * Returns the new version's id rather than nothing: the screen needs it to
+ * switch the selected version to the draft it just created, and re-querying
+ * for "the newest draft" would be guessing at what this call just did.
+ */
+export async function createPriceDraft(note: string | null): Promise<PriceDraftResult> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("create_price_catalog_draft", {
+    p_note: note ?? undefined,
+  });
+
+  if (error) {
+    return { ok: false, message: explain(error.code, error.message) };
+  }
+
+  revalidatePath("/admin/prices");
+  return { ok: true, versionId: data };
+}
+
+/** Upserts one row of a draft. Rejected by the RPC itself for any other status. */
+export async function setPriceItem(input: {
+  versionId: string;
+  componentKey: string;
+  displayName: string;
+  category: DeviceCategory;
+  grade: PriceGrade;
+  unit: PriceUnit;
+  unitPriceCents: number;
+}): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("set_price_item", {
+    p_version_id: input.versionId,
+    p_component_key: input.componentKey,
+    p_display_name: input.displayName,
+    p_category: input.category,
+    p_grade: input.grade,
+    p_unit: input.unit,
+    p_unit_price_cents: input.unitPriceCents,
+  });
+
+  if (error) {
+    return { ok: false, message: explain(error.code, error.message) };
+  }
+
+  revalidatePath("/admin/prices");
+  return { ok: true };
+}
+
+/**
+ * Makes a draft the live catalog. Not reversible except by publishing another
+ * version -- the confirmation dialog in front of this call is the one modal
+ * in the console, for exactly that reason.
+ */
+export async function publishPriceCatalog(versionId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("publish_price_catalog", {
+    p_version_id: versionId,
+  });
+
+  if (error) {
+    return { ok: false, message: explain(error.code, error.message) };
+  }
+
+  revalidatePath("/admin/prices");
   return { ok: true };
 }
 
