@@ -63,6 +63,47 @@ compliance manifest is worse than a missing one. If you can see a device but
 cannot identify it beyond its category, say so with a lower confidence rather
 than inventing a make or model.`;
 
+/**
+ * Retries a Gemini call that failed because the model was busy.
+ *
+ * 503 UNAVAILABLE ("this model is currently experiencing high demand") and 429
+ * are Google telling us to come back, not that anything is wrong with the
+ * request -- the identical call succeeds seconds later. Without this the phone
+ * shows "couldn't read that photo" for a photo that was perfectly readable,
+ * and an App Store reviewer who hits it at the wrong moment rejects the build.
+ *
+ * Two extra attempts over ~3s: long enough to ride out a spike, short enough
+ * that someone holding a phone in a storeroom does not think it has hung.
+ */
+const BUSY_STATUSES = new Set([429, 503]);
+const RETRY_DELAYS_MS = [800, 2000];
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+async function callGeminiWithRetry(model: string, imageBase64: string, mimeType: string) {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      return await callGemini(model, imageBase64, mimeType);
+    } catch (e) {
+      lastError = e;
+      const busy = e instanceof GeminiBusyError;
+      if (!busy || attempt === RETRY_DELAYS_MS.length) throw e;
+      console.warn(`Gemini busy (attempt ${attempt + 1}), retrying`);
+      await sleep(RETRY_DELAYS_MS[attempt]);
+    }
+  }
+  throw lastError;
+}
+
+/** Gemini was reachable but asked us to come back -- 429 or 503. */
+class GeminiBusyError extends Error {
+  constructor(status: number, body: string) {
+    super(`Gemini returned ${status}: ${body}`);
+    this.name = "GeminiBusyError";
+  }
+}
+
 async function callGemini(model: string, imageBase64: string, mimeType: string) {
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
@@ -90,7 +131,10 @@ async function callGemini(model: string, imageBase64: string, mimeType: string) 
   );
 
   if (!res.ok) {
-    throw new Error(`Gemini returned ${res.status}: ${await res.text()}`);
+    const body = await res.text();
+    // Busy is worth another go; a 400 for a malformed request is not.
+    if (BUSY_STATUSES.has(res.status)) throw new GeminiBusyError(res.status, body);
+    throw new Error(`Gemini returned ${res.status}: ${body}`);
   }
   const body = await res.json();
   const text = body?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -105,7 +149,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: "No image supplied" }, { status: 400 });
     }
 
-    let result = await callGemini(MODEL, imageBase64, mimeType ?? "image/jpeg");
+    let result = await callGeminiWithRetry(MODEL, imageBase64, mimeType ?? "image/jpeg");
 
     // One retry on the larger model, and only when the whole scan is unsure --
     // a single hard item among five confident ones is not worth a second call.
@@ -115,7 +159,7 @@ Deno.serve(async (req) => {
     );
     if (result.items.length > 0 && lowest < CONFIDENCE_GATE) {
       try {
-        result = await callGemini(RETRY_MODEL, imageBase64, mimeType ?? "image/jpeg");
+        result = await callGeminiWithRetry(RETRY_MODEL, imageBase64, mimeType ?? "image/jpeg");
       } catch {
         // The Flash result is still usable; the client sends anything under
         // the gate to manual entry anyway.

@@ -1,6 +1,59 @@
 import { useEffect } from "react";
 import { AppState } from "react-native";
-import { identityFromAuthUser, resolveRoles, supabase, useSessionStore } from "@rebin/api";
+import type { SessionIdentity } from "@rebin/api";
+import {
+  RolesUnreachableError,
+  identityFromAuthUser,
+  resolveRoles,
+  supabase,
+  useSessionStore,
+} from "@rebin/api";
+
+/** Backoff between role-lookup retries, in ms. Four tries over ~7 seconds. */
+const RETRY_DELAYS = [500, 1500, 5000];
+
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Retries a role lookup that failed because the network was unreachable.
+ *
+ * Backs off rather than hammering: a phone that just came out of a lift needs
+ * a moment, not four immediate requests. `isStale` is checked before every
+ * attempt and again before writing, so a newer auth event (a sign-out, a
+ * different user signing in) abandons this chain instead of racing it.
+ *
+ * If every attempt fails the store is left exactly as it was. The session is
+ * still on disk and still valid; the next foreground, or the next auth event,
+ * will try again. Signing out here would be the very bug this exists to fix.
+ */
+async function retryRoles(
+  userId: string,
+  _ticket: number,
+  isStale: () => boolean,
+  identity: SessionIdentity,
+): Promise<void> {
+  for (const delay of RETRY_DELAYS) {
+    await wait(delay);
+    if (isStale()) return;
+
+    try {
+      const assignments = await resolveRoles(userId);
+      if (isStale()) return;
+      useSessionStore
+        .getState()
+        .setSession(userId, assignments, assignments.length > 0, identity);
+      return;
+    } catch (e) {
+      if (isStale()) return;
+      // Still unreachable -- keep backing off. Anything else is a real answer
+      // from the server: the account has no roles, so it has no portal.
+      if (!(e instanceof RolesUnreachableError)) {
+        useSessionStore.getState().setSignedOut();
+        return;
+      }
+    }
+  }
+}
 
 /**
  * Rehydrates the session store from whatever Supabase already has on disk.
@@ -48,8 +101,19 @@ export function useSessionBootstrap() {
             .getState()
             .setSession(userId, assignments, assignments.length > 0, identity);
         })
-        .catch(() => {
+        .catch((e: unknown) => {
           if (cancelled || ticket !== latest) return;
+
+          // A phone that lost signal still holds a valid session, and throwing
+          // it away means logging in again over a dropped bar of reception --
+          // which is what a vendor standing in a warehouse basement actually
+          // experiences. Retry instead, and only give up on the session when
+          // the server answers and says there are no roles.
+          if (e instanceof RolesUnreachableError) {
+            void retryRoles(userId, ticket, () => cancelled || ticket !== latest, identity);
+            return;
+          }
+
           // A valid token whose roles can't be read is not a signed-in user in
           // any useful sense -- it's an account with no portal. Treating it as
           // signed-out sends them to login rather than stranding the app on a

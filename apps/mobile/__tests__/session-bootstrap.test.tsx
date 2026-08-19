@@ -1,5 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react-native";
 import { AppState } from "react-native";
+import { RolesUnreachableError } from "@rebin/api";
 import { useSessionStore } from "../src/store/session";
 import { useSessionBootstrap } from "../src/hooks/useSessionBootstrap";
 
@@ -135,13 +136,78 @@ describe("session bootstrap", () => {
     expect(mockResolveRoles).not.toHaveBeenCalled();
   });
 
-  it("signs out rather than hanging on 'loading' when roles fail to load", async () => {
-    mockResolveRoles.mockRejectedValue(new Error("network"));
+  it("signs out rather than hanging on 'loading' when the server refuses the role read", async () => {
+    mockResolveRoles.mockRejectedValue(new Error("permission denied for table role_assignments"));
     await renderHook(() => useSessionBootstrap());
 
     authCallback!("INITIAL_SESSION", { user: { id: "u3" } });
 
     await waitFor(() => expect(useSessionStore.getState().status).toBe("signed-out"));
+  });
+
+  // The bug: a phone that lost signal for a moment was signed out, because the
+  // role lookup's catch treated "could not reach the server" and "this account
+  // has no roles" as the same thing. The session on disk was still valid, so
+  // the user was made to log in again over one dropped bar of reception.
+  describe("a role lookup that could not reach the server", () => {
+    // Scoped to this block: the backoff waits seconds of real time, which the
+    // rest of the suite has no reason to pay. `advanceTimers` lets waitFor's
+    // own polling still run while the fake clock is driven by hand.
+    beforeEach(() => jest.useFakeTimers({ advanceTimers: true }));
+    afterEach(() => jest.useRealTimers());
+
+    it("keeps the session and recovers when the network returns", async () => {
+      mockResolveRoles
+        .mockRejectedValueOnce(new RolesUnreachableError("Network request failed"))
+        .mockResolvedValueOnce(ORG_ROLE);
+
+      await renderHook(() => useSessionBootstrap());
+      authCallback!("INITIAL_SESSION", { user: { id: "u1" } });
+
+      // The first attempt has failed by now; the store must not have been
+      // signed out while the retry is pending.
+      await waitFor(() => expect(mockResolveRoles).toHaveBeenCalledTimes(1));
+      expect(useSessionStore.getState().status).not.toBe("signed-out");
+
+      jest.advanceTimersByTime(500);
+      await waitFor(() => expect(useSessionStore.getState().status).toBe("ready"));
+      expect(useSessionStore.getState().assignments).toEqual(ORG_ROLE);
+    });
+
+    it("stays signed in when every retry also fails", async () => {
+      mockResolveRoles.mockRejectedValue(new RolesUnreachableError("Network request failed"));
+
+      await renderHook(() => useSessionBootstrap());
+      authCallback!("INITIAL_SESSION", { user: { id: "u1" } });
+
+      // Drain the whole backoff: 500 + 1500 + 5000.
+      await waitFor(() => expect(mockResolveRoles).toHaveBeenCalledTimes(1));
+      for (const delay of [500, 1500, 5000]) {
+        jest.advanceTimersByTime(delay);
+        await waitFor(() => expect(mockResolveRoles).toHaveBeenCalled());
+      }
+
+      // Still not signed out: the token on disk is valid, and the next
+      // foreground will try again.
+      expect(useSessionStore.getState().status).not.toBe("signed-out");
+    });
+
+    // Unreachable is worth retrying; a real answer is not. An account the
+    // server says has no roles must not be retried three more times.
+    it("signs out when a retry gets a real refusal", async () => {
+      mockResolveRoles
+        .mockRejectedValueOnce(new RolesUnreachableError("Network request failed"))
+        .mockRejectedValueOnce(new Error("permission denied"));
+
+      await renderHook(() => useSessionBootstrap());
+      authCallback!("INITIAL_SESSION", { user: { id: "u1" } });
+
+      await waitFor(() => expect(mockResolveRoles).toHaveBeenCalledTimes(1));
+      jest.advanceTimersByTime(500);
+
+      await waitFor(() => expect(useSessionStore.getState().status).toBe("signed-out"));
+      expect(mockResolveRoles).toHaveBeenCalledTimes(2);
+    });
   });
 
   it("ignores a slow role lookup superseded by a newer auth event", async () => {
