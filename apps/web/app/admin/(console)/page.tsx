@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PIPELINE, STATUS_LABEL } from "@/lib/transitions";
 import { StatusDot, When, Empty } from "../ui";
 import { PageIn, Stagger, StaggerItem, Tally } from "../Motion";
+import { PipelineBar } from "./PipelineBar";
 import type { RequestStatus } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
@@ -156,6 +157,8 @@ export default async function OverviewPage() {
           </p>
         </div>
       )}
+
+      <PipelineBar byStatus={byStatus} />
 
       <div className="admin-head">
         <h2 className="admin-h1">Open requests</h2>
