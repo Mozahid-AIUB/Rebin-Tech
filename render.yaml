@@ -1,0 +1,39 @@
+# Render reads this instead of asking for build and start commands by hand.
+#
+# Kept at the repo root rather than in apps/web because this is a pnpm
+# workspace: the install has to run where the lockfile and the workspace
+# definition are, and only then can it build one package out of it.
+services:
+  - type: web
+    name: rebin-console
+    runtime: node
+    # Ohio is Render's US East. The Supabase project is US East too, and every
+    # console page is server-rendered with several queries each -- the overview
+    # alone issues seven. Across regions that is seven round trips of 200-300ms
+    # on a page an operator opens every morning; in the same region it is
+    # 20-30ms and invisible.
+    region: ohio
+    plan: starter
+    branch: main
+
+    # `--frozen-lockfile` so a deploy fails loudly on a lockfile that does not
+    # match package.json, rather than quietly resolving something else.
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter web build
+    startCommand: pnpm --filter web start
+
+    # Render restarts a service whose health check fails, so this has to be a
+    # route that answers without a session. The console redirects to /login,
+    # which is a 307 and would read as unhealthy; the marketing page is a
+    # plain 200 and touches nothing.
+    healthCheckPath: /
+
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # Both are set in the dashboard, not here: the values belong to the
+      # Supabase project rather than to this file, and a repo is the wrong
+      # place to keep them even when they are safe to expose.
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
