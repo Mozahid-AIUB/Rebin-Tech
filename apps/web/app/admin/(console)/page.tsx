@@ -4,6 +4,7 @@ import { PIPELINE, STATUS_LABEL } from "@/lib/transitions";
 import { StatusDot, When, Empty } from "../ui";
 import { PageIn, Stagger, StaggerItem, Tally } from "../Motion";
 import { PipelineBar } from "./PipelineBar";
+import { RankedBars, Meter, money } from "./Charts";
 import type { RequestStatus } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
@@ -74,6 +75,54 @@ export default async function OverviewPage() {
     .select("id, status, unit_count, created_at, dock_address")
     .in("status", PIPELINE.filter((s) => s !== "completed"))
     .order("created_at", { ascending: true });
+
+  // The charts below. Read at request time like everything else on this page
+  // -- there is no seeded or illustrative data anywhere in this console.
+  const [quoteItems, jobs, requestCategories] = await Promise.all([
+    supabase.from("quote_items").select("display_name, quantity, line_total_cents"),
+    supabase.from("job_assignments").select("actual_units"),
+    supabase.from("pickup_requests").select("categories, unit_count"),
+  ]);
+
+  // Value by component, highest first. Answers what is actually worth
+  // collecting, which the catalog cannot: a high rate on something nobody
+  // ever ships is not revenue.
+  const valueByComponent = new Map<string, number>();
+  for (const item of quoteItems.data ?? []) {
+    valueByComponent.set(
+      item.display_name,
+      (valueByComponent.get(item.display_name) ?? 0) + item.line_total_cents,
+    );
+  }
+  const topValue = [...valueByComponent.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([label, value]) => ({ label, value }));
+
+  // Which categories organizations actually ask for. Counted per request
+  // rather than per unit: one request for 400 monitors is one customer with a
+  // monitor problem, not four hundred of them.
+  const byCategory = new Map<string, number>();
+  for (const row of requestCategories.data ?? []) {
+    for (const category of row.categories ?? []) {
+      byCategory.set(category, (byCategory.get(category) ?? 0) + 1);
+    }
+  }
+  const categoryRows = [...byCategory.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([label, value]) => ({
+      label: label.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()),
+      value,
+    }));
+
+  const bookedUnits = (requestCategories.data ?? []).reduce(
+    (sum, r) => sum + (r.unit_count ?? 0),
+    0,
+  );
+  const collectedUnits = (jobs.data ?? []).reduce(
+    (sum, j) => sum + (j.actual_units ?? 0),
+    0,
+  );
 
   const accountCount = pendingAccountsCount.count ?? 0;
   const pendingAgentCount = pendingAgentsCount.count ?? 0;
@@ -159,6 +208,30 @@ export default async function OverviewPage() {
       )}
 
       <PipelineBar byStatus={byStatus} />
+
+      <div className="chart-grid">
+        <RankedBars
+          title="Where the value is"
+          note="Total quoted, by component, across every quote in the database."
+          rows={topValue}
+          format={money}
+        />
+        <RankedBars
+          title="What organizations ask for"
+          note="Pickup requests naming each category. Counted per request, not per device."
+          rows={categoryRows}
+        />
+      </div>
+
+      <div className="chart-grid">
+        <Meter
+          title="Booked against collected"
+          note="Units an agent recorded on arrival, against units organizations booked. A wide gap is either optimistic booking or work still on the line."
+          value={collectedUnits}
+          total={bookedUnits}
+          format={(n) => n.toLocaleString("en-US")}
+        />
+      </div>
 
       <div className="admin-head">
         <h2 className="admin-h1">Open requests</h2>

@@ -1473,3 +1473,125 @@ table.admin-table {
   font-weight: 600;
   color: var(--ink);
 }
+
+/* --------------------------------------------------------------- charts */
+
+/* Two charts side by side where there is room, stacked where there is not.
+   auto-fit rather than a fixed count so a narrow window reflows instead of
+   scrolling a chart off the edge. */
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 0.875rem;
+  margin-bottom: 1.75rem;
+}
+
+.chart-panel {
+  margin-bottom: 0;
+}
+
+.chart-note {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--muted);
+  margin: -0.5rem 0 1rem;
+}
+
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4375rem;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: minmax(6rem, 9rem) 1fr auto;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.125rem 0;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.bar-row-link:hover {
+  background: var(--row-hover);
+}
+
+.bar-row-link:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 2px;
+}
+
+.bar-label {
+  font-size: 0.75rem;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The track is the full extent, so a short bar reads as "small share of the
+   biggest" rather than as a bar that happens to be short. */
+.bar-track {
+  height: 0.875rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--board) 5%, transparent);
+  overflow: hidden;
+}
+
+.bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+}
+
+/* Always present, never dependent on the fill being legible -- which is what
+   lets the lighter ramp steps be used at all. */
+.bar-value {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.meter-figure {
+  font-family: var(--font-mono), monospace;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0 0 0.625rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.4375rem;
+}
+
+.meter-of {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.meter-track {
+  display: block;
+  height: 0.875rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--board) 5%, transparent);
+  overflow: hidden;
+}
+
+.meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(to right, #D2965F, #8E5528);
+}
+
+.meter-pct {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 0.4375rem 0 0;
+}
