@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { grantOperator, revokeOperator } from "../../actions";
+import { createOperator, grantOperator, revokeOperator } from "../../actions";
 
 /**
  * Grant access to an account that already exists.
@@ -17,25 +17,49 @@ export function AddOperator() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  // Two ways in, because there are two situations. Usually the colleague has
+  // no account at all and the console should just make one. Occasionally they
+  // already signed up as something else -- a business owner being promoted --
+  // and creating a second account under the same address would fail anyway.
+  const [mode, setMode] = useState<"create" | "existing">("create");
+
+  const reset = (label: string) => {
+    setDone(label);
+    setEmail("");
+    setPassword("");
+    setFullName("");
+    router.refresh();
+  };
 
   return (
     <div className="panel">
       <h2 className="panel-title">Add an operator</h2>
-      {/* Where the account comes from has to be said here. There is no
-          operator sign-up anywhere -- the mobile app offers organization,
-          business and supplier, and adding a fourth card would be exactly the
-          self-issued admin account this design refuses. So the account is
-          created in Supabase by whoever administers it, and this screen
-          attaches the access. An operator who does not know that reads "they
-          sign up first" and goes looking for a form that does not exist. */}
+
+      <div className="filters" style={{ marginBottom: "0.875rem" }}>
+        <button
+          className="filter"
+          aria-current={mode === "create"}
+          onClick={() => { setMode("create"); setError(null); }}
+        >
+          Create an account
+        </button>
+        <button
+          className="filter"
+          aria-current={mode === "existing"}
+          onClick={() => { setMode("existing"); setError(null); }}
+        >
+          Grant an existing one
+        </button>
+      </div>
+
       <p className="chart-note" style={{ margin: "0 0 1rem" }}>
-        Their account has to exist before you can grant it access. Create it in
-        Supabase — <strong>Authentication → Users → Add user</strong>, with
-        &ldquo;Auto Confirm User&rdquo; ticked — then enter that email here.
-        There is deliberately no operator sign-up: an account that approves
-        businesses and records payments is issued, never claimed.
+        {mode === "create"
+          ? "Creates the account and gives it the console straight away. Tell them the password you set here — they can change it after signing in."
+          : "For someone who already has an account in this product. Their email is all that is needed."}
       </p>
 
       {error && <p className="notice">{error}</p>}
@@ -45,37 +69,88 @@ export function AddOperator() {
         </p>
       )}
 
-      <div className="btn-row">
-        <input
-          className="cell-input"
-          style={{ width: "18rem" }}
-          type="email"
-          placeholder="colleague@rebintech.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          aria-label="Email of the person to grant access to"
-        />
-        <button
-          className="btn btn-primary"
-          disabled={pending || email.trim() === ""}
-          onClick={() => {
-            setError(null);
-            setDone(null);
-            startTransition(async () => {
-              const result = await grantOperator(email.trim());
-              if (!result.ok) {
-                setError(result.message);
-                return;
-              }
-              setDone(email.trim());
-              setEmail("");
-              router.refresh();
-            });
-          }}
-        >
-          {pending ? "Granting…" : "Grant access"}
-        </button>
-      </div>
+      {mode === "create" ? (
+        <div className="btn-row">
+          <input
+            className="cell-input"
+            style={{ width: "11rem" }}
+            placeholder="Full name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            aria-label="Their name"
+          />
+          <input
+            className="cell-input"
+            style={{ width: "16rem" }}
+            type="email"
+            placeholder="colleague@rebintech.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            aria-label="Their email"
+          />
+          <input
+            className="cell-input"
+            style={{ width: "12rem" }}
+            type="text"
+            placeholder="Password (10+ characters)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            aria-label="A password for their account"
+          />
+          <button
+            className="btn btn-primary"
+            disabled={pending || email.trim() === "" || password.length < 10}
+            onClick={() => {
+              setError(null);
+              setDone(null);
+              startTransition(async () => {
+                const result = await createOperator({
+                  email: email.trim(),
+                  password,
+                  fullName: fullName.trim(),
+                });
+                if (!result.ok) {
+                  setError(result.message);
+                  return;
+                }
+                reset(fullName.trim() || email.trim());
+              });
+            }}
+          >
+            {pending ? "Creating…" : "Create operator"}
+          </button>
+        </div>
+      ) : (
+        <div className="btn-row">
+          <input
+            className="cell-input"
+            style={{ width: "18rem" }}
+            type="email"
+            placeholder="colleague@rebintech.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            aria-label="Email of the person to grant access to"
+          />
+          <button
+            className="btn btn-primary"
+            disabled={pending || email.trim() === ""}
+            onClick={() => {
+              setError(null);
+              setDone(null);
+              startTransition(async () => {
+                const result = await grantOperator(email.trim());
+                if (!result.ok) {
+                  setError(result.message);
+                  return;
+                }
+                reset(email.trim());
+              });
+            }}
+          >
+            {pending ? "Granting…" : "Grant access"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

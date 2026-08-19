@@ -327,6 +327,52 @@ export async function grantOperator(email: string): Promise<ActionResult> {
   return { ok: true };
 }
 
+/**
+ * Create an operator account and grant it the console, in one step.
+ *
+ * Calls the `create-operator` edge function rather than an RPC: creating an
+ * auth user needs the service-role key, and that key belongs on a server the
+ * browser never reaches. The function checks the caller is already platform
+ * staff before it touches the key, so this is not a way in -- it is a way for
+ * someone already inside to bring in a colleague.
+ */
+export async function createOperator(input: {
+  email: string;
+  password: string;
+  fullName: string;
+}): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    return { ok: false, message: "Your session expired. Sign in again." };
+  }
+
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-operator`,
+    {
+      method: "POST",
+      headers: {
+        // The operator's own token, which is what the function checks. The
+        // anon key alone would get a 403 from it.
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    },
+  );
+
+  const body = (await res.json().catch(() => null)) as { error?: string } | null;
+  if (!res.ok) {
+    return { ok: false, message: body?.error ?? `Could not create the account (${res.status})` };
+  }
+
+  revalidatePath("/admin/operators");
+  return { ok: true };
+}
+
 export async function revokeOperator(userId: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("revoke_operator" as never, {
