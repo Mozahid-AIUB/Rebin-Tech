@@ -5,6 +5,7 @@ import { effectiveQuoteStatus } from "@/lib/quotes";
 import { formatCents, GRADE_LABEL, UNIT_LABEL } from "@/lib/pricing";
 import { QuoteStatusDot, When } from "../../../ui";
 import { PageIn } from "../../../Motion";
+import { ReceiveConsignment } from "./ReceiveConsignment";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,15 @@ export default async function QuoteDetailPage({
       .eq("quote_id", id)
       .order("display_name", { ascending: true }),
   ]);
+
+  // Has this consignment already been recorded as arrived? Cast past the
+  // generated types -- payouts landed in 0038 and types.gen.ts cannot be
+  // regenerated from here.
+  const { data: payout } = await supabase
+    .from("payouts" as never)
+    .select("id")
+    .eq("quote_id", id)
+    .maybeSingle();
 
   const status = effectiveQuoteStatus(quote.status, quote.expires_at);
   const rows = items ?? [];
@@ -109,6 +119,10 @@ export default async function QuoteDetailPage({
           </div>
         </dl>
       </div>
+
+      {status === "accepted" && (
+        <ReceiveConsignment quoteId={id} alreadyReceived={payout != null} />
+      )}
 
       <div className="table-wrap">
         <table className="admin-table">
