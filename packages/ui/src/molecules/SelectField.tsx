@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText } from "../atoms/AppText";
 import { tokens } from "../tokens";
 import { usePortalTheme } from "../theme";
@@ -21,6 +22,7 @@ export function SelectField({
   placeholder?: string;
   error?: string;
 }) {
+  const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const { accent } = usePortalTheme();
   const selectedLabel = options.find((o) => o.value === value)?.label ?? null;
@@ -55,6 +57,10 @@ export function SelectField({
             borderTopLeftRadius: tokens.radius.sheet,
             borderTopRightRadius: tokens.radius.sheet,
             padding: tokens.space[4],
+            // Anchored to the bottom of the window, which on Android sits
+            // under the navigation bar -- without this the last option in the
+            // list is the one a gesture bar covers.
+            paddingBottom: tokens.space[4] + insets.bottom,
           }}
         >
           <AppText variant="h2" style={{ marginBottom: tokens.space[2] }}>{label}</AppText>

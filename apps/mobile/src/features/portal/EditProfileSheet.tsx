@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Modal, Pressable, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText, FormField, PillButton, tokens } from "@rebin/ui";
 
 /**
@@ -30,6 +31,7 @@ export function EditProfileSheet({
   onSaved: () => void;
   save: (input: { fullName: string; phone: string | null }) => Promise<void>;
 }) {
+  const insets = useSafeAreaInsets();
   const [fullName, setFullName] = useState(initialFullName);
   const [phone, setPhone] = useState(initialPhone);
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +81,10 @@ export function EditProfileSheet({
             borderTopLeftRadius: tokens.radius.sheet,
             borderTopRightRadius: tokens.radius.sheet,
             padding: tokens.space[4],
+            // Anchored to the bottom of the window, which on Android sits
+            // under the navigation bar -- without this the sheet's last
+            // control is the one a gesture bar covers.
+            paddingBottom: tokens.space[4] + insets.bottom,
             gap: tokens.space[3],
           }}
         >

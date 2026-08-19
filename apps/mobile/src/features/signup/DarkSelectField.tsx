@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText, authTokens } from "@rebin/ui";
 
 // Task 15 never built a dark-forest SelectField (only AuthInput/AuthButton/
@@ -31,6 +32,7 @@ export function DarkSelectField({
   error?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const insets = useSafeAreaInsets();
   const selectedLabel = options.find((o) => o.value === value)?.label ?? null;
 
   return (
@@ -67,6 +69,12 @@ export function DarkSelectField({
             borderWidth: 1,
             borderColor: authTokens.border,
             padding: 20,
+            // The sheet is anchored to the bottom of the window, which on
+            // Android sits underneath the navigation bar -- so without this
+            // the last option in the list is the one a gesture bar covers,
+            // and the last option is exactly where a newly added choice
+            // lands. Matches how the scan sheets already pad themselves.
+            paddingBottom: 20 + insets.bottom,
           }}
         >
           <AppText variant="h2" style={{ color: authTokens.text, marginBottom: 12 }}>{label}</AppText>
