@@ -77,9 +77,12 @@ describe("Manual entry", () => {
     await fireEvent.changeText(screen.getByLabelText("How many?"), "12");
     await fireEvent.press(screen.getByRole("button", { name: "Add to quote" }));
 
-    // 12 x 2000g (4.4 lb) = 52.9 lb at $0.80/lb -> $42.33 (rounded at the
-    // line, the same way create_quote rounds it).
-    await waitFor(() => expect(screen.getByText("12 × 4.4 lbs = 52.9 lbs at $0.80/lb")).toBeTruthy());
+    // 12 x 2000g = 24000g (52.911 lb) at $0.80/lb -> $42.33 (rounded at the
+    // line, the same way create_quote rounds it). Grams reconcile exactly
+    // (12 x 2000 = 24000); the parenthetical lbs figure is a derived
+    // convenience, not a second quantity the multiplication has to agree
+    // with -- see lineArithmetic in packages/shared/src/weight.ts.
+    await waitFor(() => expect(screen.getByText("12 × 2000g = 24000g (52.911 lb) at $0.80/lb")).toBeTruthy());
     await waitFor(() => expect(screen.getAllByText("$42.33")).toHaveLength(2));
   });
 

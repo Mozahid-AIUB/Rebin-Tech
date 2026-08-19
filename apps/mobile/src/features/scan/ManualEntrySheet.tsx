@@ -2,15 +2,10 @@ import { useCallback, useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { listCurrentPrices, type Appraisal, type AppraisedLine, type PriceItem } from "@rebin/api";
-import { formatCents, formatWeight } from "@rebin/shared";
+import { formatCents, formatWeight, GRAMS_PER_LB, lineArithmetic } from "@rebin/shared";
 import { AppText, Card, FormField, PillButton, SectionHeader, tokens } from "@rebin/ui";
 import { useLoader } from "../../hooks/useLoader";
 import { Stepper } from "./Stepper";
-
-// Grams per pound. Matches create_quote (0034_weight_pricing.sql) and the
-// appraise Edge Function -- so the line total shown here before a quote is
-// saved is the same total the RPC computes when it actually is.
-const GRAMS_PER_LB = 453.59237;
 
 /**
  * A quantity times a catalog row's weight and rate, rounded the same way
@@ -22,29 +17,6 @@ function priceLine(item: PriceItem, quantity: number): { weightG: number | null;
   }
   const weightG = item.avgWeightG * quantity;
   return { weightG, lineTotalCents: Math.round((item.unitPriceCents * weightG) / GRAMS_PER_LB) };
-}
-
-/**
- * Shows the arithmetic behind a total rather than just the total: "12 x 4.4
- * lb = 52.9 lb at $0.80/lb". A vendor who can reconstruct a number can argue
- * with it, which matters more here than a total that is merely correct.
- *
- * Falls back to a plain per-item read when the line has no weight (a rate
- * that is still a price per item, same as every line before catalog v3).
- */
-function lineArithmetic(line: {
-  quantity: number;
-  unitPriceCents: number;
-  weightG: number | null;
-}): string {
-  if (line.weightG == null) {
-    return `${line.quantity} × ${formatCents(line.unitPriceCents)}`;
-  }
-  const perUnitG = line.weightG / line.quantity;
-  return (
-    `${line.quantity} × ${formatWeight(perUnitG)} = ${formatWeight(line.weightG)} ` +
-    `at ${formatCents(line.unitPriceCents)}/lb`
-  );
 }
 
 /**

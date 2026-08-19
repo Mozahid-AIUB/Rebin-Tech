@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { appraisePhoto, type Appraisal, type AppraisedLine } from "@rebin/api";
-import { formatCents, formatWeight, scanDisposition } from "@rebin/shared";
+import { formatCents, GRAMS_PER_LB, lineArithmetic, scanDisposition } from "@rebin/shared";
 import { AppText, Card, EmptyState, PillButton, tokens } from "@rebin/ui";
 import { capturePhotoForScan } from "./capture";
 import { Stepper } from "./Stepper";
@@ -15,27 +15,6 @@ import { Stepper } from "./Stepper";
 // catalog v3 has exactly one row per component, priced by weight rather than
 // by condition, and the Edge Function does that arithmetic before this screen
 // ever sees the line.
-
-// Grams per pound. Matches create_quote (0034_weight_pricing.sql) and the
-// appraise Edge Function -- so a quantity correction made here lands on the
-// same total the RPC would compute for the same quantity.
-const GRAMS_PER_LB = 453.59237;
-
-/**
- * Shows the arithmetic behind a total rather than just the total: "12 x 4.4
- * lb = 52.9 lb at $0.80/lb". Falls back to a plain per-item read for a line
- * with no weight, which is still priced per item.
- */
-function lineArithmetic(line: { quantity: number; unitPriceCents: number; weightG: number | null }): string {
-  if (line.weightG == null) {
-    return `${line.quantity} × ${formatCents(line.unitPriceCents)}`;
-  }
-  const perUnitG = line.weightG / line.quantity;
-  return (
-    `${line.quantity} × ${formatWeight(perUnitG)} = ${formatWeight(line.weightG)} ` +
-    `at ${formatCents(line.unitPriceCents)}/lb`
-  );
-}
 
 export function AppraisalScanSheet({
   visible,

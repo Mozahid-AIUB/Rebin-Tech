@@ -18,6 +18,7 @@ const RETRY_MODEL = "gemini-pro-latest";
 const CONFIDENCE_GATE = 70;
 
 type CatalogRow = {
+  id: string;
   component_key: string;
   display_name: string;
   grade: string;
@@ -125,7 +126,7 @@ Deno.serve(async (req) => {
     const { data: catalog, error } = await admin
       .from("price_items")
       .select(
-        "component_key, display_name, grade, unit, unit_price_cents, catalog_version_id, avg_weight_g, price_catalog_versions!inner(status)",
+        "id, component_key, display_name, grade, unit, unit_price_cents, catalog_version_id, avg_weight_g, price_catalog_versions!inner(status)",
       )
       .eq("price_catalog_versions.status", "active");
     if (error) throw new Error(`Catalog read failed: ${error.message}`);
@@ -158,7 +159,27 @@ Deno.serve(async (req) => {
     }
 
     const priced = result.items.flatMap((item) => {
-      const row = rows.find((r) => r.component_key === item.componentKey);
+      // `rows` comes back from PostgREST in whatever order Postgres happens
+      // to return them, which is not a guarantee -- catalog v3 has one row
+      // per component_key today, but 0035 shipped believing exactly that and
+      // was wrong: the draft it published still carried v2's graded
+      // duplicates (0036), because of the same draft-copy bug 0037 fixes.
+      // If duplicates ever recur, `.find` on an unordered result would let
+      // the same photo quote two different prices depending on what Postgres
+      // felt like returning first. Preferring the weight-priced row (the
+      // pricing model the catalog is meant to carry now) and breaking any
+      // further tie on the row's own id -- stable and unique, unlike
+      // catalog_version_id which is identical across every row this query
+      // can return -- removes the non-determinism without assuming
+      // duplicates can't happen again.
+      const candidates = rows.filter((r) => r.component_key === item.componentKey);
+      const row = candidates
+        .slice()
+        .sort((a, b) => {
+          const weighted = Number(b.avg_weight_g != null) - Number(a.avg_weight_g != null);
+          if (weighted !== 0) return weighted;
+          return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+        })[0];
       // A key the catalog has no price for is dropped rather than quoted at
       // zero -- a $0 line reads as "worthless", not "unpriced".
       if (!row) return [];

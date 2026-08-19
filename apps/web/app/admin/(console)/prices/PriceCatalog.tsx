@@ -371,6 +371,16 @@ function EditableRow({
     item.avg_weight_g != null ? gramsToLbs(item.avg_weight_g).toString() : "",
   );
   const [weightError, setWeightError] = useState(false);
+  // Tracked apart from `dirty`: `gramsToLbs` rounds to one decimal place, so
+  // re-deriving grams from `weightLbs` on every save -- even one the operator
+  // never touched -- would round-trip the stored value through a formatted
+  // string and drift it toward the 0.1-lb grid a little further each time
+  // (30g -> "0.1" -> 45g on the very next save). `parseDollarsToCents`'s own
+  // doc comment says money never round-trips through a formatted string;
+  // weight needs the same rule. Only a save where the operator actually
+  // edited this field is allowed to touch avg_weight_g at all -- every other
+  // save resubmits `item.avg_weight_g` verbatim.
+  const [weightDirty, setWeightDirty] = useState(false);
   const [dirty, setDirty] = useState(false);
 
   const priceCentsPreview = parseDollarsToCents(price);
@@ -386,11 +396,19 @@ function EditableRow({
       setPriceError(true);
       return;
     }
-    const trimmedWeight = weightLbs.trim();
-    const lbs = trimmedWeight === "" ? null : parseLbs(weightLbs);
-    if (trimmedWeight !== "" && lbs === null) {
-      setWeightError(true);
-      return;
+    // Weight is submitted unchanged unless this field was actually edited.
+    // Re-deriving it from `weightLbs` on every save would push the stored
+    // grams through `gramsToLbs`'s one-decimal rounding whether or not the
+    // operator touched the field -- see the comment on `weightDirty` above.
+    let avgWeightG = item.avg_weight_g;
+    if (weightDirty) {
+      const trimmedWeight = weightLbs.trim();
+      const lbs = trimmedWeight === "" ? null : parseLbs(weightLbs);
+      if (trimmedWeight !== "" && lbs === null) {
+        setWeightError(true);
+        return;
+      }
+      avgWeightG = lbs === null ? null : lbsToGrams(lbs);
     }
     setPriceError(false);
     setWeightError(false);
@@ -408,9 +426,10 @@ function EditableRow({
       grade: item.grade,
       unit,
       unitPriceCents: cents,
-      avgWeightG: lbs === null ? null : lbsToGrams(lbs),
+      avgWeightG,
     });
     setDirty(false);
+    setWeightDirty(false);
   }
 
   return (
@@ -458,6 +477,7 @@ function EditableRow({
             setWeightLbs(e.target.value);
             setWeightError(false);
             setDirty(true);
+            setWeightDirty(true);
           }}
           placeholder="e.g. 4.4"
         />
