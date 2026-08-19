@@ -27,6 +27,17 @@ const config = {
   ios: {
     bundleIdentifier: "com.rebintech.app",
     supportsTablet: true,
+    infoPlist: {
+      // Declared so App Store Connect stops asking on every single upload.
+      // The app uses HTTPS and Supabase's auth, which is exempt encryption
+      // under the US export rules -- but an undeclared build sits in
+      // "Missing Compliance" until someone answers the question by hand.
+      ITSAppUsesNonExemptEncryption: false,
+    },
+    // Every build Apple accepts must carry a build number higher than the
+    // last one under the same version. `autoIncrement` in eas.json advances
+    // it; this is the floor it counts from.
+    buildNumber: "1",
   },
   android: {
     package: "com.rebintech.app",
