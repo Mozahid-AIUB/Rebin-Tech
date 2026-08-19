@@ -41,8 +41,8 @@ begin
   perform set_price_item(v_draft, 'large_display',     'Large display or TV',   'monitors_displays', 'parts', 'lb',  20, 12000);
 
   perform set_price_item(v_draft, 'rack_server',       'Rack server',           'server_gear', 'parts', 'lb', 90, 18000);
-  perform set_price_item(v_draft, 'network_gear',      'Network equipment',     'server_gear', 'parts', 'lb', 85, 3000);
-  perform set_price_item(v_draft, 'power_supply',      'Power supply',          'server_gear', 'parts', 'lb', 75, 1500);
+  perform set_price_item(v_draft, 'network_gear',      'Switch or router',     'server_gear', 'parts', 'lb', 85, 3000);
+  perform set_price_item(v_draft, 'power_supply',      'Power supply unit',          'server_gear', 'parts', 'lb', 75, 1500);
 
   perform set_price_item(v_draft, 'copier',            'Copier or MFP',         'copiers_printers', 'parts', 'lb', 15, 60000);
   perform set_price_item(v_draft, 'printer',           'Printer',               'copiers_printers', 'parts', 'lb', 18, 9000);
@@ -55,7 +55,7 @@ begin
   perform set_price_item(v_draft, 'ram_module',        'Memory module',         'components_parts', 'parts', 'lb', 900,   30);
   perform set_price_item(v_draft, 'hard_drive',        'Hard drive',            'components_parts', 'parts', 'lb', 130,  600);
   perform set_price_item(v_draft, 'solid_state_drive', 'Solid-state drive',     'components_parts', 'parts', 'lb', 150,   80);
-  perform set_price_item(v_draft, 'expansion_card',    'Expansion card',        'components_parts', 'parts', 'lb', 400,  200);
+  perform set_price_item(v_draft, 'expansion_card',    'Graphics or expansion card',        'components_parts', 'parts', 'lb', 400,  200);
 
   perform publish_price_catalog(v_draft);
 end $$;
