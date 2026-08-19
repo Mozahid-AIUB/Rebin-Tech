@@ -30,12 +30,18 @@ const NEXT_STEPS: Record<SignupRole, readonly [string, string, string]> = {
     "Pickups near you appear in your queue",
     "Complete jobs and track your earnings",
   ],
+  supplier: [
+    "Scan or list the stock you want to sell",
+    "Get a quote against the live catalog",
+    "Ship it to our warehouse and get paid",
+  ],
 };
 
 const SUBTITLE: Record<SignupRole, string> = {
   organization: "Your organization is set up and ready to book its first pickup.",
   business: "Your business is set up and ready to sell its first batch.",
   agent: "Your agent profile is set up. Jobs in your area will appear in your queue.",
+  supplier: "You're set up and ready to sell your first batch. Ship whenever you're ready.",
 };
 
 export function SuccessStep({

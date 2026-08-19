@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { decideQuote, getQuote, type QuoteDetail } from "@rebin/api";
-import { formatCents, formatUsDate, scanDisposition } from "@rebin/shared";
+import { decideQuote, getBusiness, getQuote, useSessionStore, type QuoteDetail } from "@rebin/api";
+import {
+  formatCents,
+  formatUsDate,
+  scanDisposition,
+  SUPPLIER_BUSINESS_TYPE,
+  WAREHOUSE_ADDRESS,
+  WAREHOUSE_ADDRESS_PENDING_NOTE,
+} from "@rebin/shared";
 import {
   AppText,
   Card,
@@ -38,6 +45,9 @@ const STAMP: Record<QuoteDetail["status"], { label: string; tone: "pending" | "a
 export default function QuoteDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { assignments, activeIndex } = useSessionStore();
+  const active = assignments[activeIndex];
+  const businessId = active?.scopeType === "business" ? active.scopeId : null;
 
   const [quote, setQuote] = useState<QuoteDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,19 +55,28 @@ export default function QuoteDetailScreen() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmingDecline, setConfirmingDecline] = useState(false);
+  // Whether this total is still catalog-only or already backed by a scale.
+  // Read from business_type, not the role: a supplier and a repair shop are
+  // both biz_owner, so the role alone can't tell this screen which it has.
+  const [isSupplier, setIsSupplier] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     setError(null);
     try {
-      setQuote(await getQuote(id));
+      const [quoteResult, business] = await Promise.all([
+        getQuote(id),
+        businessId ? getBusiness(businessId) : Promise.resolve(null),
+      ]);
+      setQuote(quoteResult);
+      setIsSupplier(business?.businessType === SUPPLIER_BUSINESS_TYPE);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't load this quote.");
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, businessId]);
 
   useEffect(() => {
     void load();
@@ -131,6 +150,14 @@ export default function QuoteDetailScreen() {
     >
       <View style={{ gap: tokens.space[1] }}>
         <AppText variant="display">{formatCents(quote.totalCents)}</AppText>
+        {/* Covers the Accept button below too -- this is the total the button
+            repeats, so the qualifier only needs to live here once. The number
+            comes from the catalog; for a supplier the scale has the final say. */}
+        {isSupplier ? (
+          <AppText variant="bodySm" tone="muted">
+            Estimated — final price is set when we weigh it
+          </AppText>
+        ) : null}
         <AppText variant="body" tone={open ? "accent" : "muted"}>{STATUS_LINE[quote.status]}</AppText>
         <AppText variant="bodySm" tone="muted">
           {open
@@ -143,7 +170,7 @@ export default function QuoteDetailScreen() {
         title="Rebin · collection docket"
         reference={`QT-${quote.id.slice(0, 8).toUpperCase()}`}
         date={formatUsDate(quote.createdAt, TZ)}
-        totalLabel="TOTAL"
+        totalLabel={isSupplier ? "ESTIMATED TOTAL" : "TOTAL"}
         total={formatCents(quote.totalCents)}
         stampLabel={STAMP[quote.status].label}
         stampTone={STAMP[quote.status].tone}
@@ -186,14 +213,37 @@ export default function QuoteDetailScreen() {
       {quote.status === "accepted" && !outcome ? (
         <Card accentBorder style={{ gap: tokens.space[1] }}>
           <AppText variant="h3">What happens next</AppText>
-          <AppText variant="bodySm" tone="secondary">
-            We&apos;ll be in touch to arrange collection and payment.
-          </AppText>
-          {/* Shipping labels and payouts are the next two features. Saying so
-              plainly beats a disabled button that implies they exist. */}
-          <AppText variant="bodySm" tone="muted">
-            Shipping labels and payouts arrive in a coming release.
-          </AppText>
+          {isSupplier ? (
+            <>
+              {/* Nobody is collecting from a supplier -- they ship. Saying
+                  "collection" here would be false in the one word that
+                  matters, right after they've just committed to this total. */}
+              <AppText variant="bodySm" tone="secondary">
+                Ship it to the Rebin Tech warehouse. We weigh and sort it on
+                arrival, and your payout follows within seven days.
+              </AppText>
+              {WAREHOUSE_ADDRESS ? (
+                <AppText variant="bodySm" tone="muted" selectable>
+                  {WAREHOUSE_ADDRESS}
+                </AppText>
+              ) : (
+                <AppText variant="bodySm" tone="muted">
+                  {WAREHOUSE_ADDRESS_PENDING_NOTE}
+                </AppText>
+              )}
+            </>
+          ) : (
+            <>
+              <AppText variant="bodySm" tone="secondary">
+                We&apos;ll be in touch to arrange collection and payment.
+              </AppText>
+              {/* Shipping labels and payouts are the next two features. Saying so
+                  plainly beats a disabled button that implies they exist. */}
+              <AppText variant="bodySm" tone="muted">
+                Shipping labels and payouts arrive in a coming release.
+              </AppText>
+            </>
+          )}
         </Card>
       ) : null}
 

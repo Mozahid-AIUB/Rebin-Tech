@@ -16,6 +16,9 @@ describe("Signup role picker", () => {
     ["Organization. Schools, hospitals, offices", "organization"],
     ["Business owner. Shops, repair centers, traders", "business"],
     ["Field agent. Collectors and pickup crew", "agent"],
+    // A fourth card: a supplier registers with no EIN and no business-type
+    // choice, but otherwise opens the same shared form as everyone else.
+    ["Supplier. Independent collectors, garages, side buyers", "supplier"],
   ])("opens the shared form with role=%s preselected", async (label, role) => {
     await render(<SignupRolePicker />);
     await fireEvent.press(screen.getByLabelText(label));

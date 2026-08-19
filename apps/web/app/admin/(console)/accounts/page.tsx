@@ -4,8 +4,25 @@ import { When, Empty, AccountStatusDot } from "../../ui";
 import { PageIn } from "../../Motion";
 import { AccountActions } from "./AccountActions";
 import type { AccountStatus } from "@/lib/supabase/types";
+import type { BusinessType } from "@rebin/shared";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Readable, not a raw enum. `it_reseller` on a queue an operator scans every
+ * morning is a value they'd have to decode; the paperwork question this
+ * column exists to answer deserves plain words, especially for `supplier`
+ * -- the one type this queue was extended to call out.
+ */
+const TYPE_LABEL: Record<BusinessType, string> = {
+  repair_shop: "Repair shop",
+  electronics_retailer: "Electronics retailer",
+  scrap_dealer: "Scrap dealer",
+  it_reseller: "IT reseller",
+  refurbisher: "Refurbisher",
+  supplier: "Supplier",
+  other: "Other",
+};
 
 /**
  * Everyone waiting to be let in -- organizations and businesses only.
@@ -39,6 +56,18 @@ export default async function AccountsPage() {
       r.kind !== null && r.id !== null && r.name !== null && r.status !== null && r.created_at !== null,
   );
 
+  // pending_accounts returns kind but not business_type -- a business and a
+  // supplier are indistinguishable in the view, and the paperwork differs
+  // between them (a business has an EIN, a supplier has none). Fetched only
+  // for the business rows actually on screen, and mapped by id.
+  const businessIds = rows.filter((r) => r.kind === "business").map((r) => r.id);
+
+  const { data: types, error: typesError } = businessIds.length
+    ? await supabase.from("businesses").select("id, business_type").in("id", businessIds)
+    : { data: [], error: null };
+
+  const typeFor = new Map((types ?? []).map((t) => [t.id, t.business_type]));
+
   return (
     <PageIn>
       <div className="admin-head">
@@ -54,6 +83,12 @@ export default async function AccountsPage() {
       </p>
 
       {error && <p className="notice">Could not load the queue: {error.message}</p>}
+      {!error && typesError && (
+        <p className="notice">
+          Queue loaded, but business types could not: {typesError.message}. Every
+          business below may be showing as a plain business, supplier or not.
+        </p>
+      )}
 
       <div className="table-wrap">
         {rows.length === 0 ? (
@@ -76,7 +111,14 @@ export default async function AccountsPage() {
               {rows.map((row) => (
                 <tr key={`${row.kind}-${row.id}`}>
                   <td>
-                    <span className="kind">{row.kind}</span>
+                    <span className="kind">
+                      {row.kind === "business"
+                        ? (() => {
+                            const t = typeFor.get(row.id);
+                            return t ? TYPE_LABEL[t] : "Business";
+                          })()
+                        : row.kind}
+                    </span>
                   </td>
                   <td className="cell-name">{row.name}</td>
                   <td>

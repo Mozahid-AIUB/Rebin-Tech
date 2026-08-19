@@ -31,6 +31,7 @@ export const SIGNUP_ROLE_OPTIONS = [
   { value: "organization", label: "Organization" },
   { value: "business", label: "Business owner" },
   { value: "agent", label: "Field agent" },
+  { value: "supplier", label: "Supplier" },
 ] as const;
 
 export const BUSINESS_TYPE_OPTIONS = [

@@ -11,7 +11,13 @@ import {
   type Appraisal,
   type QuoteRow,
 } from "@rebin/api";
-import { formatCents, summariseQuotes } from "@rebin/shared";
+import {
+  formatCents,
+  summariseQuotes,
+  SUPPLIER_BUSINESS_TYPE,
+  WAREHOUSE_ADDRESS,
+  WAREHOUSE_ADDRESS_PENDING_NOTE,
+} from "@rebin/shared";
 import {
   AppText,
   Card,
@@ -117,6 +123,9 @@ export default function BizDashboard() {
   }
 
   const stats = summariseQuotes(quotes);
+  // A supplier and a repair shop are both biz_owner -- the role can't tell
+  // them apart, so this reads the loaded business row instead of asking again.
+  const isSupplier = business?.businessType === SUPPLIER_BUSINESS_TYPE;
 
   return (
     <Screen
@@ -174,6 +183,28 @@ export default function BizDashboard() {
         {business ? <AppText variant="body" tone="muted">{business.name}</AppText> : null}
       </View>
 
+      {/* A supplier collects their own stock and ships it on -- they never
+          have a pickup to schedule, and a screen that only hid a pickup
+          control would leave them with no answer to "so what do I do now". */}
+      {isSupplier ? (
+        <Card accentBorder style={{ gap: tokens.space[1] }}>
+          <AppText variant="h3">Ship it to us</AppText>
+          <AppText variant="bodySm" tone="secondary">
+            Send your collection to the Rebin Tech warehouse. We weigh and sort
+            it on arrival, and your payout follows within seven days.
+          </AppText>
+          {WAREHOUSE_ADDRESS ? (
+            <AppText variant="bodySm" tone="muted" selectable>
+              {WAREHOUSE_ADDRESS}
+            </AppText>
+          ) : (
+            <AppText variant="bodySm" tone="muted">
+              {WAREHOUSE_ADDRESS_PENDING_NOTE}
+            </AppText>
+          )}
+        </Card>
+      ) : null}
+
       {loading ? (
         <AppText variant="body" tone="muted">Loading your dashboard…</AppText>
       ) : error ? (
@@ -195,6 +226,14 @@ export default function BizDashboard() {
               tone={stats.acceptedValueCents > 0 ? "default" : "muted"}
             />
           </StatRow>
+          {/* The number above comes from the catalog, not a scale. For a
+              supplier the scale has the final say, so an unqualified total
+              here would be a promise this dashboard can't keep. */}
+          {isSupplier ? (
+            <AppText variant="label" tone="muted">
+              Estimated — final price is set when we weigh it
+            </AppText>
+          ) : null}
 
           <SectionHeader title="Recent quotes" />
           {quotes.length === 0 ? (
@@ -205,7 +244,7 @@ export default function BizDashboard() {
           ) : (
             <View style={{ gap: tokens.space[2] }}>
               {quotes.slice(0, 5).map((quote) => (
-                <QuoteCard key={quote.id} quote={quote} />
+                <QuoteCard key={quote.id} quote={quote} estimate={isSupplier} />
               ))}
             </View>
           )}

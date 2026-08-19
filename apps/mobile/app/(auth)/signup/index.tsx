@@ -1,7 +1,7 @@
 import { View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import { AUTH_ROLE_ACCENTS, AppText, AuthScreen, RoleCard, authTokens } from "@rebin/ui";
-import { AgentIcon, BusinessIcon, OrgIcon } from "../../../src/features/signup/RoleIcons";
+import { AgentIcon, BusinessIcon, OrgIcon, SupplierIcon } from "../../../src/features/signup/RoleIcons";
 
 // See login.tsx's own `asHref` for the identical reasoning: these are known,
 // hand-authored route names, never unvalidated user input.
@@ -42,6 +42,16 @@ const ROLES = [
     audience: "Collectors and pickup crew",
     points: ["See pickups assigned to you", "Follow an ordered route list", "Watch your earnings add up"],
     Icon: AgentIcon,
+  },
+  {
+    key: "supplier",
+    signupRole: "supplier",
+    title: "Supplier",
+    // Named for what the person does, not for what the schema calls them: a
+    // shop owner reading "supplier" cannot tell whether it means him.
+    audience: "Independent collectors, garages, side buyers",
+    points: ["Same price as a business", "Ship stock in on your schedule", "No EIN or paperwork to start"],
+    Icon: SupplierIcon,
   },
 ] as const;
 

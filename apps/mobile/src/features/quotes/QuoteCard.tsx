@@ -26,20 +26,41 @@ function daysLeft(expiresAt: string): number {
   return Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86_400_000);
 }
 
-export function QuoteCard({ quote }: { quote: QuoteRow }) {
+/**
+ * `estimate` is required, not defaulted, on purpose.
+ *
+ * A supplier's total is never final until Rebin's scale weighs it in — every
+ * other business's is final at accept time. Two earlier commits qualified
+ * that number screen by screen and still missed this card, because a default
+ * (either way) is a value a caller can silently agree with by typing nothing.
+ * Requiring the caller to look up `isSupplier` and pass it makes the omission
+ * a type error instead of a silent one.
+ */
+export function QuoteCard({ quote, estimate }: { quote: QuoteRow; estimate: boolean }) {
   const router = useRouter();
   const meta = STATUS_META[quote.status];
   const remaining = daysLeft(quote.expiresAt);
+  const total = formatCents(quote.totalCents);
+  const totalLabel = estimate ? `Estimated ${total}` : total;
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Quote for ${formatCents(quote.totalCents)}, ${meta.label}`}
+      accessibilityLabel={`Quote for ${totalLabel}, ${meta.label}`}
       onPress={() => router.push(asHref(`/(biz)/quote/${quote.id}`))}
     >
       <Card style={{ gap: tokens.space[1] }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <AppText variant="h2">{formatCents(quote.totalCents)}</AppText>
+          <View>
+            <AppText variant="h2">{total}</AppText>
+            {/* The scale has the final say for a supplier, so the figure this
+                card prints in large type cannot stand alone -- it needs the
+                same qualifier every other supplier-facing total already
+                carries. */}
+            {estimate ? (
+              <AppText variant="label" tone="muted">Estimated — final price is set when we weigh it</AppText>
+            ) : null}
+          </View>
           <View
             accessibilityRole="text"
             style={{

@@ -14,6 +14,7 @@ import {
   type PostalAddress,
   type ProfileDetail,
 } from "@rebin/api";
+import { SUPPLIER_BUSINESS_TYPE } from "@rebin/shared";
 import { AppText, Card, PillButton, Screen, SectionHeader, tokens } from "@rebin/ui";
 import { useLoader } from "../../hooks/useLoader";
 import { useLogout } from "../../hooks/useLogout";
@@ -50,6 +51,7 @@ const ENUM_LABEL: Record<string, string> = {
   scrap_dealer: "Scrap Dealer",
   it_reseller: "IT Reseller",
   refurbisher: "Refurbisher",
+  supplier: "Supplier",
   car: "Car",
   van: "Van",
   box_truck: "Box Truck",
@@ -220,7 +222,13 @@ export function MeScreen() {
               <Card variant="alt" style={{ gap: tokens.space[2] }}>
                 <Row label="Name" value={detail.business.name} />
                 <Row label="Type" value={label(detail.business.businessType)} />
-                <Row label="EIN" value={detail.business.ein ?? "Not provided"} />
+                {/* A supplier is never asked for an EIN at signup -- the role
+                    collects e-waste rather than reselling it, so "Not
+                    provided" here would misdescribe a field that was never
+                    part of the form, not one the vendor skipped. */}
+                {detail.business.businessType !== SUPPLIER_BUSINESS_TYPE ? (
+                  <Row label="EIN" value={detail.business.ein ?? "Not provided"} />
+                ) : null}
                 <Row label="Address" value={formatAddress(detail.business.address)} />
               </Card>
             </>

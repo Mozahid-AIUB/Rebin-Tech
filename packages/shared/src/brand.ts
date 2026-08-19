@@ -160,3 +160,30 @@ export const PORTAL_ACCENTS_SUBTLE = Object.freeze({
  * of the API package install the whole Expo tree.
  */
 export type PortalKey = keyof typeof PORTAL_ACCENTS;
+
+/**
+ * Where a supplier ships their collection.
+ *
+ * Lives here rather than inline in a screen because the console needs the same
+ * string in a later stage, and a constant duplicated into two apps is one that
+ * drifts the first time either changes.
+ *
+ * `null` until the real address is in hand — accounts go active on signup
+ * with no approval step in between, so there is no gate that would stop an
+ * unset address from being shown to a supplier the moment they sign up. A
+ * screen that reads this must treat `null` as "not ready to ship" rather than
+ * printing a fake address: see `WAREHOUSE_ADDRESS_PENDING_NOTE` below. Set
+ * this to the real string and every screen that reads it starts showing it,
+ * with no other edit required.
+ */
+export const WAREHOUSE_ADDRESS: string | null = null;
+
+/**
+ * What a ship-to card says while `WAREHOUSE_ADDRESS` is still `null`.
+ *
+ * Shipping e-waste to an address that doesn't exist is worse than telling a
+ * supplier to wait, so this is the fallback every render site must use
+ * instead of the address itself.
+ */
+export const WAREHOUSE_ADDRESS_PENDING_NOTE =
+  "We're confirming your warehouse address — we'll be in touch before you need to ship anything.";
