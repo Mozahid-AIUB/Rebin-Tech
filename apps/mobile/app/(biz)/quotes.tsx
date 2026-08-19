@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { View } from "react-native";
-import { listQuotes, useSessionStore, type QuoteRow } from "@rebin/api";
+import { getBusiness, listQuotes, useSessionStore, type BusinessSummary, type QuoteRow } from "@rebin/api";
+import { SUPPLIER_BUSINESS_TYPE } from "@rebin/shared";
 import {
   AppText,
   Card,
@@ -45,17 +46,23 @@ export default function BizQuotes() {
 
   const [filter, setFilter] = useState<Filter>("all");
   const [quotes, setQuotes] = useState<QuoteRow[]>([]);
+  const [business, setBusiness] = useState<BusinessSummary | null>(null);
 
   const { loading, error, reload } = useLoader(
     useCallback(async () => {
       // RoleGuard should make this unreachable; saying so beats an
       // empty screen that reads as a brand-new account.
       if (!businessId) throw new Error("No business is active for this account.");
-      setQuotes(await listQuotes(businessId));
+      const [rows, biz] = await Promise.all([listQuotes(businessId), getBusiness(businessId)]);
+      setQuotes(rows);
+      setBusiness(biz);
     }, [businessId]),
   );
 
   const shown = filter === "all" ? quotes : quotes.filter((q) => q.status === filter);
+  // A supplier and a repair shop are both biz_owner -- the role can't tell
+  // them apart, so this reads the loaded business row instead.
+  const isSupplier = business?.businessType === SUPPLIER_BUSINESS_TYPE;
 
   return (
     <Screen>
@@ -80,7 +87,7 @@ export default function BizQuotes() {
       ) : (
         <View style={{ gap: tokens.space[2] }}>
           {shown.map((quote) => (
-            <QuoteCard key={quote.id} quote={quote} />
+            <QuoteCard key={quote.id} quote={quote} estimate={isSupplier} />
           ))}
         </View>
       )}

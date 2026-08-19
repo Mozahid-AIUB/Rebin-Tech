@@ -11,7 +11,13 @@ import {
   type Appraisal,
   type QuoteRow,
 } from "@rebin/api";
-import { formatCents, summariseQuotes, SUPPLIER_BUSINESS_TYPE, WAREHOUSE_ADDRESS } from "@rebin/shared";
+import {
+  formatCents,
+  summariseQuotes,
+  SUPPLIER_BUSINESS_TYPE,
+  WAREHOUSE_ADDRESS,
+  WAREHOUSE_ADDRESS_PENDING_NOTE,
+} from "@rebin/shared";
 import {
   AppText,
   Card,
@@ -187,9 +193,15 @@ export default function BizDashboard() {
             Send your collection to the Rebin Tech warehouse. We weigh and sort
             it on arrival, and your payout follows within seven days.
           </AppText>
-          <AppText variant="bodySm" tone="muted" selectable>
-            {WAREHOUSE_ADDRESS}
-          </AppText>
+          {WAREHOUSE_ADDRESS ? (
+            <AppText variant="bodySm" tone="muted" selectable>
+              {WAREHOUSE_ADDRESS}
+            </AppText>
+          ) : (
+            <AppText variant="bodySm" tone="muted">
+              {WAREHOUSE_ADDRESS_PENDING_NOTE}
+            </AppText>
+          )}
         </Card>
       ) : null}
 
@@ -232,7 +244,7 @@ export default function BizDashboard() {
           ) : (
             <View style={{ gap: tokens.space[2] }}>
               {quotes.slice(0, 5).map((quote) => (
-                <QuoteCard key={quote.id} quote={quote} />
+                <QuoteCard key={quote.id} quote={quote} estimate={isSupplier} />
               ))}
             </View>
           )}

@@ -2,7 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { decideQuote, getBusiness, getQuote, useSessionStore, type QuoteDetail } from "@rebin/api";
-import { formatCents, formatUsDate, scanDisposition, SUPPLIER_BUSINESS_TYPE, WAREHOUSE_ADDRESS } from "@rebin/shared";
+import {
+  formatCents,
+  formatUsDate,
+  scanDisposition,
+  SUPPLIER_BUSINESS_TYPE,
+  WAREHOUSE_ADDRESS,
+  WAREHOUSE_ADDRESS_PENDING_NOTE,
+} from "@rebin/shared";
 import {
   AppText,
   Card,
@@ -215,9 +222,15 @@ export default function QuoteDetailScreen() {
                 Ship it to the Rebin Tech warehouse. We weigh and sort it on
                 arrival, and your payout follows within seven days.
               </AppText>
-              <AppText variant="bodySm" tone="muted" selectable>
-                {WAREHOUSE_ADDRESS}
-              </AppText>
+              {WAREHOUSE_ADDRESS ? (
+                <AppText variant="bodySm" tone="muted" selectable>
+                  {WAREHOUSE_ADDRESS}
+                </AppText>
+              ) : (
+                <AppText variant="bodySm" tone="muted">
+                  {WAREHOUSE_ADDRESS_PENDING_NOTE}
+                </AppText>
+              )}
             </>
           ) : (
             <>

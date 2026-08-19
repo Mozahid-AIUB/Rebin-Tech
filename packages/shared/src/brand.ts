@@ -168,7 +168,22 @@ export type PortalKey = keyof typeof PORTAL_ACCENTS;
  * string in a later stage, and a constant duplicated into two apps is one that
  * drifts the first time either changes.
  *
- * PLACEHOLDER — this is not the real warehouse address. Replace before a
- * supplier is told to actually ship anything here.
+ * `null` until the real address is in hand — accounts go active on signup
+ * with no approval step in between, so there is no gate that would stop an
+ * unset address from being shown to a supplier the moment they sign up. A
+ * screen that reads this must treat `null` as "not ready to ship" rather than
+ * printing a fake address: see `WAREHOUSE_ADDRESS_PENDING_NOTE` below. Set
+ * this to the real string and every screen that reads it starts showing it,
+ * with no other edit required.
  */
-export const WAREHOUSE_ADDRESS = "Rebin Tech Warehouse, 4100 Distribution Dr, Reno, NV 89506";
+export const WAREHOUSE_ADDRESS: string | null = null;
+
+/**
+ * What a ship-to card says while `WAREHOUSE_ADDRESS` is still `null`.
+ *
+ * Shipping e-waste to an address that doesn't exist is worse than telling a
+ * supplier to wait, so this is the fallback every render site must use
+ * instead of the address itself.
+ */
+export const WAREHOUSE_ADDRESS_PENDING_NOTE =
+  "We're confirming your warehouse address — we'll be in touch before you need to ship anything.";
