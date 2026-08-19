@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { AccountStatusDot, When, Empty } from "../../ui";
 import { PageIn } from "../../Motion";
+import { PeopleTabs } from "../PeopleTabs";
 import { AgentActions } from "./AgentActions";
 import type { AccountStatus } from "@/lib/supabase/types";
 
@@ -155,11 +156,13 @@ export default async function AgentsPage({
   return (
     <PageIn>
       <div className="admin-head">
-        <h1 className="admin-h1">Agents</h1>
+        <h1 className="admin-h1">People</h1>
         <span className="admin-count">
           {rows.length} {filter ? ACCOUNT_LABEL[filter].toLowerCase() : "total"}
         </span>
       </div>
+
+      <PeopleTabs current="/admin/agents" />
 
       <p className="admin-sub">
         Agents register themselves in the mobile app. There is no way to add

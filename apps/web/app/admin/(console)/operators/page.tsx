@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getStaffUser } from "@/lib/supabase/server";
 import { When, Empty } from "../../ui";
 import { PageIn } from "../../Motion";
+import { PeopleTabs } from "../PeopleTabs";
 import { AddOperator, OperatorActions } from "./OperatorControls";
 
 export const dynamic = "force-dynamic";
@@ -37,9 +38,11 @@ export default async function OperatorsPage() {
   return (
     <PageIn>
       <div className="admin-head">
-        <h1 className="admin-h1">Operators</h1>
+        <h1 className="admin-h1">People</h1>
         <span className="admin-count">{rows.length}</span>
       </div>
+
+      <PeopleTabs current="/admin/operators" />
 
       <p className="admin-sub">
         Everyone who can reach this console. Access is granted by someone who

@@ -73,34 +73,12 @@ const LINKS = [
     ),
   },
   {
-    href: "/admin/agents",
-    section: "Setup",
-    label: "Agents",
-    glyph: (
-      <>
-        <circle cx="4" cy="4.5" r="1.6" />
-        <circle cx="12" cy="4.5" r="1.6" />
-        <circle cx="8" cy="11.75" r="1.6" />
-        <path d="M5.3 5.5 7 10.4M10.7 5.5 9 10.4M5.6 4.5h4.8" />
-      </>
-    ),
-  },
-  {
-    href: "/admin/operators",
-    section: "Setup",
-    label: "Operators",
-    glyph: (
-      <>
-        <circle cx="6" cy="6" r="2.4" />
-        <path d="M2.5 13c0-2.2 1.6-3.6 3.5-3.6s3.5 1.4 3.5 3.6" />
-        <path d="M11.5 5.5v4M9.5 7.5h4" />
-      </>
-    ),
-  },
-  {
     href: "/admin/accounts",
     section: "Setup",
-    label: "Accounts",
+    // One entry for the three screens that answer "who is in this system".
+    // They share a tab header, so the navigation does not need to list each
+    // one -- three siblings here made them look like three unrelated jobs.
+    label: "People",
     glyph: (
       <>
         <rect x="2.5" y="3" width="11" height="10" rx="1.5" />
