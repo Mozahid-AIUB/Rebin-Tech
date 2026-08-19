@@ -33,7 +33,14 @@ export default async function RequestsPage({
 
   let query = supabase
     .from("pickup_requests")
-    .select("id, status, unit_count, created_at, dock_address, window_start, size_tier")
+    // The organization is joined in rather than left to the dock address to
+    // imply. Every row here is an organization's -- pickup_requests.org_id is
+    // not null and req_insert (0008) admits only organization members, so a
+    // business or a supplier cannot file one -- but "whose is this" was
+    // unanswerable from a street address alone.
+    .select(
+      "id, status, unit_count, created_at, dock_address, window_start, size_tier, org_id, organizations(name)",
+    )
     .order("created_at", { ascending: false });
 
   if (filter) query = query.eq("status", filter);
@@ -83,6 +90,7 @@ export default async function RequestsPage({
             <thead>
               <tr>
                 <th>Status</th>
+                <th>Organization</th>
                 <th>Dock</th>
                 <th>Units</th>
                 <th>Window opens</th>
@@ -97,8 +105,11 @@ export default async function RequestsPage({
                     <StatusDot status={row.status} />
                   </td>
                   <td className="cell-name">
-                    <Link href={`/admin/requests/${row.id}`}>{row.dock_address}</Link>
+                    <Link href={`/admin/requests/${row.id}`}>
+                      {row.organizations?.name ?? "—"}
+                    </Link>
                   </td>
+                  <td className="cell-dim">{row.dock_address}</td>
                   <td className="cell-mono">{row.unit_count}</td>
                   <td>
                     <When value={row.window_start} />
