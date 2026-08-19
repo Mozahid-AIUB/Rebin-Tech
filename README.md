@@ -1,36 +1,79 @@
 # Rebin Tech
 
-Free, compliant e-waste recycling. Organisations book a collection and get a
-certificate; businesses and suppliers photograph their stock and get paid by
-weight.
+**Live:** [rebin-tech.onrender.com](https://rebin-tech.onrender.com)
 
-Three surfaces, one database:
+---
+
+## ভূমিকা
+
+এটি একটি মার্কিন ক্লায়েন্টের জন্য তৈরি করা ই-বর্জ্য সংগ্রহের প্ল্যাটফর্ম।
+কোম্পানির নাম **Rebin Tech**, কার্যালয় টেক্সাসে।
+
+কাজটি দুই ধরনের গ্রাহককে ঘিরে, আর এই পার্থক্যটাই পুরো সিস্টেমের ভিত্তি:
+
+**প্রতিষ্ঠান** — হাসপাতাল, স্কুল, সরকারি অফিস। তাদের পুরনো যন্ত্রপাতি সরাতে
+হবে, সঙ্গে একটা প্রমাণপত্র লাগবে যে সবকিছু নিয়মমতো নষ্ট করা হয়েছে। তারা
+টাকা চায় না — চায় হিসাব। Rebin-এর গাড়ি গিয়ে তুলে আনে।
+
+**ব্যবসায়ী ও সরবরাহকারী** — মেরামতের দোকান, স্ক্র্যাপ সংগ্রাহক। তারা টাকা
+চায়। মোবাইল অ্যাপে জিনিসের ছবি তোলে, AI চিনে নেয় কী আছে, আর **ওজন হিসাবে**
+দাম বলে — পাউন্ড প্রতি একটা রেট, প্রতিটা যন্ত্রের গড় ওজন ধরে। ওই দামটা
+আনুমানিক; মাল গুদামে পৌঁছালে দাঁড়িপাল্লাই চূড়ান্ত সংখ্যা ঠিক করে।
+
+**একদল থেকে নেওয়া হয়, আরেকদল বিক্রি করে** — এই একটা পার্থক্য থেকেই বাকি সব
+সিদ্ধান্ত এসেছে।
+
+### তিনটি অংশ
+
+| | কী | কারা ব্যবহার করে |
+|---|---|---|
+| **ওয়েবসাইট** | পাবলিক পাতা, গোপনীয়তা নীতি, শর্তাবলি | যে কেউ |
+| **অ্যাডমিন কনসোল** | সব কাজের সারি, দাম, টাকার হিসাব | দুই-তিনজন অপারেটর |
+| **মোবাইল অ্যাপ** | ছবি তুলে দাম জানা, পিকআপ বুক করা | গ্রাহক ও বিক্রেতা |
+
+### প্রযুক্তি
+
+Next.js (ওয়েব) • React Native / Expo (মোবাইল) • Supabase / PostgreSQL
+(ডেটাবেস, প্রমাণীকরণ) • Google Gemini (ছবি থেকে যন্ত্র চেনা) • TypeScript
+
+---
+
+## Introduction
+
+An e-waste collection platform built for a US client — **Rebin Tech**, based
+in Texas.
+
+The product serves two kinds of customer, and the difference between them is
+what the whole system is shaped around:
+
+**Organisations** — hospitals, school districts, council offices. They have
+retired equipment and need it gone with a paper trail proving it was disposed
+of properly. They do not want paying; they want the certificate. Rebin's team
+drives out and collects.
+
+**Businesses and suppliers** — repair shops, scrap collectors, independent
+buyers. They do want paying. They photograph their stock in the mobile app, a
+vision model identifies each item, and the catalog prices it **by weight** — a
+rate per pound against a typical weight per component. That figure is an
+estimate; the scale at the warehouse sets the final number and an operator
+records the payout.
+
+One side is collected from, the other sells. Almost every decision downstream
+follows from that.
+
+### Three surfaces, one database
 
 | | What it is | Who uses it |
 |---|---|---|
 | **Marketing site** | The public page, privacy and terms | Anyone |
-| **Operations console** | The queues Rebin works from | Two or three operators |
+| **Operations console** | The queues, prices and payouts Rebin works from | Two or three operators |
 | **Mobile app** | Scan, quote, book a collection | Customers and sellers |
 
-> **Live:** _link to be added once deployed_
+### Stack
 
----
-
-## What the product actually does
-
-**An organisation** — a hospital, a school district, a council — has retired
-equipment and needs it gone with a paper trail. They book a collection, Rebin's
-team drives out, and a certificate records every device that left the building.
-No money changes hands.
-
-**A business or a supplier** wants paying for what they have. They photograph
-it, a vision model identifies each item, and the catalog prices it **by weight**
-— a rate per pound against a typical weight per component. The figure they see
-is an estimate; the scale at the warehouse sets the final number, and an
-operator records the payout.
-
-The difference between the two is the shape of the whole product: one is
-collected from, the other sells.
+Next.js (web) • React Native / Expo (mobile) • Supabase / PostgreSQL (data,
+auth, row-level security) • Google Gemini (equipment recognition) • TypeScript
+throughout
 
 ---
 
@@ -70,6 +113,10 @@ server the browser never reaches.
 transitions follow a fixed pipeline enforced in SQL, and the detail screen
 renders only the moves that will succeed. A dropdown of every status would
 have been less code and mostly errors.
+
+**Operator accounts are issued, never claimed.** There is no sign-up for
+console access; an existing operator creates the account and grants it, and
+neither the last operator nor your own access can be removed.
 
 ---
 
@@ -114,8 +161,8 @@ pnpm --filter @rebin/shared test
 
 `supabase/migrations/` is applied **in numerical order**, and a migration is
 never edited after it has run — a correction is a new file. The comment at the
-top of each one explains what went wrong or what changed, which is usually more
-useful than the SQL beneath it.
+top of each one explains what went wrong or what changed, which is usually
+more useful than the SQL beneath it.
 
 If a screen starts failing with *"Could not find the function"*, a migration
 has not been applied rather than the code being wrong.
