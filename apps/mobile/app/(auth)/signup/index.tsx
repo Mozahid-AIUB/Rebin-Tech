@@ -42,7 +42,14 @@ const ROLES = [
     // Named for what the person does, not for what the schema calls them: a
     // shop owner reading "supplier" cannot tell whether it means him.
     audience: "Independent collectors, garages, side buyers",
-    points: ["Same price as a business", "Ship stock in on your schedule", "No EIN or paperwork to start"],
+    // Not "same price as a business": a one-man collector has no idea what a
+    // business is paid, so a comparison he cannot check is not reassurance.
+    // What he is actually worried about is being paid less for being small.
+    points: [
+      "The same rates our largest sellers get",
+      "Ship stock in on your schedule",
+      "No EIN or paperwork to start",
+    ],
     Icon: SupplierIcon,
   },
 ] as const;
