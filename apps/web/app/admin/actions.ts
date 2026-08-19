@@ -62,6 +62,54 @@ export async function advanceRequest(
   return { ok: true };
 }
 
+/**
+ * Set the collection window, then move the request to `scheduled`.
+ *
+ * Two RPCs rather than one because the database has no combined call, and the
+ * order matters: `reschedule_pickup_request` sends a `scheduled` request back
+ * to `pending` on the argument that a moved date invalidates the slot it was
+ * holding. Writing the window first and advancing second means that rule
+ * never fires against us -- the request is still `under_review` when the
+ * window is written, and reaches `scheduled` already carrying the date it was
+ * scheduled for.
+ *
+ * If the advance fails the window is still saved, which is the safer half to
+ * have landed: an operator sees the new date and can retry, rather than a
+ * request sitting in `scheduled` with nobody knowing when to drive there.
+ */
+export async function scheduleRequest(
+  requestId: string,
+  windowStart: string,
+  windowEnd: string,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  const { error: windowError } = await supabase.rpc("reschedule_pickup_request", {
+    p_request_id: requestId,
+    p_window_start: windowStart,
+    p_window_end: windowEnd,
+  });
+  if (windowError) {
+    return { ok: false, message: explain(windowError.code, windowError.message) };
+  }
+
+  const { error: statusError } = await supabase.rpc("advance_pickup_request", {
+    p_request_id: requestId,
+    p_status: "scheduled",
+  });
+  if (statusError) {
+    return {
+      ok: false,
+      message: `The window was saved, but the request did not move to scheduled: ${explain(statusError.code, statusError.message)}`,
+    };
+  }
+
+  revalidatePath("/admin/requests");
+  revalidatePath(`/admin/requests/${requestId}`);
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
 export async function cancelRequest(requestId: string): Promise<ActionResult> {
   const supabase = await createClient();
 

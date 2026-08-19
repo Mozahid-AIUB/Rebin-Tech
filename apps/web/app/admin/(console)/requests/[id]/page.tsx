@@ -85,7 +85,12 @@ export default async function RequestDetailPage({
         </ol>
       )}
 
-      <RequestActions requestId={request.id} status={request.status} />
+      <RequestActions
+        requestId={request.id}
+        status={request.status}
+        windowStart={request.window_start}
+        windowEnd={request.window_end}
+      />
 
       <div className="panel">
         <h2 className="panel-title">Collection</h2>

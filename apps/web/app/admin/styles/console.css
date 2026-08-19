@@ -1623,3 +1623,31 @@ table.admin-table {
   color: var(--muted);
   margin: 0.4375rem 0 0;
 }
+
+/* The scheduling form, revealed by the Schedule button rather than shown
+   permanently: it is one step of one status, and a form standing open on
+   every request would read as something that always needs filling in. */
+.sched-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.875rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.sched-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3125rem;
+}
+
+.sched-field span {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--board) 60%, transparent);
+}
