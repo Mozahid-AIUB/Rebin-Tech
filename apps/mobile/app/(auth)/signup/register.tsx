@@ -1,17 +1,9 @@
 import { useState } from "react";
-import { View } from "react-native";
+import { Linking, View } from "react-native";
 import { useLocalSearchParams, useRouter, type Href } from "expo-router";
-import {
-  SIGNUP_ROLES,
-  signupFormSchema,
-  toBusinessSignupInput,
-  toOrgSignupInput,
-  toSupplierSignupInput,
-  type SignupFormInput,
-  type SignupRole,
-} from "@rebin/shared";
+import { LEGAL_URLS, SIGNUP_ROLES, signupFormSchema, toBusinessSignupInput, toOrgSignupInput, toSupplierSignupInput, type SignupFormInput, type SignupRole } from "@rebin/shared";
 import { signIn, signUpBusiness, signUpOrganization } from "@rebin/api";
-import { AppText, AuthButton, AuthInput, AuthScreen, authTokens } from "@rebin/ui";
+import { AppText, AuthButton, AuthInput, AuthScreen, LegalCopy, authTokens } from "@rebin/ui";
 import {
   BUSINESS_TYPE_OPTIONS,
   ORG_TYPE_OPTIONS,
@@ -296,6 +288,17 @@ export default function SignupRegister() {
       {serverError ? (
         <AppText variant="bodySm" style={{ color: "#E08B84" }}>{serverError}</AppText>
       ) : null}
+
+      {/* The screen that actually creates the account said nothing about
+          either document -- only the login screen did, which is the one
+          place the agreement has already been made. Same wording and same
+          component as login, so the two screens make one promise rather
+          than two. */}
+      <LegalCopy
+        prefix="By creating an account you accept our"
+        onPrivacy={() => void Linking.openURL(LEGAL_URLS.privacy)}
+        onTerms={() => void Linking.openURL(LEGAL_URLS.terms)}
+      />
     </AuthScreen>
   );
 }

@@ -181,3 +181,23 @@ export const WAREHOUSE_ADDRESS: string | null =
  */
 export const WAREHOUSE_ADDRESS_PENDING_NOTE =
   "We're confirming your warehouse address — we'll be in touch before you need to ship anything.";
+
+/**
+ * Where the public site lives.
+ *
+ * The legal pages are written once, in the Next.js app, and both surfaces
+ * point at them: the console links them in its footer and the mobile app
+ * opens them in a browser. Copying the text into a React Native screen would
+ * mean two versions of a document that has to be identical -- and the one a
+ * lawyer updates would not be the one on the phone.
+ *
+ * Apple follows the privacy link during review, so it has to resolve to a
+ * real page on the public internet, not to a screen behind the login.
+ */
+export const SITE_URL = "https://rebin-tech.onrender.com";
+
+/** The two documents every signup screen has to link. */
+export const LEGAL_URLS = {
+  privacy: `${SITE_URL}/privacy`,
+  terms: `${SITE_URL}/terms`,
+} as const;

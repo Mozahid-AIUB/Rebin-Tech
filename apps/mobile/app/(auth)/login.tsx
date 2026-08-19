@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { Linking, Pressable, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
-import { loginSchema } from "@rebin/shared";
+import { LEGAL_URLS, loginSchema } from "@rebin/shared";
 import { AppText, AuthButton, AuthDivider, AuthInput, AuthScreen, FONT, LegalCopy, SocialButton, authTokens } from "@rebin/ui";
 import { useLogin } from "../../src/hooks/useLogin";
 
@@ -216,10 +216,17 @@ export default function Login() {
           </AppText>
         </Pressable>
 
+        {/* Opened in the browser rather than pushed as a route. These
+            pointed at /legal/privacy and /legal/terms, which were never
+            built -- tapping either did nothing, on the one screen where a
+            promise is being made. The documents live in the web app, and
+            linking to them means the version a lawyer edits is the version
+            the phone shows. Apple follows the privacy link during review,
+            so it has to reach the public internet either way. */}
         <LegalCopy
           prefix="By continuing you accept our"
-          onPrivacy={() => router.push(asHref("/legal/privacy"))}
-          onTerms={() => router.push(asHref("/legal/terms"))}
+          onPrivacy={() => void Linking.openURL(LEGAL_URLS.privacy)}
+          onTerms={() => void Linking.openURL(LEGAL_URLS.terms)}
         />
       </View>
     </AuthScreen>
