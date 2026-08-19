@@ -26,6 +26,13 @@ type CatalogRow = {
   unit_price_cents: number;
   catalog_version_id: string;
   avg_weight_g: number | null;
+  // Approximate recoverable content per unit, from the catalog rather than
+  // from the model -- see 0040_material_content.sql for why. Display only:
+  // nothing below prices from these.
+  copper_g: number | null;
+  aluminium_g: number | null;
+  steel_g: number | null;
+  gold_mg: number | null;
 };
 
 // Grams per pound. Mirrors create_quote (0034_weight_pricing.sql) exactly, so
@@ -313,7 +320,7 @@ Deno.serve(async (req) => {
     const { data: catalog, error } = await admin
       .from("price_items")
       .select(
-        "id, component_key, display_name, grade, unit, unit_price_cents, catalog_version_id, avg_weight_g, price_catalog_versions!inner(status)",
+        "id, component_key, display_name, grade, unit, unit_price_cents, catalog_version_id, avg_weight_g, copper_g, aluminium_g, steel_g, gold_mg, price_catalog_versions!inner(status)",
       )
       .eq("price_catalog_versions.status", "active");
     if (error) throw new Error(`Catalog read failed: ${error.message}`);
@@ -400,6 +407,17 @@ Deno.serve(async (req) => {
         lineTotalCents,
         source: "scan" as const,
         catalogVersionId: row.catalog_version_id,
+        // Scaled by quantity like the weight is, so three laptops read as
+        // three laptops' worth of copper. Null when the catalog has no figure
+        // for this component -- the client then shows nothing rather than a
+        // zero, which would read as "contains no copper" instead of "not
+        // recorded".
+        material: {
+          copperG: row.copper_g != null ? row.copper_g * item.quantity : null,
+          aluminiumG: row.aluminium_g != null ? row.aluminium_g * item.quantity : null,
+          steelG: row.steel_g != null ? row.steel_g * item.quantity : null,
+          goldMg: row.gold_mg != null ? row.gold_mg * item.quantity : null,
+        },
       }];
     });
 

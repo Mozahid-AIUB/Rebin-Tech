@@ -610,6 +610,28 @@ export type AppraisedLine = {
   lineTotalCents: number;
   /** Which door this line came in by. quote_items has carried it since 0023. */
   source: "scan" | "manual";
+  /**
+   * Roughly what is inside this line, scaled by quantity.
+   *
+   * From the catalog, never from the model: nobody can see gold content in a
+   * photograph, and a model asked anyway returns a different number each time
+   * (0040_material_content.sql). Looking it up instead means the same laptop
+   * photographed twice reads the same twice.
+   *
+   * Display only. No total on this screen or any other is computed from it,
+   * and the figures are averages across hardware generations -- a 2008 desktop
+   * carries several times the gold of a 2022 one.
+   *
+   * Optional because a manually typed line has no catalog row behind it, and
+   * each field is null when the catalog has no figure for that component --
+   * which must read as "not recorded", not as "contains none".
+   */
+  material?: {
+    copperG: number | null;
+    aluminiumG: number | null;
+    steelG: number | null;
+    goldMg: number | null;
+  };
 };
 
 export type Appraisal = {

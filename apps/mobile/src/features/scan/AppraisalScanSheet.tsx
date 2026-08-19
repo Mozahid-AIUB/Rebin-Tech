@@ -5,6 +5,7 @@ import { appraisePhoto, type Appraisal, type AppraisedLine } from "@rebin/api";
 import { formatCents, GRAMS_PER_LB, lineArithmetic, scanDisposition } from "@rebin/shared";
 import { AppText, Card, EmptyState, PillButton, tokens } from "@rebin/ui";
 import { capturePhotoForScan } from "./capture";
+import { MaterialLine, scaleMaterial } from "./MaterialLine";
 import { Stepper } from "./Stepper";
 
 // S35-S37. Same camera and the same "one still per subject" flow as the
@@ -103,13 +104,17 @@ export function AppraisalScanSheet({
         // reading as an item worth nothing rather than an item that is not
         // there -- removing is a separate button for that reason.
         const quantity = Math.max(1, line.quantity + by);
+        // The material figures are per-line totals, so they scale with the
+        // count exactly as the weight does. Left alone they would keep
+        // reporting one laptop's copper beside a line that now says three.
+        const material = scaleMaterial(line.material, line.quantity, quantity);
         if (line.weightG == null) {
-          return { ...line, quantity, lineTotalCents: line.unitPriceCents * quantity };
+          return { ...line, quantity, material, lineTotalCents: line.unitPriceCents * quantity };
         }
         const perUnitG = line.weightG / line.quantity;
         const weightG = Math.round(perUnitG * quantity);
         const lineTotalCents = Math.round((line.unitPriceCents * weightG) / GRAMS_PER_LB);
-        return { ...line, quantity, weightG, lineTotalCents };
+        return { ...line, quantity, material, weightG, lineTotalCents };
       }),
     );
   }
@@ -163,9 +168,13 @@ export function AppraisalScanSheet({
                   <AppText variant="h3" tone="accent">{formatCents(line.lineTotalCents)}</AppText>
                 </View>
                 <AppText variant="bodySm" tone="muted">{lineArithmetic(line)}</AppText>
-                {line.notes ? (
-                  <AppText variant="bodySm" tone="secondary">{line.notes}</AppText>
-                ) : null}
+
+                {/* What is in it, rather than what it looks like. The model's
+                    prose description ("HP laptop, gray chassis, Ubuntu
+                    sticker") told a seller nothing they could not see by
+                    looking down at the thing in their hands; the recoverable
+                    content is the reason they are selling it. */}
+                <MaterialLine material={line.material} />
 
                 {/* An identification the model was unsure of is worth real
                     money, so it is called out to be argued with rather than
