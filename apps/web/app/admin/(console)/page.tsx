@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PIPELINE, STATUS_LABEL, toneFor, type StatusTone } from "@/lib/transitions";
-import { StatusDot, When, Empty } from "../ui";
 import { PageIn, Stagger, StaggerItem, Tally } from "../Motion";
 import { PipelineBar } from "./PipelineBar";
 import { RankedBars, Meter, money } from "./Charts";
@@ -91,16 +90,6 @@ export default async function OverviewPage({
   pipelineCounts.forEach((result, i) => {
     byStatus.set(PIPELINE[i]!, result.count ?? 0);
   });
-
-  // The requests an operator can actually act on today: everything still on
-  // the line. Completed and cancelled ones are history, not work. This table
-  // itself stays an unpaginated list -- out of scope for the 1000-row limit
-  // fix, which is about the *counts* the tiles report, not this table.
-  const openRequests = await supabase
-    .from("pickup_requests")
-    .select("id, status, unit_count, created_at, dock_address")
-    .in("status", PIPELINE.filter((s) => s !== "completed"))
-    .order("created_at", { ascending: true });
 
   // The charts below. Read at request time like everything else on this page
   // -- there is no seeded or illustrative data anywhere in this console.
@@ -195,17 +184,29 @@ export default async function OverviewPage({
       .limit(FEED_CAP),
   ]);
 
-  /** PostgREST returns an embedded to-one as an object or a one-element array. */
-  const nameOf = (embed: unknown): string => {
+  /**
+   * PostgREST returns an embedded to-one as an object or a one-element array.
+   *
+   * Null when the join produced nothing, so a caller can leave the name out
+   * rather than printing "Unknown" beside a perfectly good address.
+   */
+  const nameOf = (embed: unknown): string | null => {
     const row = Array.isArray(embed) ? embed[0] : embed;
     const name = (row as { name?: unknown } | null | undefined)?.name;
-    return typeof name === "string" && name.length > 0 ? name : "Unknown";
+    return typeof name === "string" && name.length > 0 ? name : null;
   };
+
+  /** "Cedar Ridge · Dock B", or just whichever half exists. */
+  const withDock = (name: string | null, dock: string | null) =>
+    [name, dock].filter(Boolean).join(" · ") || "Unnamed";
 
   const feed: ActivityEvent[] = [
     ...(feedRequests.data ?? []).map((r) => ({
       kind: "request" as const,
-      title: nameOf(r.organizations),
+      // The dock is what an operator recognises a request by -- it is what the
+      // old Open requests table led with, and "Cedar Ridge" alone does not
+      // distinguish two of their buildings.
+      title: withDock(nameOf(r.organizations), r.dock_address),
       detail: `${STATUS_LABEL[r.status as RequestStatus]} · ${r.unit_count} units`,
       at: r.created_at,
       href: `/admin/requests/${r.id}`,
@@ -213,7 +214,7 @@ export default async function OverviewPage({
     })),
     ...(feedQuotes.data ?? []).map((q) => ({
       kind: "quote" as const,
-      title: nameOf(q.businesses),
+      title: nameOf(q.businesses) ?? "Unnamed",
       detail: `${q.status} · ${money(q.total_cents)}`,
       at: q.created_at,
       href: `/admin/quotes/${q.id}`,
@@ -223,7 +224,7 @@ export default async function OverviewPage({
       const quote = Array.isArray(p.quotes) ? p.quotes[0] : p.quotes;
       return {
         kind: "payout" as const,
-        title: nameOf((quote as { businesses?: unknown } | null)?.businesses),
+        title: nameOf((quote as { businesses?: unknown } | null)?.businesses) ?? "Unnamed",
         // A payout row exists from the moment the goods arrive, so the status
         // that matters is whether the money has actually gone out.
         detail: p.paid_at
@@ -257,15 +258,19 @@ export default async function OverviewPage({
   const feedPage = feed.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const hasActiveCatalog = (activeCatalog.data ?? []).length > 0;
 
-  const open = [...(openRequests.data ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at));
-
   const error =
     pendingAccountsCount.error ??
     pendingAgentsCount.error ??
     offeredQuotesCount.error ??
     activeCatalog.error ??
     pipelineCounts.find((r) => r.error)?.error ??
-    openRequests.error;
+    // The feed is the page's main table now, so a source that failed has to
+    // surface rather than silently shortening the list.
+    feedRequests.error ??
+    feedQuotes.error ??
+    feedPayouts.error ??
+    feedOrgs.error ??
+    feedBusinesses.error;
 
   return (
     <PageIn>
@@ -359,53 +364,6 @@ export default async function OverviewPage({
           total={bookedUnits}
           format={(n) => n.toLocaleString("en-US")}
         />
-      </div>
-
-      <div className="admin-head">
-        <h2 className="admin-h1">Open requests</h2>
-        <span className="admin-count">{open.length} on the line</span>
-      </div>
-
-      <div className="table-wrap">
-        {open.length === 0 ? (
-          <Empty
-            title="Nothing waiting"
-            hint="Every request has been collected or cancelled."
-          />
-        ) : (
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Status</th>
-                <th>Dock</th>
-                <th>Units</th>
-                <th>Filed</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {open.map((row) => (
-                <tr key={row.id}>
-                  <td>
-                    <StatusDot status={row.status} />
-                  </td>
-                  <td className="cell-name">
-                    <Link href={`/admin/requests/${row.id}`}>{row.dock_address}</Link>
-                  </td>
-                  <td className="cell-mono">{row.unit_count}</td>
-                  <td>
-                    <When value={row.created_at} />
-                  </td>
-                  <td className="cell-actions">
-                    <Link href={`/admin/requests/${row.id}`} className="btn btn-ghost btn-sm">
-                      Open
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
       </div>
 
       <Activity events={feedPage} page={page} total={feed.length} />

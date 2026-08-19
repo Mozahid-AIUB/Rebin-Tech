@@ -119,7 +119,7 @@ export function Activity({
   return (
     <>
       <div className="admin-head">
-        <h2 className="admin-h1">Activity</h2>
+        <h2 className="admin-h1">Latest activity</h2>
         <span className="admin-count">
           {total.toLocaleString("en-US")} {total === 1 ? "event" : "events"}
         </span>
