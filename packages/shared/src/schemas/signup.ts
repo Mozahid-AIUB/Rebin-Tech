@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { AGENT_VEHICLES, BUSINESS_TYPES, ORG_TYPES, SUPPLIER_BUSINESS_TYPE } from "../enums";
+import { BUSINESS_TYPES, ORG_TYPES, SUPPLIER_BUSINESS_TYPE } from "../enums";
 import { passwordSchema } from "./auth";
 import type { OrgSignupInput } from "./org";
-import type { AgentSignupInput, BusinessSignupInput } from "./roles";
+import type { BusinessSignupInput } from "./roles";
 
-/** The four self-service signup paths, as chosen on the role picker. */
-export const SIGNUP_ROLES = ["organization", "business", "agent", "supplier"] as const;
+/** The three self-service signup paths, as chosen on the role picker. */
+export const SIGNUP_ROLES = ["organization", "business", "supplier"] as const;
 export type SignupRole = (typeof SIGNUP_ROLES)[number];
 
 const usPhone = z.string().regex(/^\d{10}$/, "Enter a 10-digit US phone number");
@@ -31,10 +31,10 @@ const passwordsMatch = {
 };
 
 /**
- * One form, four shapes.
+ * One form, three shapes.
  *
  * A discriminated union rather than one flat object with optional fields: it
- * makes "an agent has no EIN" a type error instead of a runtime convention,
+ * makes "a supplier has no EIN" a type error instead of a runtime convention,
  * and it keeps each role's required fields genuinely required. The form
  * validates against the variant matching the currently-selected role, so
  * switching the dropdown switches which fields must be filled.
@@ -76,14 +76,6 @@ export const signupFormSchema = z
       // working out of a garage -- asking for a federal tax number at signup
       // turns away the exact audience this role exists to reach, and
       // businesses.ein has been nullable since 0011 for this case.
-    }),
-    z.object({
-      role: z.literal("agent"),
-      ...commonFields,
-      // No entity name and no street: an agent is a person, and what routing
-      // needs is the area they can cover, not where they sleep.
-      vehicle: z.enum(AGENT_VEHICLES),
-      hasDriversLicense: z.boolean(),
     }),
   ])
   .refine((v) => v.password === v.confirmPassword, passwordsMatch);
@@ -151,21 +143,6 @@ export function toSupplierSignupInput(v: Extract<SignupFormInput, { role: "suppl
     city: v.city,
     state: v.state,
     zip: v.zip,
-    password: v.password,
-    confirmPassword: v.confirmPassword,
-  };
-}
-
-export function toAgentSignupInput(v: Extract<SignupFormInput, { role: "agent" }>): AgentSignupInput {
-  return {
-    fullName: v.contactName,
-    email: v.email,
-    phone: v.phone,
-    serviceCity: v.city,
-    serviceState: v.state,
-    serviceZip: v.zip,
-    vehicle: v.vehicle,
-    hasDriversLicense: v.hasDriversLicense,
     password: v.password,
     confirmPassword: v.confirmPassword,
   };

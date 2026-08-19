@@ -143,19 +143,15 @@ export const tokens = {
   /**
    * The tab bar floats, so its height is not layout space -- anything else
    * pinned to the bottom of a screen has to clear it deliberately.
-   *
-   * The agent's bar is taller because that portal is worked one-handed and
-   * often gloved.
    */
   // Per portal, because the tab bar floats: it occupies no layout space, so
   // every screen reserves its height by hand and the two numbers have to be
-  // the same one. The agent's is taller -- that portal is worked one-handed,
-  // often gloved, standing at the back of a van.
+  // the same one.
   layout: Object.freeze({
-    tabBar: Object.freeze({ org: 62, business: 62, agent: 70 }),
+    tabBar: Object.freeze({ org: 62, business: 62 }),
   }),
 
-  /** Motion. Durations stay short: a field agent taps and moves. */
+  /** Motion. Durations stay short: a person taps and moves. */
   motion: Object.freeze({
     instant: 120,
     quick: 200,

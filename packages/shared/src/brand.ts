@@ -102,35 +102,34 @@ export const BRAND = Object.freeze({
 });
 
 /**
- * Two customer portals in one brand colour, and the driver's in another.
+ * Two customer portals in one brand colour.
  *
  * The business portal ran on contact gold for a while, on the argument that
- * three portals are three products. Changed at the client's direction: the
- * organization and the business are both *customers*, and a customer dealing
- * with Rebin in both capacities should not feel handed between two companies.
- * The agent keeps copper because that portal is staff, and the difference is
- * worth showing.
+ * separate portals are separate products. Changed at the client's direction:
+ * the organization and the business are both *customers*, and a customer
+ * dealing with Rebin in both capacities should not feel handed between two
+ * companies.
+ *
+ * A third, copper accent belonged to the agent portal, which was retired when
+ * agents stopped working from their own app. Collections are dispatched from
+ * the operations console now, so there is no third audience to distinguish.
  */
 export const PORTAL_ACCENTS = Object.freeze({
   org: color.board,
   business: color.board,
-  // Brighter than the trace copper it comes from, so it holds its own against
-  // the silkscreen background instead of sinking into it.
-  agent: "#C8823F",
 });
 
 /**
  * The same accents, deepened until they can be read as text.
  *
- * A metal is a fill colour. Contact gold on the silkscreen background is 2.8:1
- * and the agent's copper 2.7:1 — fine behind a button label, illegible as one.
- * The board green is already 10.8:1, so the customer portals need no twin: for
- * them the fill colour is the ink colour.
+ * A metal is a fill colour. Contact gold on the silkscreen background is
+ * 2.8:1 — fine behind a button label, illegible as one. The board green is
+ * already 10.8:1, so the customer portals need no twin: for them the fill
+ * colour is the ink colour.
  */
 export const PORTAL_ACCENT_TEXT = Object.freeze({
   org: color.board,
   business: color.board,
-  agent: "#8A5228",
 });
 
 /**
@@ -143,13 +142,11 @@ export const PORTAL_ACCENT_TEXT = Object.freeze({
 export const PORTAL_ON_ACCENT = Object.freeze({
   org: "#FFFFFF",
   business: "#FFFFFF",
-  agent: "#1C1109",
 });
 
 export const PORTAL_ACCENTS_SUBTLE = Object.freeze({
   org: "#E9EFEA",
   business: "#E9EFEA",
-  agent: "#F3E7DC",
 });
 
 /**

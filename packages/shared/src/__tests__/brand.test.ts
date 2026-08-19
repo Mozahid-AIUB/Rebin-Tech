@@ -51,17 +51,17 @@ describe("BRAND", () => {
 
 describe("portal accents", () => {
   // The organization and the business are both customers and share one brand
-  // colour; the agent is staff and does not.
+  // colour. The agent portal, which ran on copper as staff's own accent, was
+  // retired with the agent portal itself.
   it("puts both customer portals on the board green", () => {
     expect(PORTAL_ACCENTS.org).toBe(BRAND.color.board);
     expect(PORTAL_ACCENTS.business).toBe(BRAND.color.board);
-    expect(PORTAL_ACCENTS.agent).not.toBe(BRAND.color.board);
   });
 
   // A metal is a fill colour, not an ink: contact gold on the silkscreen
-  // background is 2.8:1 and the agent's copper 2.7:1. The darkened twins are
-  // what gets used when an accent has to be read.
-  it.each(["org", "business", "agent"] as const)(
+  // background is 2.8:1. The darkened twin is what gets used when an accent
+  // has to be read.
+  it.each(["org", "business"] as const)(
     "gives %s an accent dark enough to set text in",
     (portal: PortalKey) => {
       expect(contrast(PORTAL_ACCENT_TEXT[portal], BRAND.color.silk)).toBeGreaterThanOrEqual(4.5);
@@ -71,7 +71,7 @@ describe("portal accents", () => {
 
   // Getting this wrong is not cosmetic: the dark ink the gold accent wanted
   // reads at 1.4:1 on green, which is a button whose label has vanished.
-  it.each(["org", "business", "agent"] as const)(
+  it.each(["org", "business"] as const)(
     "makes %s's label legible on its own accent",
     (portal: PortalKey) => {
       expect(contrast(PORTAL_ON_ACCENT[portal], PORTAL_ACCENTS[portal])).toBeGreaterThanOrEqual(4.5);
