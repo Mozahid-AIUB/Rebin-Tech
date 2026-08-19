@@ -15,10 +15,10 @@ export type PortalTab = {
 /**
  * The bottom tab bar every portal shares.
  *
- * One component rather than three near-identical `<Tabs>` blocks: the three
- * portals differ only in their accent colour and which three routes they list,
- * and a tab bar that drifts between portals is the kind of inconsistency
- * users read as sloppiness rather than as intent.
+ * One component rather than two near-identical `<Tabs>` blocks: the two
+ * portals differ only in their accent colour and which routes they list, and
+ * a tab bar that drifts between portals is the kind of inconsistency users
+ * read as sloppiness rather than as intent.
  *
  * The accent is read from the token map rather than the portal theme context,
  * because the tab bar renders outside the PortalThemeProvider that RoleGuard
@@ -77,11 +77,9 @@ export function PortalTabs({
           backgroundColor: tokens.color.surface,
           borderTopColor: tokens.color.divider,
           borderTopWidth: 1,
-          // Field agents work one-handed, often gloved: their bar is taller
-          // and its targets bigger.
           height: tokens.layout.tabBar[portal] + insets.bottom,
           paddingTop: 6,
-          paddingBottom: insets.bottom + (portal === "agent" ? 12 : 8),
+          paddingBottom: insets.bottom + 8,
         },
         tabBarLabelStyle: {
           fontFamily: tokens.type.label.fontFamily,

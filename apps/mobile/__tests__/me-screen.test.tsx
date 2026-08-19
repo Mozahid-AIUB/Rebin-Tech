@@ -5,7 +5,6 @@ import { useSessionStore } from "../src/store/session";
 
 const mockProfile = jest.fn();
 const mockOrgDetail = jest.fn();
-const mockAgentDetail = jest.fn();
 const mockUpdate = jest.fn();
 const mockSignOut = jest.fn();
 const mockGetUser = jest.fn();
@@ -16,7 +15,6 @@ jest.mock("@rebin/api", () => {
     ...actual,
     getProfileDetail: (...a: unknown[]) => mockProfile(...a),
     getOrganizationDetail: (...a: unknown[]) => mockOrgDetail(...a),
-    getAgentDetail: (...a: unknown[]) => mockAgentDetail(...a),
     updateOwnProfile: (...a: unknown[]) => mockUpdate(...a),
     signOut: (...a: unknown[]) => mockSignOut(...a),
     supabase: { auth: { getUser: () => mockGetUser() } },
@@ -64,7 +62,7 @@ function renderMe() {
   );
 }
 
-// Shared by all three portals, so this suite is the single place the account
+// Shared by both portals, so this suite is the single place the account
 // summary and the app's only exit are pinned.
 describe("S71 Me", () => {
   it("shows the signed-in user's name and email", async () => {
@@ -108,29 +106,6 @@ describe("S71 Me", () => {
     expect(screen.getByText("Hospital / Clinic")).toBeTruthy();
     expect(screen.getByText("480 Riverside Drive\nNewark, NJ 07102")).toBeTruthy();
     expect(screen.getByText("Owner")).toBeTruthy();
-  });
-
-  it("shows an agent their service area and vehicle instead of an organization", async () => {
-    useSessionStore.setState({
-      status: "ready",
-      userId: "u2",
-      email: "agent@rebin.test",
-      oauthAvatarUrl: null,
-      assignments: [{ role: "field_agent", scopeType: "self", scopeId: null, scopeName: null }],
-      activeIndex: 0,
-    });
-    mockAgentDetail.mockResolvedValue({
-      serviceCity: "Newark",
-      serviceState: "NJ",
-      serviceZip: "07102",
-      vehicle: "van",
-      hasDriversLicense: true,
-    });
-
-    await renderMe();
-    await waitFor(() => expect(screen.getByText("Newark, NJ 07102")).toBeTruthy());
-    expect(screen.getByText("Van")).toBeTruthy();
-    expect(mockOrgDetail).not.toHaveBeenCalled();
   });
 
   it("signs out, clears the store and returns to login", async () => {

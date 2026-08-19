@@ -25,9 +25,12 @@ describe("resolveInitialRoute", () => {
       .toBe("/(org)/dashboard");
   });
 
-  it("routes a single agent assignment to the dispatch queue", () => {
+  // field_agent maps to no portal: agents work from the operations console
+  // now, not from this app, so an agent-only account has nothing here to open
+  // and lands on the same pending screen an unmapped role always would.
+  it("sends a single agent assignment to pending — agents work from the console now", () => {
     expect(resolveInitialRoute({ status: "ready", assignments: [assignment("field_agent")], hasOnboarded: true }))
-      .toBe("/(agent)/dispatch");
+      .toBe("/pending");
   });
 
   it("routes a single business assignment to the business dashboard", () => {

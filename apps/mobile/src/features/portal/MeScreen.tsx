@@ -2,13 +2,11 @@ import { useCallback, useState } from "react";
 import { Pressable, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import {
-  getAgentDetail,
   getBusinessDetail,
   getOrganizationDetail,
   getProfileDetail,
   updateOwnProfile,
   useSessionStore,
-  type AgentDetail,
   type BusinessDetail,
   type OrgDetail,
   type PostalAddress,
@@ -24,7 +22,6 @@ import { EditProfileSheet } from "./EditProfileSheet";
 const ROLE_LABEL: Record<string, string> = {
   org_owner: "Owner", org_admin: "Admin", org_requester: "Requester",
   biz_owner: "Owner", biz_staff: "Staff",
-  field_agent: "Field Agent", field_lead: "Field Lead",
   platform_owner: "Platform Owner", platform_ops: "Operations",
   platform_finance: "Finance", platform_support: "Support",
 };
@@ -52,10 +49,6 @@ const ENUM_LABEL: Record<string, string> = {
   it_reseller: "IT Reseller",
   refurbisher: "Refurbisher",
   supplier: "Supplier",
-  car: "Car",
-  van: "Van",
-  box_truck: "Box Truck",
-  none: "No vehicle",
   other: "Other",
 };
 
@@ -77,11 +70,10 @@ function formatAddress(a: PostalAddress): string {
 type Detail =
   | { kind: "organization"; org: OrgDetail }
   | { kind: "business"; business: BusinessDetail }
-  | { kind: "agent"; agent: AgentDetail }
   | null;
 
 /**
- * S71 "Me", shared by all three portals.
+ * S71 "Me", shared by both portals.
  *
  * Shows back everything the user entered at registration, grouped the way the
  * signup form asked for it -- this is the only place in the app where those
@@ -89,14 +81,14 @@ type Detail =
  * way to check what the account actually says.
  *
  * Which extra block renders depends on the active role's scope, because the
- * three signup flows genuinely collect different things (an agent has a
- * service area and a vehicle; an organization has a facility and dock access).
+ * two signup flows genuinely collect different things (an organization has a
+ * facility and dock access; a business has a business type and an EIN).
  *
  * The contact block is editable through the `update_own_profile` RPC
  * (migration 0013). The organization block links out to its own editor
- * (migration 0018's `update_own_organization`); the business and agent blocks
- * stay read-only until they have equivalents, since those rows describe a
- * tenant rather than this user.
+ * (migration 0018's `update_own_organization`); the business block stays
+ * read-only until it has an equivalent, since that row describes a tenant
+ * rather than this user.
  */
 function asHref(path: string): Href {
   return path as Href;
@@ -130,10 +122,6 @@ export function MeScreen() {
     if (active?.scopeType === "business" && scopeId) {
       const business = await getBusinessDetail(scopeId);
       return business ? { kind: "business", business } : null;
-    }
-    if (active?.role.startsWith("field_")) {
-      const agent = await getAgentDetail(userId);
-      return agent ? { kind: "agent", agent } : null;
     }
     return null;
   }, [userId, active?.scopeType, active?.scopeId, active?.role]);
@@ -196,8 +184,8 @@ export function MeScreen() {
                 <Row label="Type" value={label(detail.org.orgType)} />
                 <Row label="Pickup address" value={formatAddress(detail.org.address)} />
                 <Row label="Loading dock" value={detail.org.dockAccess ? "Yes" : "No"} />
-                {/* Only the org portal has an editor so far; the business and
-                    agent equivalents come with their own settings screens. */}
+                {/* Only the org portal has an editor so far; the business
+                    equivalent comes with its own settings screen. */}
                 <PillButton
                   label="Edit organization"
                   variant="secondary"
@@ -230,20 +218,6 @@ export function MeScreen() {
                   <Row label="EIN" value={detail.business.ein ?? "Not provided"} />
                 ) : null}
                 <Row label="Address" value={formatAddress(detail.business.address)} />
-              </Card>
-            </>
-          ) : null}
-
-          {detail?.kind === "agent" ? (
-            <>
-              <SectionHeader title="Field work" />
-              <Card variant="alt" style={{ gap: tokens.space[2] }}>
-                <Row
-                  label="Service area"
-                  value={`${detail.agent.serviceCity}, ${detail.agent.serviceState} ${detail.agent.serviceZip}`}
-                />
-                <Row label="Vehicle" value={label(detail.agent.vehicle)} />
-                <Row label="Driver's license" value={detail.agent.hasDriversLicense ? "Yes" : "No"} />
               </Card>
             </>
           ) : null}
