@@ -23,9 +23,19 @@ export function AddOperator() {
   return (
     <div className="panel">
       <h2 className="panel-title">Add an operator</h2>
+      {/* Where the account comes from has to be said here. There is no
+          operator sign-up anywhere -- the mobile app offers organization,
+          business and supplier, and adding a fourth card would be exactly the
+          self-issued admin account this design refuses. So the account is
+          created in Supabase by whoever administers it, and this screen
+          attaches the access. An operator who does not know that reads "they
+          sign up first" and goes looking for a form that does not exist. */}
       <p className="chart-note" style={{ margin: "0 0 1rem" }}>
-        They sign up first, with the email below. Then adding them here gives
-        them the console.
+        Their account has to exist before you can grant it access. Create it in
+        Supabase — <strong>Authentication → Users → Add user</strong>, with
+        &ldquo;Auto Confirm User&rdquo; ticked — then enter that email here.
+        There is deliberately no operator sign-up: an account that approves
+        businesses and records payments is issued, never claimed.
       </p>
 
       {error && <p className="notice">{error}</p>}

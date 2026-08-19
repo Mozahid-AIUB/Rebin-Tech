@@ -71,7 +71,12 @@ begin
 
   select id into v_user from auth.users where lower(email) = lower(trim(p_email));
   if v_user is null then
-    raise exception 'No account exists for %. They need to sign up first, then add them here.', p_email
+    -- Names where the account comes from, because there is nowhere to sign
+    -- up as an operator: the mobile app offers organization, business and
+    -- supplier, and a fourth card would be the self-issued admin account this
+    -- design exists to refuse. Saying "sign up first" sends an operator
+    -- looking for a form that does not exist.
+    raise exception 'No account exists for %. Create it in Supabase (Authentication -> Users -> Add user), then add them here.', p_email
       using errcode = 'P0002';
   end if;
 

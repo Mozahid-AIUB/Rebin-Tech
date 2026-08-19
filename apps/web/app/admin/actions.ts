@@ -28,14 +28,19 @@ export type ActionResult = { ok: true } | { ok: false; message: string };
  * operator can act on. Anything else is unexpected and shown verbatim --
  * inventing friendly copy for an unknown failure hides what went wrong.
  */
-function explain(code: string | undefined, fallback: string): string {
+function explain(code: string | undefined, fallback: string, message?: string): string {
   switch (code) {
     case "42501":
       return "Your account is not permitted to do that.";
     case "22023":
       return "That's not allowed right now. Reload the page to see the current state before trying again.";
     case "P0002":
-      return "That record no longer exists.";
+      // The RPCs raise P0002 for two different absences: a row that was
+      // deleted, and an account that was never created. Only the caller knows
+      // which, so the RPC's own message is preferred when there is one --
+      // grant_operator's says "they need to sign up first", which is the
+      // instruction, and "that record no longer exists" throws it away.
+      return message ?? "That record no longer exists.";
     default:
       return fallback;
   }
@@ -315,7 +320,9 @@ export async function grantOperator(email: string): Promise<ActionResult> {
   const { error } = await supabase.rpc("grant_operator" as never, {
     p_email: email,
   } as never);
-  if (error) return { ok: false, message: explain(error.code, error.message) };
+  if (error) {
+    return { ok: false, message: explain(error.code, error.message, error.message) };
+  }
   revalidatePath("/admin/operators");
   return { ok: true };
 }
