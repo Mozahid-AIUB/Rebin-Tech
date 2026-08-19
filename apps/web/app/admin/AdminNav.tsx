@@ -26,6 +26,7 @@ const LINKS = [
   },
   {
     href: "/admin/requests",
+    section: "Collections",
     label: "Requests",
     glyph: (
       <>
@@ -38,6 +39,7 @@ const LINKS = [
   },
   {
     href: "/admin/quotes",
+    section: "Buying",
     label: "Quotes",
     glyph: (
       <>
@@ -48,6 +50,7 @@ const LINKS = [
   },
   {
     href: "/admin/payouts",
+    section: "Buying",
     label: "Payouts",
     glyph: (
       <>
@@ -59,6 +62,7 @@ const LINKS = [
   },
   {
     href: "/admin/prices",
+    section: "Setup",
     label: "Prices",
     glyph: (
       <>
@@ -69,6 +73,7 @@ const LINKS = [
   },
   {
     href: "/admin/agents",
+    section: "Setup",
     label: "Agents",
     glyph: (
       <>
@@ -81,6 +86,7 @@ const LINKS = [
   },
   {
     href: "/admin/accounts",
+    section: "Setup",
     label: "Accounts",
     glyph: (
       <>
@@ -97,7 +103,17 @@ export function AdminNav() {
 
   return (
     <nav className="admin-nav">
-      {LINKS.map((link) => {
+      {LINKS.map((link, i) => {
+        // A heading appears the first time a section is seen. Derived from the
+        // array rather than nesting the links inside group objects: the order
+        // is the grouping, and a flat list keeps `current` and the keyboard
+        // order trivially correct.
+        const section = "section" in link ? link.section : undefined;
+        const previous = i > 0 ? LINKS[i - 1] : undefined;
+        const previousSection =
+          previous && "section" in previous ? previous.section : undefined;
+        const startsSection = section !== undefined && section !== previousSection;
+
         // Overview owns only its exact path; the others own their subtrees, so
         // a request detail page keeps "Requests" marked as the current section.
         const current =
@@ -106,7 +122,9 @@ export function AdminNav() {
             : pathname.startsWith(link.href);
 
         return (
-          <Link key={link.href} href={link.href} aria-current={current ? "page" : undefined}>
+          <div key={link.href} className="admin-nav-item">
+            {startsSection && <span className="admin-nav-heading">{section}</span>}
+          <Link href={link.href} aria-current={current ? "page" : undefined}>
             <svg
               viewBox="0 0 16 16"
               fill="none"
@@ -119,6 +137,7 @@ export function AdminNav() {
             </svg>
             {link.label}
           </Link>
+          </div>
         );
       })}
     </nav>

@@ -153,6 +153,25 @@
   gap: 0.125rem;
 }
 
+/* Seven flat entries gave no hint which screen served which customer. The
+   headings say it: Collections is where an organization's pickup is worked,
+   Buying is where a supplier is quoted and paid, Setup is what changes
+   monthly rather than daily. Overview sits above them all with no heading --
+   it belongs to no group because it is where you start. */
+.admin-nav-item {
+  display: contents;
+}
+
+.admin-nav-heading {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--silk) 38%, transparent);
+  padding: 0.875rem 0.625rem 0.3125rem;
+}
+
 .admin-nav a {
   display: flex;
   align-items: center;
