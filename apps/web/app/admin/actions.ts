@@ -303,6 +303,33 @@ export async function recordPayoutPaid(
   return { ok: true };
 }
 
+/**
+ * Operator management.
+ *
+ * Both writes are gated on `is_platform_staff()` inside the RPC, so this file
+ * cannot grant access the database would refuse -- and neither can a forged
+ * request that skips the UI entirely.
+ */
+export async function grantOperator(email: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("grant_operator" as never, {
+    p_email: email,
+  } as never);
+  if (error) return { ok: false, message: explain(error.code, error.message) };
+  revalidatePath("/admin/operators");
+  return { ok: true };
+}
+
+export async function revokeOperator(userId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("revoke_operator" as never, {
+    p_user_id: userId,
+  } as never);
+  if (error) return { ok: false, message: explain(error.code, error.message) };
+  revalidatePath("/admin/operators");
+  return { ok: true };
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();

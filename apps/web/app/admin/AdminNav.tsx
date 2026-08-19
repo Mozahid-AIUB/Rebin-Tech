@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { Route } from "next";
 import { usePathname } from "next/navigation";
 
 /**
@@ -85,6 +86,18 @@ const LINKS = [
     ),
   },
   {
+    href: "/admin/operators",
+    section: "Setup",
+    label: "Operators",
+    glyph: (
+      <>
+        <circle cx="6" cy="6" r="2.4" />
+        <path d="M2.5 13c0-2.2 1.6-3.6 3.5-3.6s3.5 1.4 3.5 3.6" />
+        <path d="M11.5 5.5v4M9.5 7.5h4" />
+      </>
+    ),
+  },
+  {
     href: "/admin/accounts",
     section: "Setup",
     label: "Accounts",
@@ -124,7 +137,11 @@ export function AdminNav() {
         return (
           <div key={link.href} className="admin-nav-item">
             {startsSection && <span className="admin-nav-heading">{section}</span>}
-          <Link href={link.href} aria-current={current ? "page" : undefined}>
+          {/* `as Route` because typedRoutes infers Link's generic from the
+                first member of this `as const` union and then rejects the
+                rest -- every href here is a real route, and the generated
+                route table agrees. */}
+          <Link href={link.href as Route} aria-current={current ? "page" : undefined}>
             <svg
               viewBox="0 0 16 16"
               fill="none"
