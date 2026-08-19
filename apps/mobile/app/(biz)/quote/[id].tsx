@@ -43,6 +43,54 @@ const STAMP: Record<QuoteDetail["status"], { label: string; tone: "pending" | "a
   expired: { label: "Expired", tone: "dead" },
 };
 
+/**
+ * One step of what happens after a supplier accepts.
+ *
+ * The number is the point: it says how many more things there are and which
+ * one is theirs. A bulleted list would carry the same words and lose the
+ * ordering, which is the only part a supplier is actually asking about.
+ */
+function NextStep({
+  n,
+  title,
+  detail,
+  selectable = false,
+}: {
+  n: number;
+  title: string;
+  detail: string;
+  selectable?: boolean;
+}) {
+  return (
+    <View style={{ flexDirection: "row", gap: tokens.space[2] }}>
+      <View
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: 11,
+          borderWidth: 1.5,
+          borderColor: tokens.color.copper,
+          alignItems: "center",
+          justifyContent: "center",
+          marginTop: 1,
+        }}
+      >
+        <AppText variant="label" style={{ color: tokens.color.copper }}>
+          {n}
+        </AppText>
+      </View>
+      <View style={{ flex: 1, gap: 2 }}>
+        <AppText variant="bodySm" style={{ fontWeight: "600" }}>
+          {title}
+        </AppText>
+        <AppText variant="bodySm" tone="muted" selectable={selectable}>
+          {detail}
+        </AppText>
+      </View>
+    </View>
+  );
+}
+
 export default function QuoteDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -219,24 +267,37 @@ export default function QuoteDetailScreen() {
         <Card accentBorder style={{ gap: tokens.space[1] }}>
           <AppText variant="h3">What happens next</AppText>
           {isSupplier ? (
-            <>
-              {/* Nobody is collecting from a supplier -- they ship. Saying
-                  "collection" here would be false in the one word that
-                  matters, right after they've just committed to this total. */}
-              <AppText variant="bodySm" tone="secondary">
-                Ship it to the Rebin Tech warehouse. We weigh and sort it on
-                arrival, and your payout follows within seven days.
-              </AppText>
-              {WAREHOUSE_ADDRESS ? (
-                <AppText variant="bodySm" tone="muted" selectable>
-                  {WAREHOUSE_ADDRESS}
-                </AppText>
-              ) : (
-                <AppText variant="bodySm" tone="muted">
-                  {WAREHOUSE_ADDRESS_PENDING_NOTE}
-                </AppText>
-              )}
-            </>
+            /* Three steps, numbered, because this genuinely is a sequence and
+               each step has a different owner -- the supplier does the first,
+               Rebin does the other two. As one paragraph it read as a wall a
+               supplier had to parse to find the only sentence that asked
+               anything of them.
+
+               Nobody is collecting from a supplier: they ship. Saying
+               "collection" here would be false in the one word that matters,
+               immediately after they have committed to this total. */
+            <View style={{ gap: tokens.space[2] }}>
+              <NextStep
+                n={1}
+                title="You ship it to us"
+                detail={
+                  WAREHOUSE_ADDRESS
+                    ? `Send the items above to ${WAREHOUSE_ADDRESS}. Pack them however you like -- we sort on arrival.`
+                    : WAREHOUSE_ADDRESS_PENDING_NOTE
+                }
+                selectable={Boolean(WAREHOUSE_ADDRESS)}
+              />
+              <NextStep
+                n={2}
+                title="We weigh and sort it"
+                detail={`The scale sets the final figure. ${formatCents(quote.totalCents)} is what today's rates say your list is worth -- the weight we record on arrival is what you are paid on.`}
+              />
+              <NextStep
+                n={3}
+                title="You get paid within seven days"
+                detail="Counted from the day your shipment reaches us, not from today. We will tell you the final figure before the payment leaves."
+              />
+            </View>
           ) : (
             <>
               <AppText variant="bodySm" tone="secondary">
