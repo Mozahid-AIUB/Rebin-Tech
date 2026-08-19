@@ -229,7 +229,15 @@ export function ManualEntrySheet({
                 <SectionHeader title={CATEGORY_LABEL[category] ?? category} />
                 {items.map((item) => (
                   <Pressable
-                    key={item.componentKey}
+                    // Keyed on both halves of the catalog's own unique index
+                    // (catalog_version_id, component_key, grade). v3 prices
+                    // each component once so the key alone is unique today,
+                    // but v2 listed every component three times -- and a
+                    // client still holding that catalog rendered three
+                    // children with the same key. The row's real identity
+                    // costs nothing to use and does not depend on which
+                    // catalog happens to be loaded.
+                    key={`${item.componentKey}:${item.grade}`}
                     accessibilityRole="button"
                     accessibilityLabel={item.displayName}
                     onPress={() => setPicked(item)}
