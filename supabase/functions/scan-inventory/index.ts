@@ -63,6 +63,139 @@ compliance manifest is worse than a missing one. If you can see a device but
 cannot identify it beyond its category, say so with a lower confidence rather
 than inventing a make or model.`;
 
+// Groq's vision model, used only when Gemini will not answer at all.
+//
+// Gemini's free tier queues paid callers first, so a free key gets 503
+// UNAVAILABLE in bursts -- measured against this project, a run of eight
+// calls went from 7 successes to 0 within the same afternoon, with no change
+// on our side. Retrying rides out a short spike; it cannot ride out an hour
+// of them, and a vendor standing in a warehouse should not be told their
+// photo is unreadable because Google is busy.
+//
+// Groq is a genuinely separate queue with its own free allowance, so the two
+// fail independently. It is second, not first, because Gemini reads a model
+// number off a label noticeably better -- which is the whole job here.
+const GROQ_MODEL = "qwen/qwen3.6-27b";
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+/**
+ * Pulls the JSON object out of a reasoning model's reply.
+ *
+ * Qwen thinks out loud before answering: the response opens with a <think>
+ * block of several hundred words weighing what it can see, and the JSON comes
+ * after it, usually inside a ```json fence. Groq's own `json_object` mode
+ * rejects that shape outright -- it returns 400 json_validate_failed with an
+ * empty failed_generation -- so the mode is not used and the object is taken
+ * from the text instead.
+ *
+ * Deliberately not a regex over the whole string: braces appear inside the
+ * reasoning too. This finds the first `{` after any think block or fence and
+ * matches to its balanced close.
+ */
+function extractJson(text: string): string {
+  const afterThink = text.replace(/<think>[\s\S]*?<\/think>/gi, "");
+  const fenced = afterThink.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const body = fenced ? fenced[1] : afterThink;
+
+  const start = body.indexOf("{");
+  if (start === -1) throw new Error("No JSON object in the reply");
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < body.length; i++) {
+    const c = body[i];
+    if (escaped) { escaped = false; continue; }
+    if (c === "\\") { escaped = true; continue; }
+    if (c === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (c === "{") depth++;
+    else if (c === "}" && --depth === 0) return body.slice(start, i + 1);
+  }
+  throw new Error("Unterminated JSON object in the reply");
+}
+
+/**
+ * The same scan, asked of Groq.
+ *
+ * Groq cannot enforce a response schema the way Gemini's responseSchema does,
+ * and its `json_object` mode cannot survive this model's reasoning preamble
+ * (see extractJson). So the shape is spelled out in the prompt, the object is
+ * pulled out of the prose, and anything malformed is dropped rather than
+ * trusted: the client re-parses with scanResultSchema regardless, but a bad
+ * row must not reach it wearing the right field names.
+ */
+async function callGroq(imageBase64: string, mimeType: string) {
+  const key = Deno.env.get("GROQ_API_KEY");
+  if (!key) throw new Error("GROQ_API_KEY is not set");
+
+  const res = await fetch(GROQ_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      // Qwen is a reasoning model: left to itself it writes several hundred
+      // words weighing what it can see, hits the token ceiling mid-JSON, and
+      // returns finish_reason "length" with an object that cannot be parsed.
+      // Turning reasoning off gives clean JSON in ~1s instead. Verified
+      // against the live API -- "none" and "default" are the only accepted
+      // values; "low" is rejected with a 400.
+      reasoning_effort: "none",
+      max_completion_tokens: 1024,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: `${PROMPT}
+
+End your reply with the JSON object and nothing after it, in exactly this shape:
+{"items":[{"deviceCategory":"computers_laptops","make":"Dell","model":"OptiPlex 7090","serial":"ABC123","confidence":96}]}
+
+deviceCategory must be one of: ${CATEGORIES.join(", ")}.
+make, model and serial are strings or null. confidence is a whole number
+0-100. Return {"items":[]} if you can see no electronic devices.`,
+            },
+            {
+              type: "image_url",
+              image_url: { url: `data:${mimeType};base64,${imageBase64}` },
+            },
+          ],
+        },
+      ],
+    }),
+  });
+
+  // Groq's free tier allows 8000 tokens a minute and one image costs several
+  // thousand, so two scans in quick succession hit 429 even though nothing is
+  // wrong. Worth saying plainly in the log: this is a quota, not a fault.
+  if (res.status === 429) {
+    throw new Error(`Groq rate limit (free tier is 8000 tokens/min): ${await res.text()}`);
+  }
+  if (!res.ok) throw new Error(`Groq returned ${res.status}: ${await res.text()}`);
+
+  const body = await res.json();
+  const text = body?.choices?.[0]?.message?.content;
+  if (!text) throw new Error("Groq returned no content");
+
+  const parsed = JSON.parse(extractJson(text)) as { items?: unknown };
+  const items = Array.isArray(parsed.items) ? parsed.items : [];
+
+  // Kept deliberately strict. Without a schema on the wire this is the only
+  // thing standing between a hallucinated category and a compliance manifest.
+  const clean = items.filter((item): item is { deviceCategory: string; confidence: number } => {
+    const row = item as Record<string, unknown>;
+    return (
+      typeof row?.deviceCategory === "string" &&
+      (CATEGORIES as readonly string[]).includes(row.deviceCategory) &&
+      typeof row?.confidence === "number"
+    );
+  });
+
+  return { items: clean };
+}
+
 /**
  * Retries a Gemini call that failed because the model was busy.
  *
@@ -158,7 +291,18 @@ Deno.serve(async (req) => {
       return Response.json({ error: "No image supplied" }, { status: 400 });
     }
 
-    let result = await callGeminiWithRetry(MODEL, imageBase64, mimeType ?? "image/jpeg");
+    const mime = mimeType ?? "image/jpeg";
+
+    let result;
+    try {
+      result = await callGeminiWithRetry(MODEL, imageBase64, mime);
+    } catch (e) {
+      // Only when Gemini would not answer at all. A 400 means the request
+      // itself is wrong and Groq would reject it too, so that still fails.
+      if (!(e instanceof GeminiBusyError)) throw e;
+      console.warn("Gemini unavailable after retries; falling back to Groq");
+      result = await callGroq(imageBase64, mime);
+    }
 
     // One retry on the larger model, and only when the whole scan is unsure --
     // a single hard item among five confident ones is not worth a second call.
@@ -168,7 +312,7 @@ Deno.serve(async (req) => {
     );
     if (result.items.length > 0 && lowest < CONFIDENCE_GATE) {
       try {
-        result = await callGeminiWithRetry(RETRY_MODEL, imageBase64, mimeType ?? "image/jpeg");
+        result = await callGeminiWithRetry(RETRY_MODEL, imageBase64, mime);
       } catch {
         // The Flash result is still usable; the client sends anything under
         // the gate to manual entry anyway.
