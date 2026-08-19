@@ -500,6 +500,11 @@ export type PriceItem = {
   grade: "working" | "broken" | "parts";
   unit: "each" | "lb";
   unitPriceCents: number;
+  /**
+   * Grams, when this row is priced by weight (catalog v3). Null keeps the row
+   * priced per item, same as before 0034_weight_pricing.sql.
+   */
+  avgWeightG: number | null;
 };
 
 /**
@@ -510,20 +515,35 @@ export type PriceItem = {
  * a draft is not an offer.
  */
 export async function listCurrentPrices(): Promise<PriceItem[]> {
+  // avg_weight_g (0034_weight_pricing.sql) isn't in packages/api's generated
+  // types yet -- the CLI can't reach the live database from here to
+  // regenerate them. Selected via a raw string so Postgrest still returns
+  // it; the casts below only work around the stale local type.
   const { data, error } = await supabase
     .from("price_items")
-    .select("component_key, display_name, category, grade, unit, unit_price_cents, price_catalog_versions!inner(status)")
+    .select(
+      ("component_key, display_name, category, grade, unit, unit_price_cents, avg_weight_g, price_catalog_versions!inner(status)") as "component_key",
+    )
     .eq("price_catalog_versions.status", "active")
     .order("category")
     .order("display_name");
   if (error) throw asError(error.message);
-  return (data ?? []).map((row) => ({
+  return ((data ?? []) as unknown as {
+    component_key: string;
+    display_name: string;
+    category: string;
+    grade: string;
+    unit: string;
+    unit_price_cents: number;
+    avg_weight_g: number | null;
+  }[]).map((row) => ({
     componentKey: row.component_key,
     displayName: row.display_name,
     category: row.category as string,
     grade: row.grade as PriceItem["grade"],
     unit: row.unit as PriceItem["unit"],
     unitPriceCents: row.unit_price_cents,
+    avgWeightG: row.avg_weight_g,
   }));
 }
 
@@ -565,6 +585,12 @@ export async function getCurrentPrice(
 export type AppraisedLine = {
   componentKey: string;
   displayName: string;
+  /**
+   * Still sent to create_quote, which joins price_items on it -- but never
+   * shown, and never a choice: catalog v3 has exactly one grade per
+   * component ("parts"), attached from the catalog the same way the price is,
+   * not picked by the model or the vendor.
+   */
   grade: "working" | "broken" | "parts";
   quantity: number;
   /**
@@ -579,6 +605,8 @@ export type AppraisedLine = {
   notes: string | null;
   unit: "each" | "lb";
   unitPriceCents: number;
+  /** Grams this line is priced on (quantity x the catalog average), or null when priced per item. */
+  weightG: number | null;
   lineTotalCents: number;
   /** Which door this line came in by. quote_items has carried it since 0023. */
   source: "scan" | "manual";
@@ -629,6 +657,16 @@ export type QuoteLine = {
   unit: "each" | "lb";
   quantity: number;
   unitPriceCents: number;
+  /**
+   * Grams this line was priced on at quote time, or null.
+   *
+   * Null is not "unknown" here -- it means this line was priced per item, the
+   * way every line was before 0034_weight_pricing.sql. Five accepted quotes
+   * were made against catalog v2 and are null for exactly that reason; they
+   * are historical record of an offer Rebin actually made; and rendering as
+   * if they had a weight would misrepresent that offer.
+   */
+  weightG: number | null;
   lineTotalCents: number;
   confidence: number | null;
   notes: string | null;
@@ -707,6 +745,10 @@ export async function listQuotes(businessId: string): Promise<QuoteRow[]> {
 }
 
 export async function getQuote(quoteId: string): Promise<QuoteDetail | null> {
+  // weight_g (0034_weight_pricing.sql) isn't in packages/api's generated
+  // types yet -- the CLI can't reach the live database from here to
+  // regenerate them. Selected via a raw string so Postgrest still returns
+  // it; the cast on `items.data` below only works around the stale local type.
   const [quote, items, collection] = await Promise.all([
     supabase
       .from("quotes")
@@ -715,7 +757,9 @@ export async function getQuote(quoteId: string): Promise<QuoteDetail | null> {
       .maybeSingle(),
     supabase
       .from("quote_items")
-      .select("component_key, display_name, grade, unit, quantity, unit_price_cents, line_total_cents, confidence, notes")
+      .select(
+        ("component_key, display_name, grade, unit, quantity, unit_price_cents, weight_g, line_total_cents, confidence, notes") as "component_key",
+      )
       .eq("quote_id", quoteId),
     // Through `quote_collection` (migration 0031) rather than a select on
     // job_assignments: RLS would admit the row, and with it the agent's id and
@@ -741,13 +785,25 @@ export async function getQuote(quoteId: string): Promise<QuoteDetail | null> {
     expiresAt: row.expires_at,
     decidedAt: row.decided_at,
     createdAt: row.created_at,
-    items: (items.data ?? []).map((i) => ({
+    items: ((items.data ?? []) as unknown as {
+      component_key: string;
+      display_name: string;
+      grade: string;
+      unit: string;
+      quantity: number;
+      unit_price_cents: number;
+      weight_g: number | null;
+      line_total_cents: number;
+      confidence: number | null;
+      notes: string | null;
+    }[]).map((i) => ({
       componentKey: i.component_key,
       displayName: i.display_name,
       grade: i.grade as QuoteLine["grade"],
       unit: i.unit as QuoteLine["unit"],
       quantity: i.quantity,
       unitPriceCents: i.unit_price_cents,
+      weightG: i.weight_g,
       lineTotalCents: i.line_total_cents,
       confidence: i.confidence,
       notes: i.notes,

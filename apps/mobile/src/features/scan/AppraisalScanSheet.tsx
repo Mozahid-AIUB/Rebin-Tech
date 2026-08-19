@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { appraisePhoto, type Appraisal, type AppraisedLine } from "@rebin/api";
-import { formatCents, scanDisposition } from "@rebin/shared";
+import { formatCents, formatWeight, scanDisposition } from "@rebin/shared";
 import { AppText, Card, EmptyState, PillButton, tokens } from "@rebin/ui";
 import { capturePhotoForScan } from "./capture";
 import { Stepper } from "./Stepper";
@@ -11,7 +11,31 @@ import { Stepper } from "./Stepper";
 // organization's inventory sheet, with one decisive difference: every line
 // carries a price, and that price comes from the catalog rather than from the
 // model (plan §6). The Edge Function attaches it, so nothing here can be
-// talked into a different number by a photograph.
+// talked into a different number by a photograph. There is no grade either --
+// catalog v3 has exactly one row per component, priced by weight rather than
+// by condition, and the Edge Function does that arithmetic before this screen
+// ever sees the line.
+
+// Grams per pound. Matches create_quote (0034_weight_pricing.sql) and the
+// appraise Edge Function -- so a quantity correction made here lands on the
+// same total the RPC would compute for the same quantity.
+const GRAMS_PER_LB = 453.59237;
+
+/**
+ * Shows the arithmetic behind a total rather than just the total: "12 x 4.4
+ * lb = 52.9 lb at $0.80/lb". Falls back to a plain per-item read for a line
+ * with no weight, which is still priced per item.
+ */
+function lineArithmetic(line: { quantity: number; unitPriceCents: number; weightG: number | null }): string {
+  if (line.weightG == null) {
+    return `${line.quantity} × ${formatCents(line.unitPriceCents)}`;
+  }
+  const perUnitG = line.weightG / line.quantity;
+  return (
+    `${line.quantity} × ${formatWeight(perUnitG)} = ${formatWeight(line.weightG)} ` +
+    `at ${formatCents(line.unitPriceCents)}/lb`
+  );
+}
 
 export function AppraisalScanSheet({
   visible,
@@ -87,7 +111,10 @@ export function AppraisalScanSheet({
    *
    * The unit price is not touched, because it never came from the phone: the
    * line is re-multiplied by the catalog rate the Edge Function attached, and
-   * `create_quote` reads that rate again server-side regardless.
+   * `create_quote` reads that rate again server-side regardless. For a
+   * weight-priced line unitPriceCents is a rate per pound, not a price per
+   * item, so the weight is re-derived from the per-unit weight this line
+   * already carries rather than dropped from the multiplication.
    */
   function adjustAt(index: number, by: 1 | -1) {
     setLines((prev) =>
@@ -97,7 +124,13 @@ export function AppraisalScanSheet({
         // reading as an item worth nothing rather than an item that is not
         // there -- removing is a separate button for that reason.
         const quantity = Math.max(1, line.quantity + by);
-        return { ...line, quantity, lineTotalCents: line.unitPriceCents * quantity };
+        if (line.weightG == null) {
+          return { ...line, quantity, lineTotalCents: line.unitPriceCents * quantity };
+        }
+        const perUnitG = line.weightG / line.quantity;
+        const weightG = Math.round(perUnitG * quantity);
+        const lineTotalCents = Math.round((line.unitPriceCents * weightG) / GRAMS_PER_LB);
+        return { ...line, quantity, weightG, lineTotalCents };
       }),
     );
   }
@@ -108,8 +141,8 @@ export function AppraisalScanSheet({
         <ScrollView contentContainerStyle={{ padding: tokens.space[4], gap: tokens.space[3] }}>
           <AppText variant="display">Scan your stock</AppText>
           <AppText variant="bodySm" tone="secondary">
-            Photograph what you have. We&apos;ll identify it, grade it, and price it against
-            today&apos;s catalog.
+            Photograph what you have. We&apos;ll identify it and price it against today&apos;s
+            catalog.
           </AppText>
 
           <PillButton label="Take a photo" loading={scanning} onPress={() => void onCapture()} />
@@ -143,24 +176,22 @@ export function AppraisalScanSheet({
             />
           ) : (
             lines.map((line, index) => (
-              <Card key={`${line.componentKey}-${line.grade}-${index}`} style={{ gap: tokens.space[1] }}>
+              <Card key={`${line.componentKey}-${index}`} style={{ gap: tokens.space[1] }}>
                 <View
                   style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
                 >
                   <AppText variant="h3">{line.displayName}</AppText>
                   <AppText variant="h3" tone="accent">{formatCents(line.lineTotalCents)}</AppText>
                 </View>
-                <AppText variant="bodySm" tone="muted">
-                  {`${line.quantity} × ${formatCents(line.unitPriceCents)} · ${line.grade}`}
-                </AppText>
+                <AppText variant="bodySm" tone="muted">{lineArithmetic(line)}</AppText>
                 {line.notes ? (
                   <AppText variant="bodySm" tone="secondary">{line.notes}</AppText>
                 ) : null}
 
-                {/* A grade the model was unsure of is worth real money, so it
-                    is called out to be argued with rather than accepted. A
-                    null confidence is a hand-typed line -- there was no model
-                    to doubt, so there is nothing here to check. */}
+                {/* An identification the model was unsure of is worth real
+                    money, so it is called out to be argued with rather than
+                    accepted. A null confidence is a hand-typed line -- there
+                    was no model to doubt, so there is nothing here to check. */}
                 {line.confidence !== null && scanDisposition(line.confidence) !== "auto" ? (
                   <AppText variant="label" style={{ color: tokens.color.warning }}>
                     Check this one

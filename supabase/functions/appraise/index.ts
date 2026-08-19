@@ -24,7 +24,13 @@ type CatalogRow = {
   unit: string;
   unit_price_cents: number;
   catalog_version_id: string;
+  avg_weight_g: number | null;
 };
+
+// Grams per pound. Mirrors create_quote (0034_weight_pricing.sql) exactly, so
+// the estimate shown here before a quote is saved matches the total the RPC
+// computes when it actually is.
+const GRAMS_PER_LB = 453.59237;
 
 function buildPrompt(components: { key: string; label: string }[]): string {
   return `You are appraising a lot of used electronics a recycler has been offered.
@@ -118,7 +124,9 @@ Deno.serve(async (req) => {
 
     const { data: catalog, error } = await admin
       .from("price_items")
-      .select("component_key, display_name, grade, unit, unit_price_cents, catalog_version_id, price_catalog_versions!inner(status)")
+      .select(
+        "component_key, display_name, grade, unit, unit_price_cents, catalog_version_id, avg_weight_g, price_catalog_versions!inner(status)",
+      )
       .eq("price_catalog_versions.status", "active");
     if (error) throw new Error(`Catalog read failed: ${error.message}`);
 
@@ -154,12 +162,23 @@ Deno.serve(async (req) => {
       // A key the catalog has no price for is dropped rather than quoted at
       // zero -- a $0 line reads as "worthless", not "unpriced".
       if (!row) return [];
+      // grade travels with the row, the same as the price -- the model was
+      // never asked for one (see the header comment), and create_quote still
+      // needs it to find this row again.
+      const weightG = row.avg_weight_g != null ? row.avg_weight_g * item.quantity : null;
+      const lineTotalCents =
+        weightG != null
+          ? Math.round((row.unit_price_cents * weightG) / GRAMS_PER_LB)
+          : row.unit_price_cents * item.quantity;
       return [{
         ...item,
         displayName: row.display_name,
+        grade: row.grade,
         unit: row.unit,
         unitPriceCents: row.unit_price_cents,
-        lineTotalCents: row.unit_price_cents * item.quantity,
+        avgWeightG: row.avg_weight_g,
+        weightG,
+        lineTotalCents,
         source: "scan" as const,
         catalogVersionId: row.catalog_version_id,
       }];

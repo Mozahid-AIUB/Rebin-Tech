@@ -5,6 +5,7 @@ import { decideQuote, getBusiness, getQuote, useSessionStore, type QuoteDetail }
 import {
   formatCents,
   formatUsDate,
+  formatWeight,
   scanDisposition,
   SUPPLIER_BUSINESS_TYPE,
   WAREHOUSE_ADDRESS,
@@ -178,10 +179,14 @@ export default function QuoteDetailScreen() {
       >
         {quote.items.map((line, index) => (
           <DocketLine
-            key={`${line.componentKey}-${line.grade}-${index}`}
+            key={`${line.componentKey}-${index}`}
             quantity={line.quantity}
             name={line.displayName}
-            qualifier={line.grade}
+            // A line with a weight shows it; a line with none is a historical
+            // per-item line from catalog v2 (five accepted quotes were priced
+            // against it) and keeps showing its grade exactly as it always
+            // has -- that is the offer Rebin actually made.
+            qualifier={line.weightG != null ? formatWeight(line.weightG) : line.grade}
             // The note is what the model saw. On a docket it stands where a
             // serial would, because it is the same thing: evidence for the
             // line above it.
