@@ -1651,3 +1651,95 @@ table.admin-table {
   text-transform: uppercase;
   color: color-mix(in srgb, var(--board) 60%, transparent);
 }
+
+/* --- Activity feed ------------------------------------------------------ */
+
+/*
+ * The type of thing that happened, in the leftmost column.
+ *
+ * Set in the mono face at the same size as .status, so a row reads as two
+ * labels of equal weight rather than a heading and a caption. Deliberately
+ * not coloured per type: the tone belongs to the status beside it, and a
+ * second colour on the same row would compete with it for the eye.
+ */
+.kind {
+  display: inline-block;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* --- Pager -------------------------------------------------------------- */
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  margin-top: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.pager-cell {
+  display: inline-flex;
+  align-items: center;
+}
+
+.pager-num,
+.pager-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 40px square: a comfortable touch target, and wide enough that a
+     three-digit page number does not make the row jump. */
+  min-width: 2.5rem;
+  height: 2.5rem;
+  padding: 0 0.5rem;
+  border-radius: 0.5rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.8125rem;
+  color: color-mix(in srgb, var(--ink) 78%, transparent);
+  text-decoration: none;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.pager-num:hover,
+.pager-step:hover {
+  background: var(--row-hover);
+  color: var(--ink);
+}
+
+/* The page you are on. Filled rather than outlined so it survives being
+   scanned at a glance among nine near-identical numbers. */
+.pager-num.is-here {
+  background: var(--board);
+  color: var(--silk);
+  font-weight: 600;
+}
+
+.pager-num.is-here:hover {
+  background: var(--board);
+  color: var(--silk);
+}
+
+/* First page or last page: the arrow stays in place so the row does not
+   reflow, but reads as unavailable rather than clickable. */
+.pager-step.is-off {
+  color: color-mix(in srgb, var(--ink) 38%, transparent);
+  cursor: default;
+}
+
+.pager-step.is-off:hover {
+  background: none;
+  color: color-mix(in srgb, var(--ink) 38%, transparent);
+}
+
+.pager-gap {
+  padding: 0 0.25rem;
+  color: color-mix(in srgb, var(--ink) 38%, transparent);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.8125rem;
+}

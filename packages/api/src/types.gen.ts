@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.15"
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -393,6 +398,60 @@ export type Database = {
         }
         Relationships: []
       }
+      payouts: {
+        Row: {
+          actual_weight_g: number | null
+          created_at: string
+          final_cents: number | null
+          id: string
+          notes: string | null
+          paid_at: string | null
+          paid_by: string | null
+          quote_id: string
+          received_at: string
+          reference: string | null
+        }
+        Insert: {
+          actual_weight_g?: number | null
+          created_at?: string
+          final_cents?: number | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          paid_by?: string | null
+          quote_id: string
+          received_at?: string
+          reference?: string | null
+        }
+        Update: {
+          actual_weight_g?: number | null
+          created_at?: string
+          final_cents?: number | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          paid_by?: string | null
+          quote_id?: string
+          received_at?: string
+          reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payouts_paid_by_fkey"
+            columns: ["paid_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payouts_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: true
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pickup_request_items: {
         Row: {
           category: Database["public"]["Enums"]["device_category_enum"]
@@ -546,6 +605,7 @@ export type Database = {
       }
       price_items: {
         Row: {
+          avg_weight_g: number | null
           catalog_version_id: string
           category: Database["public"]["Enums"]["device_category_enum"]
           component_key: string
@@ -557,6 +617,7 @@ export type Database = {
           unit_price_cents: number
         }
         Insert: {
+          avg_weight_g?: number | null
           catalog_version_id: string
           category: Database["public"]["Enums"]["device_category_enum"]
           component_key: string
@@ -568,6 +629,7 @@ export type Database = {
           unit_price_cents: number
         }
         Update: {
+          avg_weight_g?: number | null
           catalog_version_id?: string
           category?: Database["public"]["Enums"]["device_category_enum"]
           component_key?: string
@@ -629,6 +691,7 @@ export type Database = {
           source: string
           unit: Database["public"]["Enums"]["price_unit_enum"]
           unit_price_cents: number
+          weight_g: number | null
         }
         Insert: {
           component_key: string
@@ -643,6 +706,7 @@ export type Database = {
           source?: string
           unit: Database["public"]["Enums"]["price_unit_enum"]
           unit_price_cents: number
+          weight_g?: number | null
         }
         Update: {
           component_key?: string
@@ -657,6 +721,7 @@ export type Database = {
           source?: string
           unit?: Database["public"]["Enums"]["price_unit_enum"]
           unit_price_cents?: number
+          weight_g?: number | null
         }
         Relationships: [
           {
@@ -881,6 +946,7 @@ export type Database = {
         Args: { p_accept: boolean; p_quote_id: string }
         Returns: undefined
       }
+      grant_operator: { Args: { p_email: string }; Returns: string }
       has_role: {
         Args: {
           p_role: Database["public"]["Enums"]["role_enum"]
@@ -905,6 +971,7 @@ export type Database = {
       is_field_agent: { Args: never; Returns: boolean }
       is_org_member: { Args: { p_org: string }; Returns: boolean }
       is_platform_staff: { Args: never; Returns: boolean }
+      is_supplier: { Args: { p_business_id: string }; Returns: boolean }
       list_available_jobs: {
         Args: never
         Returns: {
@@ -940,6 +1007,17 @@ export type Database = {
           window_end: string
           window_start: string
           zip: string
+        }[]
+      }
+      list_operators: {
+        Args: never
+        Returns: {
+          email: string
+          full_name: string
+          granted_at: string
+          is_self: boolean
+          roles: string[]
+          user_id: string
         }[]
       }
       list_organization_invitations: {
@@ -1009,6 +1087,22 @@ export type Database = {
           status: Database["public"]["Enums"]["job_status_enum"]
         }[]
       }
+      record_consignment_received: {
+        Args: { p_notes?: string; p_quote_id: string }
+        Returns: string
+      }
+      record_consignment_weighed: {
+        Args: {
+          p_actual_weight_g: number
+          p_final_cents: number
+          p_quote_id: string
+        }
+        Returns: undefined
+      }
+      record_payout_paid: {
+        Args: { p_quote_id: string; p_reference?: string }
+        Returns: undefined
+      }
       remove_org_member: {
         Args: { p_org_id: string; p_user_id: string }
         Returns: undefined
@@ -1029,6 +1123,7 @@ export type Database = {
         Args: { p_job_id: string; p_note: string }
         Returns: undefined
       }
+      revoke_operator: { Args: { p_user_id: string }; Returns: undefined }
       set_agent_status: {
         Args: {
           p_status: Database["public"]["Enums"]["account_status_enum"]
@@ -1058,18 +1153,32 @@ export type Database = {
         }
         Returns: undefined
       }
-      set_price_item: {
-        Args: {
-          p_category: Database["public"]["Enums"]["device_category_enum"]
-          p_component_key: string
-          p_display_name: string
-          p_grade: Database["public"]["Enums"]["price_grade_enum"]
-          p_unit: Database["public"]["Enums"]["price_unit_enum"]
-          p_unit_price_cents: number
-          p_version_id: string
-        }
-        Returns: undefined
-      }
+      set_price_item:
+        | {
+            Args: {
+              p_category: Database["public"]["Enums"]["device_category_enum"]
+              p_component_key: string
+              p_display_name: string
+              p_grade: Database["public"]["Enums"]["price_grade_enum"]
+              p_unit: Database["public"]["Enums"]["price_unit_enum"]
+              p_unit_price_cents: number
+              p_version_id: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_avg_weight_g?: number
+              p_category: Database["public"]["Enums"]["device_category_enum"]
+              p_component_key: string
+              p_display_name: string
+              p_grade: Database["public"]["Enums"]["price_grade_enum"]
+              p_unit: Database["public"]["Enums"]["price_unit_enum"]
+              p_unit_price_cents: number
+              p_version_id: string
+            }
+            Returns: undefined
+          }
       update_own_organization: {
         Args: {
           p_city: string
@@ -1104,6 +1213,7 @@ export type Database = {
         | "it_reseller"
         | "refurbisher"
         | "other"
+        | "supplier"
       device_category_enum:
         | "computers_laptops"
         | "monitors_displays"
@@ -1298,6 +1408,7 @@ export const Constants = {
         "it_reseller",
         "refurbisher",
         "other",
+        "supplier",
       ],
       device_category_enum: [
         "computers_laptops",
@@ -1357,4 +1468,3 @@ export const Constants = {
     },
   },
 } as const
-

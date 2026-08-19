@@ -1,11 +1,26 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { PIPELINE, STATUS_LABEL } from "@/lib/transitions";
+import { PIPELINE, STATUS_LABEL, toneFor, type StatusTone } from "@/lib/transitions";
 import { StatusDot, When, Empty } from "../ui";
 import { PageIn, Stagger, StaggerItem, Tally } from "../Motion";
 import { PipelineBar } from "./PipelineBar";
 import { RankedBars, Meter, money } from "./Charts";
+import { Activity, PAGE_SIZE, type ActivityEvent } from "./Activity";
 import type { RequestStatus } from "@/lib/supabase/types";
+
+/**
+ * Quote status to the badge tone it wears, mirroring QUOTE_TONE in ui.tsx.
+ *
+ * Duplicated rather than exported from there because ui.tsx keeps its map
+ * private behind QuoteStatusDot, and the feed needs the tone without the
+ * component -- its rows show "Offered · $412", not a bare status pill.
+ */
+const QUOTE_TONE = {
+  offered: "waiting",
+  accepted: "active",
+  expired: "stopped",
+  withdrawn: "stopped",
+} as const satisfies Record<string, StatusTone>;
 
 export const dynamic = "force-dynamic";
 
@@ -16,8 +31,19 @@ export const dynamic = "force-dynamic";
  * the questions get asked: is anyone waiting to be let in, is anything
  * waiting to be moved, and where is everything else.
  */
-export default async function OverviewPage() {
+export default async function OverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ p?: string }>;
+}) {
   const supabase = await createClient();
+
+  // Page number for the activity feed. Anything that is not a positive
+  // integer -- "abc", "-1", "0", a pasted fragment -- is page one rather than
+  // an error: a bad query string should not be able to break the console's
+  // front page.
+  const requestedPage = Number((await searchParams).p);
+  const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
 
   // Every count on this screen must be an exact PostgREST count
   // (`{ count: "exact", head: true }`), not `data.length` over a fetched
@@ -127,6 +153,108 @@ export default async function OverviewPage() {
   const accountCount = pendingAccountsCount.count ?? 0;
   const pendingAgentCount = pendingAgentsCount.count ?? 0;
   const offeredQuoteCount = offeredQuotesCount.count ?? 0;
+
+  // The activity feed.
+  //
+  // Merged in JS rather than in SQL because the four sources have nothing in
+  // common but a timestamp -- different columns, different joins, different
+  // RLS. A database view that unioned them would have to flatten each to the
+  // same shape anyway, and would then be a second place to edit every time a
+  // column moves.
+  //
+  // Each source is capped: the feed only ever shows the newest page, so
+  // fetching more than a few pages' worth of each is work thrown away. The
+  // cap is generous enough that the merge is exact for any page a person
+  // actually pages to.
+  const FEED_CAP = 200;
+  const [feedRequests, feedQuotes, feedPayouts, feedOrgs, feedBusinesses] = await Promise.all([
+    supabase
+      .from("pickup_requests")
+      .select("id, status, unit_count, created_at, dock_address, organizations(name)")
+      .order("created_at", { ascending: false })
+      .limit(FEED_CAP),
+    supabase
+      .from("quotes")
+      .select("id, status, total_cents, created_at, businesses(name)")
+      .order("created_at", { ascending: false })
+      .limit(FEED_CAP),
+    supabase
+      .from("payouts")
+      .select("id, final_cents, paid_at, received_at, created_at, quotes(businesses(name))")
+      .order("created_at", { ascending: false })
+      .limit(FEED_CAP),
+    supabase
+      .from("organizations")
+      .select("id, name, created_at")
+      .order("created_at", { ascending: false })
+      .limit(FEED_CAP),
+    supabase
+      .from("businesses")
+      .select("id, name, business_type, created_at")
+      .order("created_at", { ascending: false })
+      .limit(FEED_CAP),
+  ]);
+
+  /** PostgREST returns an embedded to-one as an object or a one-element array. */
+  const nameOf = (embed: unknown): string => {
+    const row = Array.isArray(embed) ? embed[0] : embed;
+    const name = (row as { name?: unknown } | null | undefined)?.name;
+    return typeof name === "string" && name.length > 0 ? name : "Unknown";
+  };
+
+  const feed: ActivityEvent[] = [
+    ...(feedRequests.data ?? []).map((r) => ({
+      kind: "request" as const,
+      title: nameOf(r.organizations),
+      detail: `${STATUS_LABEL[r.status as RequestStatus]} · ${r.unit_count} units`,
+      at: r.created_at,
+      href: `/admin/requests/${r.id}`,
+      tone: toneFor(r.status as RequestStatus),
+    })),
+    ...(feedQuotes.data ?? []).map((q) => ({
+      kind: "quote" as const,
+      title: nameOf(q.businesses),
+      detail: `${q.status} · ${money(q.total_cents)}`,
+      at: q.created_at,
+      href: `/admin/quotes/${q.id}`,
+      tone: QUOTE_TONE[q.status as keyof typeof QUOTE_TONE] ?? "waiting",
+    })),
+    ...(feedPayouts.data ?? []).map((p) => {
+      const quote = Array.isArray(p.quotes) ? p.quotes[0] : p.quotes;
+      return {
+        kind: "payout" as const,
+        title: nameOf((quote as { businesses?: unknown } | null)?.businesses),
+        // A payout row exists from the moment the goods arrive, so the status
+        // that matters is whether the money has actually gone out.
+        detail: p.paid_at
+          ? `Paid · ${money(p.final_cents ?? 0)}`
+          : p.final_cents != null
+            ? `Weighed · ${money(p.final_cents)}`
+            : "Received",
+        at: p.created_at,
+        href: "/admin/payouts",
+        tone: (p.paid_at ? "done" : "active") as StatusTone,
+      };
+    }),
+    ...(feedOrgs.data ?? []).map((o) => ({
+      kind: "account" as const,
+      title: o.name,
+      detail: "Organization signed up",
+      at: o.created_at,
+      href: "/admin/accounts",
+      tone: "waiting" as StatusTone,
+    })),
+    ...(feedBusinesses.data ?? []).map((b) => ({
+      kind: "account" as const,
+      title: b.name,
+      detail: `${b.business_type === "supplier" ? "Supplier" : "Business"} signed up`,
+      at: b.created_at,
+      href: "/admin/accounts",
+      tone: "waiting" as StatusTone,
+    })),
+  ].sort((a, b) => b.at.localeCompare(a.at));
+
+  const feedPage = feed.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const hasActiveCatalog = (activeCatalog.data ?? []).length > 0;
 
   const open = [...(openRequests.data ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at));
@@ -279,6 +407,8 @@ export default async function OverviewPage() {
           </table>
         )}
       </div>
+
+      <Activity events={feedPage} page={page} total={feed.length} />
     </PageIn>
   );
 }
