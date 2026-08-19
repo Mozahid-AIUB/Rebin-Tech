@@ -31,10 +31,26 @@ export function InventoryScanSheet({
   visible,
   onClose,
   onDone,
+  onFallback,
 }: {
   visible: boolean;
   onClose: () => void;
   onDone: (items: ScanItem[]) => void;
+  /**
+   * Closes the sheet and returns to the wizard, where the count and the
+   * categories can be set by hand.
+   *
+   * The error copy told people to "add the device by hand" and then offered
+   * nothing to press -- a way out named but not built. The wizard has always
+   * accepted a typed count and ticked categories; scanning only fills them in
+   * faster. This is the door to that, placed where someone actually hits the
+   * wall rather than on a screen they would have to know to go back to.
+   *
+   * Matches AppraisalScanSheet's onFallback, which the business flow has had
+   * since it shipped -- the two sheets fail the same way and should offer the
+   * same escape.
+   */
+  onFallback?: () => void;
 }) {
   const [items, setItems] = useState<ScanItem[]>([]);
   const insets = useSafeAreaInsets();
@@ -105,6 +121,14 @@ export function InventoryScanSheet({
 
           {error ? (
             <AppText variant="bodySm" style={{ color: tokens.color.danger }}>{error}</AppText>
+          ) : null}
+
+          {error && onFallback ? (
+            <PillButton
+              label="Add them by hand instead"
+              variant="secondary"
+              onPress={onFallback}
+            />
           ) : null}
 
           {items.length === 0 ? (

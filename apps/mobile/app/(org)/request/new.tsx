@@ -286,6 +286,10 @@ export default function NewPickupRequest() {
         visible={scanning}
         onClose={() => setScanning(false)}
         onDone={onScanDone}
+        // Closing the sheet is the whole fallback: step 1 already asks for the
+        // count and step 2 for the categories, so dismissing it lands on the
+        // fields the scan would have filled in.
+        onFallback={() => setScanning(false)}
       />
 
       <Stepper current={step} total={TOTAL_STEPS} labels={STEP_LABELS} />

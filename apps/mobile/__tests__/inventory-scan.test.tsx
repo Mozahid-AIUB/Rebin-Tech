@@ -112,4 +112,33 @@ describe("Inventory scan", () => {
 
     await waitFor(() => expect(mockScan).not.toHaveBeenCalled());
   });
+
+  // The error copy said "add the device by hand" and offered nothing to press.
+  // The wizard behind this sheet has always taken a typed count and ticked
+  // categories -- the door existed, it just was not shown. Mirrors the
+  // business sheet, which has offered this since it shipped.
+  it("offers the by-hand path when a photo will not read", async () => {
+    const onFallback = jest.fn();
+    mockScan.mockRejectedValue(new Error("Couldn't read that photo."));
+    await render(
+      <PortalThemeProvider portal="org">
+        <InventoryScanSheet visible onClose={jest.fn()} onDone={jest.fn()} onFallback={onFallback} />
+      </PortalThemeProvider>,
+    );
+
+    await fireEvent.press(screen.getByRole("button", { name: "Take a photo" }));
+    await waitFor(() => expect(screen.getByText("Couldn't read that photo.")).toBeTruthy());
+
+    await fireEvent.press(screen.getByRole("button", { name: "Add them by hand instead" }));
+
+    expect(onFallback).toHaveBeenCalledTimes(1);
+  });
+
+  // Only after a failure. Offering it up front would make the camera look like
+  // the harder of two options on a screen built around the camera.
+  it("keeps the by-hand offer out of the way until something fails", async () => {
+    await renderSheet();
+
+    expect(screen.queryByRole("button", { name: "Add them by hand instead" })).toBeNull();
+  });
 });

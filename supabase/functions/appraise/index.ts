@@ -60,12 +60,15 @@ key above, leave it out rather than forcing it into the closest one.`;
  * request -- the identical call succeeds seconds later. Without this a vendor
  * photographing a pallet is told the photo was unreadable when it was fine.
  *
+ * Stays on the model it was given -- sending the last attempt to Pro was
+ * tried and measured, and made things worse. See the note in scan-inventory.
+ *
  * Mirrors scan-inventory exactly, deliberately: the two functions fail the
  * same way against the same API, and a vendor hitting one spike should not
  * get different behaviour depending on which screen they were on.
  */
 const BUSY_STATUSES = new Set([429, 503]);
-const RETRY_DELAYS_MS = [800, 2000];
+const RETRY_DELAYS_MS = [600, 1200];
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -83,15 +86,16 @@ async function callGeminiWithRetry(
   mimeType: string,
   components: { key: string; label: string }[],
 ) {
+  const attempts = RETRY_DELAYS_MS.length;
   let lastError: unknown;
-  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+
+  for (let attempt = 0; attempt <= attempts; attempt++) {
     try {
       return await callGemini(model, imageBase64, mimeType, components);
     } catch (e) {
       lastError = e;
-      const busy = e instanceof GeminiBusyError;
-      if (!busy || attempt === RETRY_DELAYS_MS.length) throw e;
-      console.warn(`Gemini busy (attempt ${attempt + 1}), retrying`);
+      if (!(e instanceof GeminiBusyError) || attempt === attempts) throw e;
+      console.warn(`Gemini busy on ${model} (attempt ${attempt + 1}), retrying`);
       await sleep(RETRY_DELAYS_MS[attempt]);
     }
   }

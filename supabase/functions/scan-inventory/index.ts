@@ -72,24 +72,33 @@ than inventing a make or model.`;
  * shows "couldn't read that photo" for a photo that was perfectly readable,
  * and an App Store reviewer who hits it at the wrong moment rejects the build.
  *
- * Two extra attempts over ~3s: long enough to ride out a spike, short enough
- * that someone holding a phone in a storeroom does not think it has hung.
+ * Stays on the model it was given. Sending the last attempt to Pro instead
+ * was tried and measured against the live project: it made things worse, not
+ * better -- 5 failures in 8 calls against 1 in 8, with one call taking 95
+ * seconds. Pro is both busier and far slower than Flash, so the "other door"
+ * turned out to be the more crowded one. Do not reinstate it without
+ * measuring again.
+ *
+ * Delays are short on purpose. Someone is standing in a storeroom holding a
+ * phone; a scan that takes half a minute reads as a hang, and an honest
+ * failure they can act on beats a success they gave up waiting for.
  */
 const BUSY_STATUSES = new Set([429, 503]);
-const RETRY_DELAYS_MS = [800, 2000];
+const RETRY_DELAYS_MS = [600, 1200];
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 async function callGeminiWithRetry(model: string, imageBase64: string, mimeType: string) {
+  const attempts = RETRY_DELAYS_MS.length;
   let lastError: unknown;
-  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+
+  for (let attempt = 0; attempt <= attempts; attempt++) {
     try {
       return await callGemini(model, imageBase64, mimeType);
     } catch (e) {
       lastError = e;
-      const busy = e instanceof GeminiBusyError;
-      if (!busy || attempt === RETRY_DELAYS_MS.length) throw e;
-      console.warn(`Gemini busy (attempt ${attempt + 1}), retrying`);
+      if (!(e instanceof GeminiBusyError) || attempt === attempts) throw e;
+      console.warn(`Gemini busy on ${model} (attempt ${attempt + 1}), retrying`);
       await sleep(RETRY_DELAYS_MS[attempt]);
     }
   }
