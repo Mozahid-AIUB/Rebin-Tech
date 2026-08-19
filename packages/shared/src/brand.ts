@@ -165,15 +165,12 @@ export type PortalKey = keyof typeof PORTAL_ACCENTS;
  * string in a later stage, and a constant duplicated into two apps is one that
  * drifts the first time either changes.
  *
- * `null` until the real address is in hand — accounts go active on signup
- * with no approval step in between, so there is no gate that would stop an
- * unset address from being shown to a supplier the moment they sign up. A
- * screen that reads this must treat `null` as "not ready to ship" rather than
- * printing a fake address: see `WAREHOUSE_ADDRESS_PENDING_NOTE` below. Set
- * this to the real string and every screen that reads it starts showing it,
- * with no other edit required.
+ * The type stays `string | null` and the pending note below stays with it: an
+ * address can be wrong as well as absent, and if this ever has to go back to
+ * null while a warehouse moves, every screen already handles it.
  */
-export const WAREHOUSE_ADDRESS: string | null = null;
+export const WAREHOUSE_ADDRESS: string | null =
+  "Rebin Tech Receiving, 1048 Industrial Rd, Suite 400, Dallas, TX 75207";
 
 /**
  * What a ship-to card says while `WAREHOUSE_ADDRESS` is still `null`.
