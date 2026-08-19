@@ -96,7 +96,9 @@ export default function Privacy() {
         <p>
           When you photograph equipment, that image is sent to Google&rsquo;s Gemini service, which
           identifies what is in it. Google processes the image to return that answer and does not
-          keep it. We do not store the photograph after it has been read.
+          keep it. Neither do we: the photograph is never written to our database or to any file
+          store. What we keep is the list it produced &mdash; the equipment and the count &mdash;
+          and never the picture itself.
         </p>
         <p>
           Photograph only the equipment. A picture of a screen, a label or a document may contain
