@@ -154,10 +154,16 @@ export async function setPriceItem(input: {
   grade: PriceGrade;
   unit: PriceUnit;
   unitPriceCents: number;
+  avgWeightG: number | null;
 }): Promise<ActionResult> {
   const supabase = await createClient();
 
-  const { error } = await supabase.rpc("set_price_item", {
+  // `p_avg_weight_g` (0034_weight_pricing.sql) isn't in packages/api's
+  // generated types yet -- the CLI can't reach the live database to
+  // regenerate them here. The RPC itself already accepts the argument; the
+  // `as any` below only works around the stale local type, not the database.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.rpc as any)("set_price_item", {
     p_version_id: input.versionId,
     p_component_key: input.componentKey,
     p_display_name: input.displayName,
@@ -165,6 +171,7 @@ export async function setPriceItem(input: {
     p_grade: input.grade,
     p_unit: input.unit,
     p_unit_price_cents: input.unitPriceCents,
+    p_avg_weight_g: input.avgWeightG,
   });
 
   if (error) {

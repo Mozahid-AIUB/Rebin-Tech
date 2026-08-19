@@ -23,6 +23,22 @@ import type {
   PriceGrade,
   PriceUnit,
 } from "@/lib/supabase/types";
+import { gramsToLbs, lbsToGrams } from "@rebin/shared";
+
+/**
+ * A dollars-per-pound string from an editor field -> a non-negative pounds
+ * value, or null. Same shape as `parseDollarsToCents` in @/lib/pricing, just
+ * without the cents multiplication -- this stays in pounds because
+ * `lbsToGrams` (not written here, from @rebin/shared) does the unit
+ * conversion, and money must still go through `parseDollarsToCents` on its
+ * own field.
+ */
+function parseLbs(input: string): number | null {
+  const trimmed = input.trim();
+  if (trimmed === "" || !/^\d+(\.\d+)?$/.test(trimmed)) return null;
+  const value = Number(trimmed);
+  return Number.isFinite(value) && value >= 0 ? value : null;
+}
 
 type VersionRow = {
   id: string;
@@ -40,6 +56,11 @@ type ItemRow = {
   grade: PriceGrade;
   unit: PriceUnit;
   unit_price_cents: number;
+  // Not in packages/api's generated Row type yet (0034_weight_pricing.sql
+  // added the column after types.gen.ts was last generated, and the CLI
+  // can't reach the live database from here to regenerate it) -- the page
+  // that loads this selects it and casts it on, see prices/page.tsx.
+  avg_weight_g: number | null;
 };
 
 /** A version's status, as the same dot every other screen uses for state. */
@@ -112,6 +133,7 @@ export function PriceCatalog({
     grade: PriceGrade;
     unit: PriceUnit;
     unitPriceCents: number;
+    avgWeightG: number | null;
   }) {
     if (!selected) return;
     setError(null);
@@ -261,13 +283,14 @@ export function PriceCatalog({
                   <table className="admin-table">
                     <thead>
                       <tr>
-                        <th colSpan={5}>{CATEGORY_LABEL[category]}</th>
+                        <th colSpan={6}>{CATEGORY_LABEL[category]}</th>
                       </tr>
                       <tr>
                         <th>Component</th>
                         <th>Grade</th>
                         <th>Unit</th>
-                        <th>Price</th>
+                        <th>Avg weight (lb)</th>
+                        <th>Rate per lb</th>
                         <th />
                       </tr>
                     </thead>
@@ -280,6 +303,9 @@ export function PriceCatalog({
                             <td className="cell-name">{item.display_name}</td>
                             <td>{GRADE_LABEL[item.grade]}</td>
                             <td>{UNIT_LABEL[item.unit]}</td>
+                            <td className="cell-mono">
+                              {item.avg_weight_g != null ? gramsToLbs(item.avg_weight_g).toFixed(1) : "—"}
+                            </td>
                             <td className="cell-mono">{formatCents(item.unit_price_cents)}</td>
                             <td />
                           </tr>
@@ -319,7 +345,7 @@ export function PriceCatalog({
   );
 }
 
-/** One item's row, editable in place: name, grade, unit, price. */
+/** One item's row, editable in place: name, grade, unit, average weight, rate per lb. */
 function EditableRow({
   item,
   onSave,
@@ -333,6 +359,7 @@ function EditableRow({
     grade: PriceGrade;
     unit: PriceUnit;
     unitPriceCents: number;
+    avgWeightG: number | null;
   }) => void;
   pending: boolean;
 }) {
@@ -340,7 +367,18 @@ function EditableRow({
   const [unit, setUnit] = useState<PriceUnit>(item.unit);
   const [price, setPrice] = useState((item.unit_price_cents / 100).toFixed(2));
   const [priceError, setPriceError] = useState(false);
+  const [weightLbs, setWeightLbs] = useState(
+    item.avg_weight_g != null ? gramsToLbs(item.avg_weight_g).toString() : "",
+  );
+  const [weightError, setWeightError] = useState(false);
   const [dirty, setDirty] = useState(false);
+
+  const priceCentsPreview = parseDollarsToCents(price);
+  const weightLbsPreview = parseLbs(weightLbs);
+  const perItemHint =
+    priceCentsPreview !== null && weightLbsPreview !== null
+      ? formatCents(Math.round(priceCentsPreview * weightLbsPreview))
+      : null;
 
   function commit() {
     const cents = parseDollarsToCents(price);
@@ -348,7 +386,14 @@ function EditableRow({
       setPriceError(true);
       return;
     }
+    const trimmedWeight = weightLbs.trim();
+    const lbs = trimmedWeight === "" ? null : parseLbs(weightLbs);
+    if (trimmedWeight !== "" && lbs === null) {
+      setWeightError(true);
+      return;
+    }
     setPriceError(false);
+    setWeightError(false);
     onSave({
       componentKey: item.component_key,
       displayName: displayName.trim() || item.display_name,
@@ -363,6 +408,7 @@ function EditableRow({
       grade: item.grade,
       unit,
       unitPriceCents: cents,
+      avgWeightG: lbs === null ? null : lbsToGrams(lbs),
     });
     setDirty(false);
   }
@@ -404,6 +450,21 @@ function EditableRow({
       </td>
       <td>
         <input
+          className="cell-input"
+          value={weightLbs}
+          disabled={pending}
+          aria-invalid={weightError}
+          onChange={(e) => {
+            setWeightLbs(e.target.value);
+            setWeightError(false);
+            setDirty(true);
+          }}
+          placeholder="e.g. 4.4"
+        />
+        {weightError && <span className="price-error">Enter a weight of 0 or more, like 4.4</span>}
+      </td>
+      <td>
+        <input
           className="cell-input cell-input-price"
           value={price}
           disabled={pending}
@@ -415,7 +476,8 @@ function EditableRow({
           }}
           placeholder="0.00"
         />
-        {priceError && <span className="price-error">Enter a price of 0 or more, like 12.50</span>}
+        {priceError && <span className="price-error">Enter a rate of 0 or more, like 0.80</span>}
+        {perItemHint && <span className="cell-dim">≈ {perItemHint} each</span>}
       </td>
       <td className="cell-actions">
         <button type="button" className="btn btn-ghost btn-sm" disabled={pending || !dirty} onClick={commit}>
@@ -439,6 +501,7 @@ function NewItemForm({
     grade: PriceGrade;
     unit: PriceUnit;
     unitPriceCents: number;
+    avgWeightG: number | null;
   }) => void;
   onCancel: () => void;
   pending: boolean;
@@ -449,7 +512,15 @@ function NewItemForm({
   const [grade, setGrade] = useState<PriceGrade>("working");
   const [unit, setUnit] = useState<PriceUnit>("each");
   const [price, setPrice] = useState("");
+  const [weightLbs, setWeightLbs] = useState("");
   const [fieldError, setFieldError] = useState<string | null>(null);
+
+  const priceCentsPreview = parseDollarsToCents(price);
+  const weightLbsPreview = parseLbs(weightLbs);
+  const perItemHint =
+    priceCentsPreview !== null && weightLbsPreview !== null
+      ? formatCents(Math.round(priceCentsPreview * weightLbsPreview))
+      : null;
 
   function submit() {
     const key = componentKey.trim();
@@ -460,11 +531,25 @@ function NewItemForm({
     }
     const cents = parseDollarsToCents(price);
     if (cents === null || cents < 0) {
-      setFieldError("Enter a price of 0 or more, like 12.50.");
+      setFieldError("Enter a rate of 0 or more, like 0.80.");
+      return;
+    }
+    const trimmedWeight = weightLbs.trim();
+    const lbs = trimmedWeight === "" ? null : parseLbs(weightLbs);
+    if (trimmedWeight !== "" && lbs === null) {
+      setFieldError("Enter a weight of 0 or more, like 4.4.");
       return;
     }
     setFieldError(null);
-    onSave({ componentKey: key, displayName: name, category, grade, unit, unitPriceCents: cents });
+    onSave({
+      componentKey: key,
+      displayName: name,
+      category,
+      grade,
+      unit,
+      unitPriceCents: cents,
+      avgWeightG: lbs === null ? null : lbsToGrams(lbs),
+    });
   }
 
   return (
@@ -528,7 +613,17 @@ function NewItemForm({
           </select>
         </div>
         <div className="field">
-          <label htmlFor="ni-price">Price</label>
+          <label htmlFor="ni-weight">Avg weight (lb)</label>
+          <input
+            id="ni-weight"
+            value={weightLbs}
+            disabled={pending}
+            onChange={(e) => setWeightLbs(e.target.value)}
+            placeholder="e.g. 4.4"
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="ni-price">Rate per lb</label>
           <input
             id="ni-price"
             value={price}
@@ -536,6 +631,7 @@ function NewItemForm({
             onChange={(e) => setPrice(e.target.value)}
             placeholder="0.00"
           />
+          {perItemHint && <span className="cell-dim">≈ {perItemHint} each</span>}
         </div>
       </div>
       <div className="btn-row">
