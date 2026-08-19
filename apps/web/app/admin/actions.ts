@@ -202,6 +202,59 @@ export async function publishPriceCatalog(versionId: string): Promise<ActionResu
   return { ok: true };
 }
 
+/**
+ * Payout, in three steps an operator takes on three different days.
+ *
+ * Each is one RPC gated on is_platform_staff(), like every other write here.
+ * Nothing in this file moves money -- the transfer happens at a bank, and
+ * these record that it did.
+ */
+export async function recordConsignmentReceived(
+  quoteId: string,
+  notes: string | null,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("record_consignment_received" as never, {
+    p_quote_id: quoteId,
+    p_notes: notes ?? undefined,
+  } as never);
+  if (error) return { ok: false, message: explain(error.code, error.message) };
+  revalidatePath("/admin/payouts");
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+export async function recordConsignmentWeighed(input: {
+  quoteId: string;
+  actualWeightG: number;
+  finalCents: number;
+}): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("record_consignment_weighed" as never, {
+    p_quote_id: input.quoteId,
+    p_actual_weight_g: input.actualWeightG,
+    p_final_cents: input.finalCents,
+  } as never);
+  if (error) return { ok: false, message: explain(error.code, error.message) };
+  revalidatePath("/admin/payouts");
+  return { ok: true };
+}
+
+export async function recordPayoutPaid(
+  quoteId: string,
+  reference: string | null,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("record_payout_paid" as never, {
+    p_quote_id: quoteId,
+    p_reference: reference ?? undefined,
+  } as never);
+  if (error) return { ok: false, message: explain(error.code, error.message) };
+  revalidatePath("/admin/payouts");
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();

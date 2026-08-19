@@ -47,6 +47,17 @@ const LINKS = [
     ),
   },
   {
+    href: "/admin/payouts",
+    label: "Payouts",
+    glyph: (
+      <>
+        <path d="M2.5 5.5h11v6h-11z" />
+        <path d="M2.5 8h11" />
+        <circle cx="11.5" cy="9.75" r="0.9" fill="currentColor" stroke="none" />
+      </>
+    ),
+  },
+  {
     href: "/admin/prices",
     label: "Prices",
     glyph: (
