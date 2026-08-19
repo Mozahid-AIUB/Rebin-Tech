@@ -12,8 +12,11 @@ export type RoleAssignment = {
 const PORTAL_BY_ROLE: Partial<Record<Role, PortalKey>> = {
   org_owner: "org", org_admin: "org", org_requester: "org",
   biz_owner: "business", biz_staff: "business",
-  field_agent: "agent", field_lead: "agent",
 };
+
+// field_agent and field_lead map to no portal on purpose. Agents work from
+// the operations console now, not from this app, so an agent-only account
+// has nothing to open here and resolveInitialRoute sends it to /pending.
 
 export function portalForRole(role: Role): PortalKey | null {
   return PORTAL_BY_ROLE[role] ?? null;

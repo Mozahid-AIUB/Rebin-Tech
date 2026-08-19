@@ -42,21 +42,6 @@ export const PORTAL_CONTENT: Record<PortalKey, PortalCopy> = {
     signupRoute: "/signup/business",
     inviteOnly: false,
   },
-  agent: {
-    key: "agent",
-    title: "Field Agents",
-    tagline: "Dispatch & Settlement",
-    badge: "INVITE ONLY",
-    description:
-      "For drivers and on-site technicians managing bulk pickup queues, multi-item audits, and instant digital payouts.",
-    benefits: [
-      "GPS dispatch queue with optimized routing",
-      "Continuous multi-scan audit with weight capture",
-      "Dual-signature settlement and instant payout",
-    ],
-    signupRoute: "/signup/agent",
-    inviteOnly: true,
-  },
 };
 
-export const PORTAL_ORDER: readonly PortalKey[] = ["org", "business", "agent"] as const;
+export const PORTAL_ORDER: readonly PortalKey[] = ["org", "business"] as const;

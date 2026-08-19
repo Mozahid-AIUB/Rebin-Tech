@@ -1,7 +1,7 @@
 import { View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import { AUTH_ROLE_ACCENTS, AppText, AuthScreen, RoleCard, authTokens } from "@rebin/ui";
-import { AgentIcon, BusinessIcon, OrgIcon, SupplierIcon } from "../../../src/features/signup/RoleIcons";
+import { BusinessIcon, OrgIcon, SupplierIcon } from "../../../src/features/signup/RoleIcons";
 
 // See login.tsx's own `asHref` for the identical reasoning: these are known,
 // hand-authored route names, never unvalidated user input.
@@ -34,14 +34,6 @@ const ROLES = [
     audience: "Shops, repair centers, traders",
     points: ["List scrap stock for sale", "Compare buyer price offers", "Track payouts in one place"],
     Icon: BusinessIcon,
-  },
-  {
-    key: "agent",
-    signupRole: "agent",
-    title: "Field agent",
-    audience: "Collectors and pickup crew",
-    points: ["See pickups assigned to you", "Follow an ordered route list", "Watch your earnings add up"],
-    Icon: AgentIcon,
   },
   {
     key: "supplier",

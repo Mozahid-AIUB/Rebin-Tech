@@ -8,7 +8,7 @@ import type { SignupRole } from "@rebin/shared";
 // Screen/Card/PillButton wrapped in a PortalThemeProvider.
 //
 // What happens next genuinely differs by role, so the copy does too: telling a
-// field agent we're "verifying your organization" is the kind of leftover
+// supplier we're "verifying your organization" is the kind of leftover
 // wrong-audience copy that makes a product feel unfinished.
 //
 // These read as "here is what you can do" rather than "here is what we will
@@ -25,11 +25,6 @@ const NEXT_STEPS: Record<SignupRole, readonly [string, string, string]> = {
     "Get a quote against the live catalog",
     "Ship it and get paid",
   ],
-  agent: [
-    "Set your service area and vehicle",
-    "Pickups near you appear in your queue",
-    "Complete jobs and track your earnings",
-  ],
   supplier: [
     "Scan or list the stock you want to sell",
     "Get a quote against the live catalog",
@@ -40,7 +35,6 @@ const NEXT_STEPS: Record<SignupRole, readonly [string, string, string]> = {
 const SUBTITLE: Record<SignupRole, string> = {
   organization: "Your organization is set up and ready to book its first pickup.",
   business: "Your business is set up and ready to sell its first batch.",
-  agent: "Your agent profile is set up. Jobs in your area will appear in your queue.",
   supplier: "You're set up and ready to sell your first batch. Ship whenever you're ready.",
 };
 

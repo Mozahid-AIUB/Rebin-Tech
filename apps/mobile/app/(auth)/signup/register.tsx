@@ -4,24 +4,21 @@ import { useLocalSearchParams, useRouter, type Href } from "expo-router";
 import {
   SIGNUP_ROLES,
   signupFormSchema,
-  toAgentSignupInput,
   toBusinessSignupInput,
   toOrgSignupInput,
   toSupplierSignupInput,
   type SignupFormInput,
   type SignupRole,
 } from "@rebin/shared";
-import { signIn, signUpAgent, signUpBusiness, signUpOrganization } from "@rebin/api";
+import { signIn, signUpBusiness, signUpOrganization } from "@rebin/api";
 import { AppText, AuthButton, AuthInput, AuthScreen, authTokens } from "@rebin/ui";
 import {
-  AGENT_VEHICLE_OPTIONS,
   BUSINESS_TYPE_OPTIONS,
   ORG_TYPE_OPTIONS,
   SIGNUP_ROLE_OPTIONS,
   US_STATES,
 } from "../../../src/config/us-states";
 import { DarkSelectField } from "../../../src/features/signup/DarkSelectField";
-import { DarkToggleRow } from "../../../src/features/signup/DarkToggleRow";
 import { SuccessStep } from "../../../src/features/signup/SuccessStep";
 import { applyMask, displayMask } from "../../../src/features/signup/mask";
 
@@ -42,25 +39,21 @@ function parseRole(raw: string | string[] | undefined): SignupRole {
 // Field labels that change with the role. Everything else on this form is
 // worded identically for all three, so only the genuinely role-specific
 // wording lives here.
-const ENTITY_LABEL: Record<Exclude<SignupRole, "agent">, { label: string; placeholder: string }> = {
+const ENTITY_LABEL: Record<SignupRole, { label: string; placeholder: string }> = {
   organization: { label: "Organization name", placeholder: "e.g. Riverside Medical Center" },
   business: { label: "Business name", placeholder: "e.g. Eastside Electronics Repair" },
   supplier: { label: "Your name or trading name", placeholder: "e.g. Rakib Collection" },
 };
 
 const ADDRESS_HEADING: Record<SignupRole, { title: string; hint: string }> = {
-  organization: { title: "Pickup address", hint: "Where our agent should arrive." },
+  organization: { title: "Pickup address", hint: "Where our collection team should arrive." },
   business: { title: "Business address", hint: "Where your stock is picked up." },
-  // Not a home address on purpose -- what routing needs is the area an agent
-  // can cover, and asking a driver for their home address at signup is both
-  // more intrusive and less useful.
-  agent: { title: "Service area", hint: "Where you can take pickups." },
   // A supplier ships to the warehouse rather than being collected from, but
   // still needs a return/contact address on file, same as a business.
   supplier: { title: "Your address", hint: "Where you ship from." },
 };
 
-type Values = Partial<Record<keyof SignupFormInput | "entityName" | "orgType" | "businessType" | "ein" | "street" | "vehicle" | "hasDriversLicense", unknown>>;
+type Values = Partial<Record<keyof SignupFormInput | "entityName" | "orgType" | "businessType" | "ein" | "street", unknown>>;
 
 export default function SignupRegister() {
   const router = useRouter();
@@ -78,7 +71,6 @@ export default function SignupRegister() {
     contactName: "", email: "", phone: "", city: "", zip: "",
     password: "", confirmPassword: "",
     entityName: "", street: "", ein: "",
-    hasDriversLicense: false,
   });
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -123,8 +115,7 @@ export default function SignupRegister() {
       const input = parsed.data;
       if (input.role === "organization") await signUpOrganization(toOrgSignupInput(input));
       else if (input.role === "business") await signUpBusiness(toBusinessSignupInput(input));
-      else if (input.role === "supplier") await signUpBusiness(toSupplierSignupInput(input));
-      else await signUpAgent(toAgentSignupInput(input));
+      else await signUpBusiness(toSupplierSignupInput(input));
       setDone(true);
     } catch (e) {
       setServerError(e instanceof Error ? e.message : "Registration failed. Try again.");
@@ -201,19 +192,15 @@ export default function SignupRegister() {
         keyboardType="number-pad"
       />
 
-      {role !== "agent" ? (
-        <>
-          <FormSection title={role === "organization" ? "Your organization" : "Your business"} />
-          <AuthInput
-            label={ENTITY_LABEL[role].label}
-            placeholder={ENTITY_LABEL[role].placeholder}
-            value={str("entityName")}
-            onChangeText={(v) => set("entityName", v)}
-            error={errors.entityName}
-            autoCapitalize="words"
-          />
-        </>
-      ) : null}
+      <FormSection title={role === "organization" ? "Your organization" : "Your business"} />
+      <AuthInput
+        label={ENTITY_LABEL[role].label}
+        placeholder={ENTITY_LABEL[role].placeholder}
+        value={str("entityName")}
+        onChangeText={(v) => set("entityName", v)}
+        error={errors.entityName}
+        autoCapitalize="words"
+      />
 
       {role === "organization" ? (
         <DarkSelectField
@@ -245,35 +232,14 @@ export default function SignupRegister() {
         </>
       ) : null}
 
-      {role === "agent" ? (
-        <>
-          <FormSection title="How you work" />
-          <DarkSelectField
-            label="Vehicle"
-            value={str("vehicle") || null}
-            options={AGENT_VEHICLE_OPTIONS}
-            onSelect={(v) => set("vehicle", v)}
-            error={errors.vehicle}
-          />
-          <DarkToggleRow
-            label="Valid driver's license?"
-            description="Self-reported now, verified during onboarding"
-            value={Boolean(values.hasDriversLicense)}
-            onValueChange={(v) => set("hasDriversLicense", v)}
-          />
-        </>
-      ) : null}
-
       <FormSection title={ADDRESS_HEADING[role].title} hint={ADDRESS_HEADING[role].hint} />
-      {role !== "agent" ? (
-        <AuthInput
-          label="Street address"
-          placeholder="Street address"
-          value={str("street")}
-          onChangeText={(v) => set("street", v)}
-          error={errors.street}
-        />
-      ) : null}
+      <AuthInput
+        label="Street address"
+        placeholder="Street address"
+        value={str("street")}
+        onChangeText={(v) => set("street", v)}
+        error={errors.street}
+      />
       <AuthInput
         label="City"
         placeholder="City"

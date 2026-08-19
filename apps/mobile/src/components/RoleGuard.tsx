@@ -7,7 +7,6 @@ import { useSessionStore } from "../store/session";
 const HOME_BY_PORTAL: Record<PortalKey, string> = {
   org: "/(org)/dashboard",
   business: "/(biz)/dashboard",
-  agent: "/(agent)/dispatch",
 };
 
 // Expo Router's typed routes (apps/mobile/.expo/types/router.d.ts, codegen'd

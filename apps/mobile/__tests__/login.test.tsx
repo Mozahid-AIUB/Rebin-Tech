@@ -8,7 +8,7 @@ const mockReplace = jest.fn();
 jest.mock("@rebin/api", () => ({
   signIn: (...a: unknown[]) => mockSignIn(...a),
   resolveRoles: (...a: unknown[]) => mockResolveRoles(...a),
-  portalForRole: (r: string) => (r.startsWith("org_") ? "org" : r.startsWith("biz_") ? "business" : "agent"),
+  portalForRole: (r: string) => (r.startsWith("org_") ? "org" : r.startsWith("biz_") ? "business" : null),
   // useLogin.ts imports useSessionStore from "../store/session", which
   // re-exports it FROM @rebin/api (Task 8's approved store location — see
   // apps/mobile/src/store/session.ts). Mocking the whole @rebin/api module
@@ -56,14 +56,17 @@ describe("S04 Login", () => {
     expect(mockSignIn).not.toHaveBeenCalled();
   });
 
-  it("routes an agent to the dispatch queue after a successful login", async () => {
+  // field_agent maps to no portal now -- agents work from the operations
+  // console, not this app -- so an agent-only account lands on /pending
+  // rather than a screen the app no longer has.
+  it("routes an agent-only account to pending after a successful login", async () => {
     mockSignIn.mockResolvedValue({ userId: "u1" });
     mockResolveRoles.mockResolvedValue([{ role: "field_agent", scopeType: "self", scopeId: null, scopeName: null }]);
     await render(<Login />);
     await fireEvent.changeText(screen.getByLabelText("Email"), "karim@rebin.test");
     await fireEvent.changeText(screen.getByLabelText("Password"), "RebinTech2026!");
     await fireEvent.press(screen.getByRole("button", { name: "Log In" }));
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/(agent)/dispatch"));
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/pending"));
   });
 
   it("surfaces a server error without clearing the email", async () => {

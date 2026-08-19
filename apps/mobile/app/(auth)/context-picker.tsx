@@ -17,13 +17,11 @@ function asHref(path: string): Href {
 const HOME: Record<PortalKey, string> = {
   org: "/(org)/dashboard",
   business: "/(biz)/dashboard",
-  agent: "/(agent)/dispatch",
 };
 
 const ROLE_LABEL: Record<string, string> = {
   org_owner: "Owner", org_admin: "Admin", org_requester: "Requester",
   biz_owner: "Owner", biz_staff: "Staff",
-  field_agent: "Field Agent", field_lead: "Field Lead",
 };
 
 // Same dark-forest deviation from the plan's cream `Screen` as pending.tsx:
@@ -58,7 +56,7 @@ export default function ContextPicker() {
           // for one would offer a choice that goes nowhere.
           if (!portal) return null;
 
-          const accent = AUTH_ROLE_ACCENTS[portal === "business" ? "business" : portal];
+          const accent = AUTH_ROLE_ACCENTS[portal];
           const name = assignment.scopeName ?? PORTAL_CONTENT[portal].title;
 
           return (
