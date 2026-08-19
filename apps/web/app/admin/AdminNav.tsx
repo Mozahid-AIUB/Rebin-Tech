@@ -26,7 +26,7 @@ const LINKS = [
   },
   {
     href: "/admin/requests",
-    section: "Collections",
+    section: "Organizations",
     label: "Requests",
     glyph: (
       <>
@@ -39,7 +39,7 @@ const LINKS = [
   },
   {
     href: "/admin/quotes",
-    section: "Buying",
+    section: "Sellers",
     label: "Quotes",
     glyph: (
       <>
@@ -50,7 +50,7 @@ const LINKS = [
   },
   {
     href: "/admin/payouts",
-    section: "Buying",
+    section: "Sellers",
     label: "Payouts",
     glyph: (
       <>

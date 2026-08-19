@@ -153,11 +153,20 @@
   gap: 0.125rem;
 }
 
-/* Seven flat entries gave no hint which screen served which customer. The
-   headings say it: Collections is where an organization's pickup is worked,
-   Buying is where a supplier is quoted and paid, Setup is what changes
-   monthly rather than daily. Overview sits above them all with no heading --
-   it belongs to no group because it is where you start. */
+/* Seven flat entries gave no hint which screen served which customer, so the
+   headings name the customer rather than the activity: Organizations is where
+   a pickup is worked, Sellers is where material that arrives is quoted and
+   paid for, Setup is what changes monthly rather than daily. Naming the party
+   beats naming the verb -- an operator asks "where do I deal with this
+   seller", not "where do I do buying".
+
+   "Sellers" rather than "Suppliers" because both screens under it hold
+   businesses as well as suppliers -- the quotes table is currently half one
+   and half the other, and they are quoted at identical rates. The word has to
+   cover everyone who sells to Rebin, or half the rows look misfiled.
+
+   Overview sits above them all with no heading, because it belongs to no
+   group. */
 .admin-nav-item {
   display: contents;
 }
