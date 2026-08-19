@@ -6,6 +6,10 @@
 // here from that catalog -- never by the model (plan §6, "AI never prices").
 // A rate change is then one row, and every quote can be explained by pointing
 // at the catalog version it was priced against.
+//
+// Grades were removed once pricing moved to weight (catalog v3): every
+// component is one row now, priced per pound, so there is nothing left for a
+// grade to select. Do not restore it.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -13,16 +17,21 @@ const MODEL = "gemini-flash-latest";
 const RETRY_MODEL = "gemini-pro-latest";
 const CONFIDENCE_GATE = 70;
 
-const GRADES = ["working", "broken", "parts"] as const;
-
 type CatalogRow = {
+  id: string;
   component_key: string;
   display_name: string;
   grade: string;
   unit: string;
   unit_price_cents: number;
   catalog_version_id: string;
+  avg_weight_g: number | null;
 };
+
+// Grams per pound. Mirrors create_quote (0034_weight_pricing.sql) exactly, so
+// the estimate shown here before a quote is saved matches the total the RPC
+// computes when it actually is.
+const GRAMS_PER_LB = 453.59237;
 
 function buildPrompt(components: { key: string; label: string }[]): string {
   return `You are appraising a lot of used electronics a recycler has been offered.
@@ -34,16 +43,13 @@ ${components.map((c) => `- ${c.key}: ${c.label}`).join("\n")}
 
 For each line give:
 - componentKey: one of the keys above
-- grade: working (intact, looks operable), broken (visible damage or clearly
-  dead), or parts (stripped, crushed, or missing major components)
-- quantity: how many of that key and grade are visible
+- quantity: how many of that key are visible
 - confidence: 0-100
-- notes: what you actually saw that led to the grade, in one short phrase
+- notes: a short phrase describing the item -- what it is, its condition,
+  anything relevant you actually saw
 
 Never state a price; you are not pricing this. If an item does not match any
-key above, leave it out rather than forcing it into the closest one. Grade on
-visible evidence only -- a closed laptop is not "working" just because it looks
-undamaged, so say so in notes and lower the confidence.`;
+key above, leave it out rather than forcing it into the closest one.`;
 }
 
 async function callGemini(
@@ -80,12 +86,11 @@ async function callGemini(
                   type: "object",
                   properties: {
                     componentKey: { type: "string", enum: components.map((c) => c.key) },
-                    grade: { type: "string", enum: GRADES },
                     quantity: { type: "integer" },
                     confidence: { type: "integer" },
                     notes: { type: "string", nullable: true },
                   },
-                  required: ["componentKey", "grade", "quantity", "confidence", "notes"],
+                  required: ["componentKey", "quantity", "confidence", "notes"],
                 },
               },
             },
@@ -101,7 +106,7 @@ async function callGemini(
   const text = body?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error("Gemini returned no content");
   return JSON.parse(text) as {
-    items: { componentKey: string; grade: string; quantity: number; confidence: number; notes: string | null }[];
+    items: { componentKey: string; quantity: number; confidence: number; notes: string | null }[];
   };
 }
 
@@ -120,7 +125,9 @@ Deno.serve(async (req) => {
 
     const { data: catalog, error } = await admin
       .from("price_items")
-      .select("component_key, display_name, grade, unit, unit_price_cents, catalog_version_id, price_catalog_versions!inner(status)")
+      .select(
+        "id, component_key, display_name, grade, unit, unit_price_cents, catalog_version_id, avg_weight_g, price_catalog_versions!inner(status)",
+      )
       .eq("price_catalog_versions.status", "active");
     if (error) throw new Error(`Catalog read failed: ${error.message}`);
 
@@ -132,8 +139,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // One entry per component, not per grade -- the model picks the grade
-    // itself, and listing the same key three times would read as three things.
+    // One entry per component -- catalog v3 has exactly one row per
+    // component_key (every row is "parts"), so this also de-dupes nothing
+    // that wasn't already unique.
     const components = Array.from(
       new Map(rows.map((r) => [r.component_key, r.display_name])).entries(),
     ).map(([key, label]) => ({ key, label }));
@@ -151,18 +159,47 @@ Deno.serve(async (req) => {
     }
 
     const priced = result.items.flatMap((item) => {
-      const row = rows.find(
-        (r) => r.component_key === item.componentKey && r.grade === item.grade,
-      );
+      // `rows` comes back from PostgREST in whatever order Postgres happens
+      // to return them, which is not a guarantee -- catalog v3 has one row
+      // per component_key today, but 0035 shipped believing exactly that and
+      // was wrong: the draft it published still carried v2's graded
+      // duplicates (0036), because of the same draft-copy bug 0037 fixes.
+      // If duplicates ever recur, `.find` on an unordered result would let
+      // the same photo quote two different prices depending on what Postgres
+      // felt like returning first. Preferring the weight-priced row (the
+      // pricing model the catalog is meant to carry now) and breaking any
+      // further tie on the row's own id -- stable and unique, unlike
+      // catalog_version_id which is identical across every row this query
+      // can return -- removes the non-determinism without assuming
+      // duplicates can't happen again.
+      const candidates = rows.filter((r) => r.component_key === item.componentKey);
+      const row = candidates
+        .slice()
+        .sort((a, b) => {
+          const weighted = Number(b.avg_weight_g != null) - Number(a.avg_weight_g != null);
+          if (weighted !== 0) return weighted;
+          return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+        })[0];
       // A key the catalog has no price for is dropped rather than quoted at
       // zero -- a $0 line reads as "worthless", not "unpriced".
       if (!row) return [];
+      // grade travels with the row, the same as the price -- the model was
+      // never asked for one (see the header comment), and create_quote still
+      // needs it to find this row again.
+      const weightG = row.avg_weight_g != null ? row.avg_weight_g * item.quantity : null;
+      const lineTotalCents =
+        weightG != null
+          ? Math.round((row.unit_price_cents * weightG) / GRAMS_PER_LB)
+          : row.unit_price_cents * item.quantity;
       return [{
         ...item,
         displayName: row.display_name,
+        grade: row.grade,
         unit: row.unit,
         unitPriceCents: row.unit_price_cents,
-        lineTotalCents: row.unit_price_cents * item.quantity,
+        avgWeightG: row.avg_weight_g,
+        weightG,
+        lineTotalCents,
         source: "scan" as const,
         catalogVersionId: row.catalog_version_id,
       }];

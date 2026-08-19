@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Empty } from "../../ui";
 import { PageIn } from "../../Motion";
 import { PriceCatalog } from "./PriceCatalog";
+import type { DeviceCategory, PriceGrade, PriceUnit } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
 
@@ -38,15 +39,32 @@ export default async function PricesPage({
     rows[0] ??
     null;
 
-  const { data: items, error: itemsError } = selected
+  // avg_weight_g (0034_weight_pricing.sql) isn't in packages/api's generated
+  // types yet -- the CLI can't reach the live database to regenerate them
+  // here. Selected via a raw string so Postgrest still returns it; the `any`
+  // cast below only papers over the stale local type, not the database.
+  const { data: itemsRaw, error: itemsError } = selected
     ? await supabase
         .from("price_items")
-        .select("id, component_key, display_name, category, grade, unit, unit_price_cents")
+        .select("id, component_key, display_name, category, grade, unit, unit_price_cents, avg_weight_g" as "id")
         .eq("catalog_version_id", selected.id)
         .order("category", { ascending: true })
         .order("display_name", { ascending: true })
         .order("grade", { ascending: true })
     : { data: [], error: null };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const items = itemsRaw as any as
+    | {
+        id: string;
+        component_key: string;
+        display_name: string;
+        category: DeviceCategory;
+        grade: PriceGrade;
+        unit: PriceUnit;
+        unit_price_cents: number;
+        avg_weight_g: number | null;
+      }[]
+    | null;
 
   const error = versionsError ?? itemsError;
 

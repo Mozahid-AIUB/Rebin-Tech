@@ -18,10 +18,9 @@ export type PriceUnit = (typeof PRICE_UNITS)[number];
 export const appraisalItemSchema = z.object({
   /** Must be a component_key that exists in the live catalog. */
   componentKey: z.string().min(1),
-  grade: z.enum(PRICE_GRADES),
   quantity: z.number().int().min(1),
   confidence: z.number().min(0).max(100),
-  /** What the model saw -- shown to the vendor so a wrong grade is arguable. */
+  /** What the model saw -- shown to the vendor alongside the item. */
   notes: z.string().nullable().default(null),
 });
 

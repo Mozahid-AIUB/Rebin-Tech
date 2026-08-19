@@ -5,7 +5,6 @@ import { appraisalResultSchema, lineTotalCents, quoteTotalCents } from "../schem
 describe("appraisalResultSchema", () => {
   const item = {
     componentKey: "laptop_business",
-    grade: "working",
     quantity: 3,
     confidence: 92,
     notes: "Dell Latitude, powers on",
@@ -13,12 +12,6 @@ describe("appraisalResultSchema", () => {
 
   it("accepts an identified lot", () => {
     expect(appraisalResultSchema.safeParse({ items: [item] }).success).toBe(true);
-  });
-
-  it("rejects a grade outside working/broken/parts", () => {
-    expect(appraisalResultSchema.safeParse({ items: [{ ...item, grade: "mint" }] }).success).toBe(
-      false,
-    );
   });
 
   // A model that returns a price is a model that has to be retrained to change
