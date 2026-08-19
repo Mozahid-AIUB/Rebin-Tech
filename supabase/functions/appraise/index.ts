@@ -6,14 +6,16 @@
 // here from that catalog -- never by the model (plan §6, "AI never prices").
 // A rate change is then one row, and every quote can be explained by pointing
 // at the catalog version it was priced against.
+//
+// Grades were removed once pricing moved to weight (catalog v3): every
+// component is one row now, priced per pound, so there is nothing left for a
+// grade to select. Do not restore it.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const MODEL = "gemini-flash-latest";
 const RETRY_MODEL = "gemini-pro-latest";
 const CONFIDENCE_GATE = 70;
-
-const GRADES = ["working", "broken", "parts"] as const;
 
 type CatalogRow = {
   component_key: string;
@@ -34,16 +36,13 @@ ${components.map((c) => `- ${c.key}: ${c.label}`).join("\n")}
 
 For each line give:
 - componentKey: one of the keys above
-- grade: working (intact, looks operable), broken (visible damage or clearly
-  dead), or parts (stripped, crushed, or missing major components)
-- quantity: how many of that key and grade are visible
+- quantity: how many of that key are visible
 - confidence: 0-100
-- notes: what you actually saw that led to the grade, in one short phrase
+- notes: a short phrase describing the item -- what it is, its condition,
+  anything relevant you actually saw
 
 Never state a price; you are not pricing this. If an item does not match any
-key above, leave it out rather than forcing it into the closest one. Grade on
-visible evidence only -- a closed laptop is not "working" just because it looks
-undamaged, so say so in notes and lower the confidence.`;
+key above, leave it out rather than forcing it into the closest one.`;
 }
 
 async function callGemini(
@@ -80,12 +79,11 @@ async function callGemini(
                   type: "object",
                   properties: {
                     componentKey: { type: "string", enum: components.map((c) => c.key) },
-                    grade: { type: "string", enum: GRADES },
                     quantity: { type: "integer" },
                     confidence: { type: "integer" },
                     notes: { type: "string", nullable: true },
                   },
-                  required: ["componentKey", "grade", "quantity", "confidence", "notes"],
+                  required: ["componentKey", "quantity", "confidence", "notes"],
                 },
               },
             },
@@ -101,7 +99,7 @@ async function callGemini(
   const text = body?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error("Gemini returned no content");
   return JSON.parse(text) as {
-    items: { componentKey: string; grade: string; quantity: number; confidence: number; notes: string | null }[];
+    items: { componentKey: string; quantity: number; confidence: number; notes: string | null }[];
   };
 }
 
@@ -132,8 +130,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // One entry per component, not per grade -- the model picks the grade
-    // itself, and listing the same key three times would read as three things.
+    // One entry per component -- catalog v3 has exactly one row per
+    // component_key (every row is "parts"), so this also de-dupes nothing
+    // that wasn't already unique.
     const components = Array.from(
       new Map(rows.map((r) => [r.component_key, r.display_name])).entries(),
     ).map(([key, label]) => ({ key, label }));
@@ -151,9 +150,7 @@ Deno.serve(async (req) => {
     }
 
     const priced = result.items.flatMap((item) => {
-      const row = rows.find(
-        (r) => r.component_key === item.componentKey && r.grade === item.grade,
-      );
+      const row = rows.find((r) => r.component_key === item.componentKey);
       // A key the catalog has no price for is dropped rather than quoted at
       // zero -- a $0 line reads as "worthless", not "unpriced".
       if (!row) return [];
