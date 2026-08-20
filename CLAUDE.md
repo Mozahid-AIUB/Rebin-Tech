@@ -1,7 +1,12 @@
 # Working on Rebin Tech
 
 Read this before touching anything. It records the decisions that are easy to
-undo by accident, and the state of the things that are half-finished.
+undo by accident.
+
+**`TODO.md` is the other half** — what is outstanding, what is blocked and on
+whom, and what to pick up next. It is written in Bengali because the client
+reads it too. Start there if you are resuming work rather than answering a
+question.
 
 ## What this is
 
