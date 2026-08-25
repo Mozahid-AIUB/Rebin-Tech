@@ -1,8 +1,13 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { corsHeaders } from "../_shared/cors.ts";
 
 // Mirrors signup-organization / signup-business. An agent creates no tenant,
 // so the RPC returns the user's own id rather than an entity id.
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   const body = await req.json();
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -18,7 +23,10 @@ Deno.serve(async (req) => {
     email_confirm: true,
   });
   if (authError || !created.user) {
-    return Response.json({ error: authError?.message ?? "User creation failed" }, { status: 400 });
+    return Response.json(
+      { error: authError?.message ?? "User creation failed" },
+      { status: 400, headers: corsHeaders },
+    );
   }
   const userId = created.user.id;
 
@@ -35,8 +43,8 @@ Deno.serve(async (req) => {
 
   if (rpcError) {
     await admin.auth.admin.deleteUser(userId); // no orphaned auth users
-    return Response.json({ error: rpcError.message }, { status: 400 });
+    return Response.json({ error: rpcError.message }, { status: 400, headers: corsHeaders });
   }
 
-  return Response.json({ userId });
+  return Response.json({ userId }, { headers: corsHeaders });
 });

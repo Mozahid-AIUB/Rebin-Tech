@@ -6,6 +6,8 @@
 // GEMINI_API_KEY lives here and only here. Shipping it in an EXPO_PUBLIC_* var
 // would hand every installed app a key that bills to this project.
 
+import { corsHeaders } from "../_shared/cors.ts";
+
 // Aliases, not pinned versions. The plan names gemini-2.5-flash, but Google
 // closed that model to new API keys -- this project's own key gets a 404 with
 // "no longer available to new users" -- and a pinned id will keep going stale
@@ -285,10 +287,13 @@ async function callGemini(model: string, imageBase64: string, mimeType: string) 
 }
 
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
   try {
     const { imageBase64, mimeType } = await req.json();
     if (!imageBase64) {
-      return Response.json({ error: "No image supplied" }, { status: 400 });
+      return Response.json({ error: "No image supplied" }, { status: 400, headers: corsHeaders });
     }
 
     const mime = mimeType ?? "image/jpeg";
@@ -319,14 +324,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    return Response.json(result);
+    return Response.json(result, { headers: corsHeaders });
   } catch (e) {
     // The message reaches a user standing in a storeroom holding a phone, so
     // it says what to do rather than what broke.
     console.error("scan-inventory failed", e);
     return Response.json(
       { error: "Couldn't read that photo. Try again with more light, or add the device by hand." },
-      { status: 502 },
+      { status: 502, headers: corsHeaders },
     );
   }
 });

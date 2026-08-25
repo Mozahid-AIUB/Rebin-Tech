@@ -1,4 +1,5 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { corsHeaders } from "../_shared/cors.ts";
 
 // Delete the caller's own account, in one call.
 //
@@ -14,13 +15,16 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // way around, a caller who fails the RPC's guards would already be logged
 // out with no session left to retry from, having gained nothing.
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
   if (req.method !== "POST") {
-    return Response.json({ error: "POST only" }, { status: 405 });
+    return Response.json({ error: "POST only" }, { status: 405, headers: corsHeaders });
   }
 
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) {
-    return Response.json({ error: "Not signed in (no token)" }, { status: 401 });
+    return Response.json({ error: "Not signed in (no token)" }, { status: 401, headers: corsHeaders });
   }
 
   // The caller, as themselves. Their token, the anon key, RLS applying --
@@ -40,7 +44,10 @@ Deno.serve(async (req) => {
     // was present but the server rejected -- expired, revoked, malformed.
     // The two used to share one string ("Not signed in"), which made a
     // support conversation or a log impossible to tell apart.
-    return Response.json({ error: "Not signed in (invalid session)" }, { status: 401 });
+    return Response.json(
+      { error: "Not signed in (invalid session)" },
+      { status: 401, headers: corsHeaders },
+    );
   }
 
   const { error: rpcError } = await caller.rpc("delete_own_account");
@@ -48,7 +55,7 @@ Deno.serve(async (req) => {
     // Whatever delete_own_account() raised -- "Remove your platform access
     // first" or "Transfer ownership..." -- reaches the app verbatim. The
     // auth user is never touched when this branch runs.
-    return Response.json({ error: rpcError.message }, { status: 400 });
+    return Response.json({ error: rpcError.message }, { status: 400, headers: corsHeaders });
   }
 
   const admin = createClient(
@@ -64,8 +71,8 @@ Deno.serve(async (req) => {
     // -- worth surfacing as a real error rather than swallowing, since it
     // means Apple's specific requirement (removing the credential) did not
     // complete, even though the rest of the account was cleared.
-    return Response.json({ error: deleteError.message }, { status: 500 });
+    return Response.json({ error: deleteError.message }, { status: 500, headers: corsHeaders });
   }
 
-  return Response.json({ ok: true });
+  return Response.json({ ok: true }, { headers: corsHeaders });
 });
