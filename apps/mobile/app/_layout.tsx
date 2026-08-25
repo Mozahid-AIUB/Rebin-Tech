@@ -13,12 +13,14 @@ import {
   IBMPlexMono_500Medium,
   IBMPlexMono_600SemiBold,
 } from "@expo-google-fonts/ibm-plex-mono";
+import { isConfigured } from "@rebin/api";
 import { tokens } from "@rebin/ui";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useSessionStore } from "../src/store/session";
 import { useSessionBootstrap } from "../src/hooks/useSessionBootstrap";
 import { resolveInitialRoute } from "../src/components/RoleGuard";
+import { ConfigurationNotice } from "../src/components/ConfigurationNotice";
 
 // Deferred from Task 9 (see task-9-report.md): RoleGuard.tsx and the three
 // portal route-group layouts were built there, but wiring THIS root layout to
@@ -114,6 +116,20 @@ export default function RootLayout() {
     IBMPlexMono_600SemiBold,
   });
   if (!fontsLoaded && !fontError) return null;
+
+  // Before anything that touches the network. A build with no Supabase URL or
+  // key cannot sign anyone in, so rendering the app shell would only lead to
+  // a login screen whose every attempt fails for a reason nobody can see.
+  // Checked here rather than deeper because this is the first component that
+  // renders -- the old behaviour was a throw at import time, which no screen
+  // could catch.
+  if (!isConfigured) {
+    return (
+      <SafeAreaProvider>
+        <ConfigurationNotice />
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <KeyboardProvider>

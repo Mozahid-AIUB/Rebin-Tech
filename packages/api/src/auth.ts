@@ -170,3 +170,32 @@ export async function signUpAgent(input: AgentSignupInput): Promise<{ userId: st
   if (!data) throw new Error("Signup returned no payload");
   return data;
 }
+
+// A raw fetch, not supabase.functions.invoke: invoke() wraps a non-2xx
+// response in a generic FunctionsHttpError and discards the JSON body, so
+// the RPC's own message ("Remove your platform access first", "Transfer
+// ownership...") never reaches the caller. The web console's createOperator
+// (apps/web/app/admin/actions.ts) hits the same wall calling create-operator
+// and solves it the same way.
+export async function deleteOwnAccount(): Promise<void> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) throw new Error("Not signed in");
+
+  const res = await fetch(
+    `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/delete-account`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+    },
+  );
+
+  const body = (await res.json().catch(() => null)) as { error?: string } | null;
+  if (!res.ok) {
+    throw new Error(body?.error ?? `Could not delete the account (${res.status})`);
+  }
+}

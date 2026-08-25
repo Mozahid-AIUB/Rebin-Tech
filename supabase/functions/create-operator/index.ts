@@ -1,4 +1,5 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { corsHeaders } from "../_shared/cors.ts";
 
 // Create an operator account and grant it the console, in one call.
 //
@@ -13,13 +14,16 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // one thing this system genuinely needs it for, and an edge function is where
 // a key that bypasses RLS can sit without ever reaching a browser.
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
   if (req.method !== "POST") {
-    return Response.json({ error: "POST only" }, { status: 405 });
+    return Response.json({ error: "POST only" }, { status: 405, headers: corsHeaders });
   }
 
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) {
-    return Response.json({ error: "Not signed in" }, { status: 401 });
+    return Response.json({ error: "Not signed in" }, { status: 401, headers: corsHeaders });
   }
 
   // The caller, as themselves. Their token, the anon key, RLS applying --
@@ -32,12 +36,12 @@ Deno.serve(async (req) => {
 
   const { data: isStaff, error: staffError } = await caller.rpc("is_platform_staff");
   if (staffError) {
-    return Response.json({ error: staffError.message }, { status: 500 });
+    return Response.json({ error: staffError.message }, { status: 500, headers: corsHeaders });
   }
   if (isStaff !== true) {
     return Response.json(
       { error: "Only an existing operator can add another operator" },
-      { status: 403 },
+      { status: 403, headers: corsHeaders },
     );
   }
 
@@ -47,7 +51,10 @@ Deno.serve(async (req) => {
   const fullName = typeof body?.fullName === "string" ? body.fullName.trim() : "";
 
   if (!email || !password) {
-    return Response.json({ error: "An email and a password are required" }, { status: 400 });
+    return Response.json(
+      { error: "An email and a password are required" },
+      { status: 400, headers: corsHeaders },
+    );
   }
   // Matches what the mobile signup schema asks of everyone else. A shorter
   // password on the account that can move money would be the wrong place to
@@ -55,7 +62,7 @@ Deno.serve(async (req) => {
   if (password.length < 10) {
     return Response.json(
       { error: "The password must be at least 10 characters" },
-      { status: 400 },
+      { status: 400, headers: corsHeaders },
     );
   }
 
@@ -85,7 +92,7 @@ Deno.serve(async (req) => {
           ? "An account with that email already exists. Grant it access from the Operators screen instead."
           : message,
       },
-      { status: 400 },
+      { status: 400, headers: corsHeaders },
     );
   }
 
@@ -97,12 +104,12 @@ Deno.serve(async (req) => {
     // The account exists but has no access, which is a half-finished state an
     // operator cannot see or fix. Remove it and report the real failure.
     await admin.auth.admin.deleteUser(created.user.id);
-    return Response.json({ error: grantError.message }, { status: 400 });
+    return Response.json({ error: grantError.message }, { status: 400, headers: corsHeaders });
   }
 
   if (fullName) {
     await admin.from("profiles").update({ full_name: fullName }).eq("id", created.user.id);
   }
 
-  return Response.json({ userId: created.user.id, email });
+  return Response.json({ userId: created.user.id, email }, { headers: corsHeaders });
 });

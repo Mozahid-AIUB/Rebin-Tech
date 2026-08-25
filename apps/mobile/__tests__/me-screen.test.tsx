@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { Alert } from "react-native";
 import { PortalThemeProvider } from "@rebin/ui";
 import { MeScreen } from "../src/features/portal/MeScreen";
 import { useSessionStore } from "../src/store/session";
@@ -7,6 +8,7 @@ const mockProfile = jest.fn();
 const mockOrgDetail = jest.fn();
 const mockUpdate = jest.fn();
 const mockSignOut = jest.fn();
+const mockDeleteAccount = jest.fn();
 const mockGetUser = jest.fn();
 
 jest.mock("@rebin/api", () => {
@@ -17,6 +19,7 @@ jest.mock("@rebin/api", () => {
     getOrganizationDetail: (...a: unknown[]) => mockOrgDetail(...a),
     updateOwnProfile: (...a: unknown[]) => mockUpdate(...a),
     signOut: (...a: unknown[]) => mockSignOut(...a),
+    deleteOwnAccount: (...a: unknown[]) => mockDeleteAccount(...a),
     supabase: { auth: { getUser: () => mockGetUser() } },
   };
 });
@@ -44,6 +47,7 @@ beforeEach(() => {
     dockAccess: true,
   });
   mockSignOut.mockResolvedValue(undefined);
+  mockDeleteAccount.mockResolvedValue(undefined);
   useSessionStore.setState({
     status: "ready",
     userId: "u1",
@@ -219,5 +223,64 @@ describe("S71 Me", () => {
     mockProfile.mockRejectedValue(new Error("network"));
     await renderMe();
     await waitFor(() => expect(screen.getByRole("button", { name: "Log Out" })).toBeTruthy());
+  });
+
+  it("shows a Delete Account button below Log Out", async () => {
+    await renderMe();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Log Out" })).toBeTruthy());
+    expect(screen.getByRole("button", { name: "Delete Account" })).toBeTruthy();
+  });
+
+  it("asks for confirmation before deleting, and does nothing on Cancel", async () => {
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => {});
+    await renderMe();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Delete Account" })).toBeTruthy());
+
+    await fireEvent.press(screen.getByRole("button", { name: "Delete Account" }));
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Delete Account?",
+      "This will permanently delete your account and cannot be undone.",
+      expect.any(Array),
+    );
+    expect(mockDeleteAccount).not.toHaveBeenCalled();
+  });
+
+  it("deletes the account, signs out and returns to login when confirmed", async () => {
+    jest.spyOn(Alert, "alert").mockImplementation((_title, _message, buttons) => {
+      const deleteButton = buttons?.find((b) => b.text === "Delete");
+      deleteButton?.onPress?.();
+    });
+    await renderMe();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Delete Account" })).toBeTruthy());
+
+    await fireEvent.press(screen.getByRole("button", { name: "Delete Account" }));
+
+    await waitFor(() => expect(mockDeleteAccount).toHaveBeenCalledTimes(1));
+    // The account is gone server-side once deleteOwnAccount resolves; the
+    // local Supabase session must also be cleared (matching useLogout's
+    // pattern), or the persisted token on disk causes a stale-session
+    // bootstrap on the next cold start.
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    expect(useSessionStore.getState().status).toBe("signed-out");
+    expect(mockReplace).toHaveBeenCalledWith("/login");
+  });
+
+  it("shows the server's error and stays signed in when deletion is blocked", async () => {
+    mockDeleteAccount.mockRejectedValue(new Error("Remove your platform access first"));
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation((_title, _message, buttons) => {
+      const deleteButton = buttons?.find((b) => b.text === "Delete");
+      deleteButton?.onPress?.();
+    });
+    await renderMe();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Delete Account" })).toBeTruthy());
+
+    await fireEvent.press(screen.getByRole("button", { name: "Delete Account" }));
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith("Couldn't delete your account", "Remove your platform access first"),
+    );
+    expect(useSessionStore.getState().status).toBe("ready");
+    expect(mockReplace).not.toHaveBeenCalledWith("/login");
   });
 });

@@ -1,10 +1,12 @@
 import { useCallback, useState } from "react";
-import { Pressable, View } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import {
+  deleteOwnAccount,
   getBusinessDetail,
   getOrganizationDetail,
   getProfileDetail,
+  signOut,
   updateOwnProfile,
   useSessionStore,
   type BusinessDetail,
@@ -98,11 +100,46 @@ export function MeScreen() {
   const router = useRouter();
   const { userId, email, oauthAvatarUrl, assignments, activeIndex } = useSessionStore();
   const { logout, pending } = useLogout();
+  const [deleting, setDeleting] = useState(false);
   const active = assignments[activeIndex];
 
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState<ProfileDetail | null>(null);
   const [detail, setDetail] = useState<Detail>(null);
+
+  function onDeletePress() {
+    Alert.alert(
+      "Delete Account?",
+      "This will permanently delete your account and cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: onConfirmDelete },
+      ],
+    );
+  }
+
+  async function onConfirmDelete() {
+    setDeleting(true);
+    try {
+      await deleteOwnAccount();
+      // Mirrors useLogout's order: the server call before the local state
+      // clear. The account is gone server-side at this point, so a failed
+      // sign-out here (offline, already-expired token) must not block the
+      // exit -- it's deliberately swallowed the same way useLogout swallows
+      // it, since persistSession + AsyncStorage otherwise leaves a token on
+      // disk that a later cold start would try to bootstrap a session from.
+      await signOut().catch(() => {});
+      useSessionStore.getState().setSignedOut();
+      router.replace(asHref("/login"));
+    } catch (e) {
+      Alert.alert(
+        "Couldn't delete your account",
+        e instanceof Error ? e.message : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   /**
    * Which tenant row belongs to the active role.
@@ -258,9 +295,27 @@ export function MeScreen() {
         label={pending ? "Signing out…" : "Log Out"}
         accessibilityLabel="Log Out"
         variant="quietDanger"
+        // The default quietDanger outline (scheme.border, #D9DDD4) sits too
+        // close in value to this card's own surface to read as an edge --
+        // signing out destroys nothing, so it gets the board's own forest
+        // green rather than the danger red Delete Account keeps below.
+        borderColor="#2D6B4F"
         loading={pending}
         haptic="none"
         onPress={() => void logout()}
+      />
+      <View style={{ height: tokens.space[2] }} />
+      <PillButton
+        label="Delete Account"
+        accessibilityLabel="Delete Account"
+        variant="quietDanger"
+        // Same visibility problem as Log Out, but this one destroys the
+        // account -- the outline stays in the danger family rather than
+        // borrowing the calmer green above it.
+        borderColor={tokens.color.danger}
+        loading={deleting}
+        haptic="none"
+        onPress={onDeletePress}
       />
     </Screen>
   );

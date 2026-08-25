@@ -12,6 +12,7 @@
 // grade to select. Do not restore it.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const MODEL = "gemini-flash-latest";
 const RETRY_MODEL = "gemini-pro-latest";
@@ -305,9 +306,14 @@ async function callGemini(
 }
 
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
   try {
     const { imageBase64, mimeType } = await req.json();
-    if (!imageBase64) return Response.json({ error: "No image supplied" }, { status: 400 });
+    if (!imageBase64) {
+      return Response.json({ error: "No image supplied" }, { status: 400, headers: corsHeaders });
+    }
 
     // Service role, because the catalog read has to succeed for an anonymous
     // browse too, and because the prices attached below must come from the
@@ -329,7 +335,7 @@ Deno.serve(async (req) => {
     if (rows.length === 0) {
       return Response.json(
         { error: "No price catalog is published yet, so nothing can be quoted." },
-        { status: 503 },
+        { status: 503, headers: corsHeaders },
       );
     }
 
@@ -421,16 +427,19 @@ Deno.serve(async (req) => {
       }];
     });
 
-    return Response.json({
-      items: priced,
-      totalCents: priced.reduce((sum, i) => sum + i.lineTotalCents, 0),
-      catalogVersionId: priced[0]?.catalogVersionId ?? null,
-    });
+    return Response.json(
+      {
+        items: priced,
+        totalCents: priced.reduce((sum, i) => sum + i.lineTotalCents, 0),
+        catalogVersionId: priced[0]?.catalogVersionId ?? null,
+      },
+      { headers: corsHeaders },
+    );
   } catch (e) {
     console.error("appraise failed", e);
     return Response.json(
       { error: "Couldn't read that photo. Try again with more light, or list the items by hand." },
-      { status: 502 },
+      { status: 502, headers: corsHeaders },
     );
   }
 });
