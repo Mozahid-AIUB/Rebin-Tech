@@ -3,17 +3,12 @@ import { Linking, Pressable, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 import { LEGAL_URLS, loginSchema } from "@rebin/shared";
-import { AppText, AuthButton, AuthDivider, AuthInput, AuthScreen, FONT, LegalCopy, SocialButton, authTokens } from "@rebin/ui";
+import { AppText, AuthButton, AuthInput, AuthScreen, FONT, LegalCopy, authTokens } from "@rebin/ui";
 import { useLogin } from "../../src/hooks/useLogin";
 
 // See RoleGuard.tsx's and the root _layout.tsx's own `asHref` for the
-// identical reasoning. Two call sites in this file need it: the "Not you?"
-// link back to "/" (a real, existing route, so this is just satisfying the
-// broader union type) and "Forgot password" -> "/forgot-password", a screen
-// this task doesn't build (out of scope, same as the brief's own literal
-// reference to it) so Expo Router's codegen'd route typing doesn't know it
-// yet. Both are known, hand-authored route names, never unvalidated user
-// input, so this cast can't hide a typo class of bug.
+// identical reasoning. "/signup" is a known, hand-authored route name, never
+// unvalidated user input, so this cast can't hide a typo class of bug.
 function asHref(path: string): Href {
   return path as Href;
 }
@@ -82,20 +77,16 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
-  const [socialNotice, setSocialNotice] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(true);
+  const [forgotNotice, setForgotNotice] = useState(false);
 
-  // Real Google/Apple sign-in needs native SDK setup (OAuth client IDs,
-  // Apple Sign In entitlements, a token-exchange endpoint) that Task 16
-  // builds -- not yet wired. Rather than a silent no-op (which would look
-  // broken/unresponsive to a real tester tapping the button) or a fake
-  // success, tapping either button surfaces an honest, visible status.
-  function onSocialPress(provider: "google" | "apple") {
-    setSocialNotice(
-      provider === "google"
-        ? "Sign in with Google is coming soon."
-        : "Sign in with Apple is coming soon.",
-    );
+  // The master plan lists S05 (Forgot Password) as P1 -- a Supabase-hosted
+  // reset-email flow with no custom UI built yet. Routing to "/forgot-password"
+  // hit a route that doesn't exist, a dead tap Apple's reviewer would read as
+  // the same class of bug as the Sign in with Apple crash. An honest, visible
+  // status beats a silent no-op until S05 is actually built.
+  function onForgotPassword() {
+    setForgotNotice(true);
   }
 
   function onSubmit() {
@@ -152,8 +143,8 @@ export default function Login() {
 
       {/* Spacing here is deliberately uneven, not a uniform stack: the two
           fields sit tight as one group, then each boundary (options row ->
-          CTA -> divider -> social) opens up a step. Even gaps everywhere give
-          the eye no grouping to latch onto. */}
+          CTA) opens up a step. Even gaps everywhere give the eye no grouping
+          to latch onto. */}
       <View style={{ marginTop: 2, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
         {/* UI-only for now, same P2a-style pattern used elsewhere in this
             plan (control is visible/wired to local state; no persistence
@@ -163,7 +154,7 @@ export default function Login() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Forgot password"
-          onPress={() => router.push(asHref("/forgot-password"))}
+          onPress={onForgotPassword}
           style={{ minHeight: 44, justifyContent: "center" }}
         >
           <AppText variant="bodySm" style={{ color: authTokens.link }}>
@@ -172,24 +163,15 @@ export default function Login() {
         </Pressable>
       </View>
 
+      {forgotNotice ? (
+        <AppText variant="bodySm" style={{ color: authTokens.muted, textAlign: "center" }}>
+          Password reset is coming soon.
+        </AppText>
+      ) : null}
+
       <View style={{ marginTop: 10 }}>
         <AuthButton label="Log In" onPress={onSubmit} loading={isPending} />
       </View>
-
-      <View style={{ marginTop: 10 }}>
-        <AuthDivider label="or" />
-      </View>
-
-      <View style={{ gap: 10 }}>
-        <SocialButton provider="google" onPress={() => onSocialPress("google")} />
-        <SocialButton provider="apple" onPress={() => onSocialPress("apple")} />
-      </View>
-
-      {socialNotice ? (
-        <AppText variant="bodySm" style={{ color: authTokens.muted, textAlign: "center" }}>
-          {socialNotice}
-        </AppText>
-      ) : null}
 
       {/* One footer, not three. This screen previously stacked three centered
           link rows (sign up / legal / "Not you? Back to home"); the last was
