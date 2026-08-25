@@ -119,13 +119,19 @@ export default function SignupRegister() {
   // Signing in here rather than sending the user to /login: the account is
   // usable the moment it exists (migration 0017), and asking someone to retype
   // the password they chose thirty seconds ago is friction with nothing behind
-  // it. The root layout watches the session and routes to the right portal on
-  // its own, so there is no navigation to do afterwards.
+  // it. The root layout's RootRedirect watches the session and routes to the
+  // right portal on its own -- but only while sitting at "/", the app's
+  // literal entry route (a deliberate restriction, so a signed-in user
+  // browsing deeper in their portal is never yanked back to its dashboard).
+  // This screen is "/(auth)/signup/register", not "/", so without navigating
+  // there first, RootRedirect never gets a chance to run and "Go to my
+  // dashboard" does nothing visible even after a successful sign-in.
   async function onContinue() {
     setContinuing(true);
     setServerError(null);
     try {
       await signIn(String(values.email ?? ""), String(values.password ?? ""));
+      router.replace(asHref("/"));
     } catch {
       // The account is registered either way -- falling back to the login
       // screen is a working path, not an error worth alarming them with.
