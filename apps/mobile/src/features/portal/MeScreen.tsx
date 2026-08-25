@@ -1,7 +1,8 @@
 import { useCallback, useState } from "react";
-import { Pressable, View } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import {
+  deleteOwnAccount,
   getBusinessDetail,
   getOrganizationDetail,
   getProfileDetail,
@@ -98,11 +99,39 @@ export function MeScreen() {
   const router = useRouter();
   const { userId, email, oauthAvatarUrl, assignments, activeIndex } = useSessionStore();
   const { logout, pending } = useLogout();
+  const [deleting, setDeleting] = useState(false);
   const active = assignments[activeIndex];
 
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState<ProfileDetail | null>(null);
   const [detail, setDetail] = useState<Detail>(null);
+
+  function onDeletePress() {
+    Alert.alert(
+      "Delete Account?",
+      "This will permanently delete your account and cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: onConfirmDelete },
+      ],
+    );
+  }
+
+  async function onConfirmDelete() {
+    setDeleting(true);
+    try {
+      await deleteOwnAccount();
+      useSessionStore.getState().setSignedOut();
+      router.replace(asHref("/login"));
+    } catch (e) {
+      Alert.alert(
+        "Couldn't delete your account",
+        e instanceof Error ? e.message : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   /**
    * Which tenant row belongs to the active role.
@@ -261,6 +290,15 @@ export function MeScreen() {
         loading={pending}
         haptic="none"
         onPress={() => void logout()}
+      />
+      <View style={{ height: tokens.space[2] }} />
+      <PillButton
+        label="Delete Account"
+        accessibilityLabel="Delete Account"
+        variant="quietDanger"
+        loading={deleting}
+        haptic="none"
+        onPress={onDeletePress}
       />
     </Screen>
   );
