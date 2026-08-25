@@ -72,8 +72,19 @@ because one participant's login was removed.
 
 Checked in this order inside `delete_own_account()`:
 
-1. **Caller holds a platform role** (`platform_owner`/`ops`/`support`/
-   `finance`). Blocked outright: *"Remove your platform access first."*
+1. **Caller holds any platform role** (`platform_owner`, `platform_ops`,
+   `platform_support`, or `platform_finance`). Blocked outright: *"Remove
+   your platform access first."* This check is a direct `role_assignments`
+   lookup for any of the four roles with `revoked_at is null` — **not**
+   `is_platform_staff()`, which 0032 deliberately defines to exclude
+   `platform_support` (it only reads, never writes, so write-gating RPCs
+   don't need to name it). That distinction is for RPCs that gate a write by
+   platform *authority*; self-deletion is gated by platform *membership* —
+   a support or finance account still holds real access to tenant data and
+   still needs another operator to revoke it first, same as an owner or ops
+   account. Using `is_platform_staff()` here would let `platform_support`
+   and `platform_finance` accounts delete themselves straight through,
+   leaving `role_assignments` rows granted to a now-deleted `auth.users` id.
    Mirrors 0039's own stance — `revoke_operator` already refuses to let
    platform staff remove their own access in one step (self-removal mid-
    session is the specific mistake 0039 exists to prevent), and letting
@@ -110,7 +121,12 @@ declare
   v_uid uuid := auth.uid();
   v_other_members integer;
 begin
-  if is_platform_staff() then
+  if exists (
+    select 1 from role_assignments
+     where user_id = v_uid
+       and role in ('platform_owner','platform_ops','platform_support','platform_finance')
+       and revoked_at is null
+  ) then
     raise exception 'Remove your platform access first' using errcode = '42501';
   end if;
 
