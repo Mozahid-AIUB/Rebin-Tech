@@ -3,16 +3,23 @@ import SignupRegister from "../app/(auth)/signup/register";
 
 const mockOrg = jest.fn();
 const mockBusiness = jest.fn();
+const mockSignIn = jest.fn();
 jest.mock("@rebin/api", () => ({
   signUpOrganization: (...a: unknown[]) => mockOrg(...a),
   signUpBusiness: (...a: unknown[]) => mockBusiness(...a),
+  signIn: (...a: unknown[]) => mockSignIn(...a),
 }));
 
 // Overridden per-test to simulate arriving from a specific role card.
 // Prefixed `mock` so jest.mock's factory is allowed to close over it.
 let mockRouteParams: { role?: string } = {};
+// A stable reference, not a fresh jest.fn() per useRouter() call: onContinue
+// (register.tsx) reads router.replace across a render caused by setDone(true),
+// so a test asserting on it needs the same mock instance the component
+// actually calls, not a new one minted the next time useRouter() runs.
+const mockReplace = jest.fn();
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ replace: jest.fn(), push: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ replace: mockReplace, push: jest.fn(), back: jest.fn() }),
   useLocalSearchParams: () => mockRouteParams,
 }));
 
@@ -116,5 +123,41 @@ describe("Signup registration form", () => {
         businessType: "repair_shop",
       }),
     );
+  });
+
+  // RootRedirect (app/_layout.tsx) only ever evaluates resolveInitialRoute
+  // while sitting at "/" -- a signed-in user browsing deeper in their portal
+  // must never be yanked back to its dashboard by an unrelated render. This
+  // screen is "/(auth)/signup/register", not "/", so onContinue has to
+  // navigate there itself or RootRedirect never gets a chance to run and the
+  // button does nothing after a successful sign-in.
+  it("navigates to \"/\" after signing in, so RootRedirect can route to the right portal", async () => {
+    mockRouteParams = { role: "business" };
+    mockBusiness.mockResolvedValue({ userId: "u1", businessId: "b1" });
+    mockSignIn.mockResolvedValue({ userId: "u1" });
+    await render(<SignupRegister />);
+    await fillBusinessForm();
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Go to my dashboard" })).toBeTruthy());
+    await fireEvent.press(screen.getByRole("button", { name: "Go to my dashboard" }));
+
+    await waitFor(() => expect(mockSignIn).toHaveBeenCalledWith("dana@rebin.test", "RebinTech2026!"));
+    expect(mockReplace).toHaveBeenCalledWith("/");
+  });
+
+  it("falls back to the login screen if the post-signup sign-in fails", async () => {
+    mockRouteParams = { role: "business" };
+    mockBusiness.mockResolvedValue({ userId: "u1", businessId: "b1" });
+    mockSignIn.mockRejectedValue(new Error("network"));
+    await render(<SignupRegister />);
+    await fillBusinessForm();
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Go to my dashboard" })).toBeTruthy());
+    await fireEvent.press(screen.getByRole("button", { name: "Go to my dashboard" }));
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/login"));
+    expect(mockReplace).not.toHaveBeenCalledWith("/");
   });
 });
