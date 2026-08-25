@@ -6,6 +6,7 @@ import {
   getBusinessDetail,
   getOrganizationDetail,
   getProfileDetail,
+  signOut,
   updateOwnProfile,
   useSessionStore,
   type BusinessDetail,
@@ -121,6 +122,13 @@ export function MeScreen() {
     setDeleting(true);
     try {
       await deleteOwnAccount();
+      // Mirrors useLogout's order: the server call before the local state
+      // clear. The account is gone server-side at this point, so a failed
+      // sign-out here (offline, already-expired token) must not block the
+      // exit -- it's deliberately swallowed the same way useLogout swallows
+      // it, since persistSession + AsyncStorage otherwise leaves a token on
+      // disk that a later cold start would try to bootstrap a session from.
+      await signOut().catch(() => {});
       useSessionStore.getState().setSignedOut();
       router.replace(asHref("/login"));
     } catch (e) {

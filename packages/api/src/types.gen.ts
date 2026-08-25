@@ -605,38 +605,50 @@ export type Database = {
       }
       price_items: {
         Row: {
+          aluminium_g: number | null
           avg_weight_g: number | null
           catalog_version_id: string
           category: Database["public"]["Enums"]["device_category_enum"]
           component_key: string
+          copper_g: number | null
           created_at: string
           display_name: string
+          gold_mg: number | null
           grade: Database["public"]["Enums"]["price_grade_enum"]
           id: string
+          steel_g: number | null
           unit: Database["public"]["Enums"]["price_unit_enum"]
           unit_price_cents: number
         }
         Insert: {
+          aluminium_g?: number | null
           avg_weight_g?: number | null
           catalog_version_id: string
           category: Database["public"]["Enums"]["device_category_enum"]
           component_key: string
+          copper_g?: number | null
           created_at?: string
           display_name: string
+          gold_mg?: number | null
           grade: Database["public"]["Enums"]["price_grade_enum"]
           id?: string
+          steel_g?: number | null
           unit?: Database["public"]["Enums"]["price_unit_enum"]
           unit_price_cents: number
         }
         Update: {
+          aluminium_g?: number | null
           avg_weight_g?: number | null
           catalog_version_id?: string
           category?: Database["public"]["Enums"]["device_category_enum"]
           component_key?: string
+          copper_g?: number | null
           created_at?: string
           display_name?: string
+          gold_mg?: number | null
           grade?: Database["public"]["Enums"]["price_grade_enum"]
           id?: string
+          steel_g?: number | null
           unit?: Database["public"]["Enums"]["price_unit_enum"]
           unit_price_cents?: number
         }
@@ -946,6 +958,7 @@ export type Database = {
         Args: { p_accept: boolean; p_quote_id: string }
         Returns: undefined
       }
+      delete_own_account: { Args: never; Returns: undefined }
       grant_operator: { Args: { p_email: string }; Returns: string }
       has_role: {
         Args: {
@@ -1173,6 +1186,23 @@ export type Database = {
               p_component_key: string
               p_display_name: string
               p_grade: Database["public"]["Enums"]["price_grade_enum"]
+              p_unit: Database["public"]["Enums"]["price_unit_enum"]
+              p_unit_price_cents: number
+              p_version_id: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_aluminium_g?: number
+              p_avg_weight_g?: number
+              p_category: Database["public"]["Enums"]["device_category_enum"]
+              p_component_key: string
+              p_copper_g?: number
+              p_display_name: string
+              p_gold_mg?: number
+              p_grade: Database["public"]["Enums"]["price_grade_enum"]
+              p_steel_g?: number
               p_unit: Database["public"]["Enums"]["price_unit_enum"]
               p_unit_price_cents: number
               p_version_id: string

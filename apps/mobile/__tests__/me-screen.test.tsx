@@ -257,6 +257,11 @@ describe("S71 Me", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Delete Account" }));
 
     await waitFor(() => expect(mockDeleteAccount).toHaveBeenCalledTimes(1));
+    // The account is gone server-side once deleteOwnAccount resolves; the
+    // local Supabase session must also be cleared (matching useLogout's
+    // pattern), or the persisted token on disk causes a stale-session
+    // bootstrap on the next cold start.
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
     expect(useSessionStore.getState().status).toBe("signed-out");
     expect(mockReplace).toHaveBeenCalledWith("/login");
   });

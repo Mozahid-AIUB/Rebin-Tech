@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
 
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) {
-    return Response.json({ error: "Not signed in" }, { status: 401 });
+    return Response.json({ error: "Not signed in (no token)" }, { status: 401 });
   }
 
   // The caller, as themselves. Their token, the anon key, RLS applying --
@@ -36,7 +36,11 @@ Deno.serve(async (req) => {
     error: userError,
   } = await caller.auth.getUser();
   if (userError || !user) {
-    return Response.json({ error: "Not signed in" }, { status: 401 });
+    // Distinct from the missing-header case above: this is a token that
+    // was present but the server rejected -- expired, revoked, malformed.
+    // The two used to share one string ("Not signed in"), which made a
+    // support conversation or a log impossible to tell apart.
+    return Response.json({ error: "Not signed in (invalid session)" }, { status: 401 });
   }
 
   const { error: rpcError } = await caller.rpc("delete_own_account");
