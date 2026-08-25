@@ -64,9 +64,9 @@ alter table payouts
   add  constraint payouts_paid_by_fkey
        foreign key (paid_by) references profiles(id) on delete set null;
 
-alter table collection_lines
-  drop constraint collection_lines_resolved_by_fkey,
-  add  constraint collection_lines_resolved_by_fkey
+alter table job_assignments
+  drop constraint job_assignments_resolved_by_fkey,
+  add  constraint job_assignments_resolved_by_fkey
        foreign key (resolved_by) references profiles(id) on delete set null;
 
 comment on constraint audit_events_actor_id_fkey on audit_events is
