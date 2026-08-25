@@ -295,6 +295,11 @@ export function MeScreen() {
         label={pending ? "Signing out…" : "Log Out"}
         accessibilityLabel="Log Out"
         variant="quietDanger"
+        // The default quietDanger outline (scheme.border, #D9DDD4) sits too
+        // close in value to this card's own surface to read as an edge --
+        // signing out destroys nothing, so it gets the board's own forest
+        // green rather than the danger red Delete Account keeps below.
+        borderColor="#2D6B4F"
         loading={pending}
         haptic="none"
         onPress={() => void logout()}
@@ -304,6 +309,10 @@ export function MeScreen() {
         label="Delete Account"
         accessibilityLabel="Delete Account"
         variant="quietDanger"
+        // Same visibility problem as Log Out, but this one destroys the
+        // account -- the outline stays in the danger family rather than
+        // borrowing the calmer green above it.
+        borderColor={tokens.color.danger}
         loading={deleting}
         haptic="none"
         onPress={onDeletePress}

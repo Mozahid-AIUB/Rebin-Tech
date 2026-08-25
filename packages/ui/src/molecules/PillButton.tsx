@@ -37,6 +37,14 @@ export function PillButton({
    * halfway through the action.
    */
   accessibilityLabel,
+  /**
+   * Escape hatch for a `ghost`/`quietDanger` button whose outline needs to
+   * read as a real edge rather than the variant's default hairline -- e.g.
+   * against a card surface close in value to `scheme.border`, where the
+   * default all but disappears. Leave unset everywhere else; this is not a
+   * general theming knob.
+   */
+  borderColor,
 }: {
   label: string;
   onPress: () => void;
@@ -46,6 +54,7 @@ export function PillButton({
   fullWidth?: boolean;
   haptic?: "impact" | "success" | "none";
   accessibilityLabel?: string;
+  borderColor?: string;
 }) {
   const { accent, accentText, onAccent } = usePortalTheme();
   const scheme = useScheme();
@@ -100,7 +109,8 @@ export function PillButton({
         borderWidth: variant === "ghost" || variant === "quietDanger" ? 1 : 0,
         // A ghost button's outline should read as a boundary, not as a second
         // primary button competing with the real one above it.
-        borderColor: variant === "ghost" || variant === "quietDanger" ? scheme.border : accent,
+        borderColor:
+          borderColor ?? (variant === "ghost" || variant === "quietDanger" ? scheme.border : accent),
         opacity: inert ? 0.4 : 1,
       }}
     >
