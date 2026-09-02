@@ -60,9 +60,18 @@ export default function SignupRolePicker() {
   return (
     <AuthScreen
       title="How will you use Rebin?"
-      subtitle="Pick the one that fits you. This sets up the right account — you can't switch it later without support."
+      // The three cards below list what each account gets, the same shape a
+      // paid-tier picker uses -- and Apple's reviewer read it as exactly
+      // that, rejecting the app under 3.1.1 for "external mechanisms for
+      // purchases or subscriptions" on a screen where nothing is purchased.
+      // Every account here is free; the business/supplier cards are the
+      // ones a reviewer skimming for pricing language would land on
+      // ("Compare buyer price offers," "Track payouts"), so the
+      // disambiguation belongs on this screen, read before any of them.
+      subtitle="Pick the one that fits you. Every account is free — you get paid for the e-waste you provide, you never pay us. This sets up the right account — you can't switch it later without support."
       onBack={() => router.back()}
       backLabel="Back to log in"
+      theme="light"
     >
       <View style={{ marginTop: 2, gap: 10 }}>
         {ROLES.map((role) => (

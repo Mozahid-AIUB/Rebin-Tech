@@ -5,7 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { authTokens } from "../tokens";
+import { authTokens, tokens } from "../tokens";
 import { AppText } from "../atoms/AppText";
 import { BotanicalBackdrop } from "./BotanicalBackdrop";
 import { RebinMark } from "./RebinMark";
@@ -17,6 +17,7 @@ export function AuthScreen({
   footer,
   onBack,
   backLabel = "Go back",
+  theme = "dark",
 }: {
   title: string;
   subtitle?: string;
@@ -27,12 +28,33 @@ export function AuthScreen({
    * so the mark keeps its role as the flow's visual anchor. */
   onBack?: () => void;
   backLabel?: string;
+  /**
+   * "light" fades the dark-forest gradient to white toward the bottom of the
+   * screen instead of holding solid green -- built for the signup role
+   * picker, whose card list (price/payout bullet points) an App Store
+   * reviewer misread as a paid-tier picker under 3.1.1. Every other pre-auth
+   * screen omits this and keeps the original dark treatment unchanged.
+   */
+  theme?: "dark" | "light";
 }) {
   const insets = useSafeAreaInsets();
+  const isLight = theme === "light";
+  const c = isLight
+    // textSecondary, not the lighter `muted` token: the subtitle sits right
+    // where the gradient below is still fading through mid-tone green, and
+    // muted's gray reads at near-equal contrast against both that and pure
+    // white -- exactly the range where it disappears.
+    ? { text: tokens.color.text, muted: tokens.color.textSecondary, border: tokens.color.border, pressedBg: tokens.color.surfaceAlt }
+    : { text: authTokens.text, muted: authTokens.muted, border: authTokens.border, pressedBg: authTokens.surfacePressed };
   return (
-    <View style={{ flex: 1, backgroundColor: authTokens.bg }}>
+    <View style={{ flex: 1, backgroundColor: isLight ? "#FFFFFF" : authTokens.bg }}>
       <LinearGradient
-        colors={[authTokens.bg, authTokens.bgDeep]}
+        colors={isLight ? [authTokens.bg, "#FFFFFF"] : [authTokens.bg, authTokens.bgDeep]}
+        // The light variant's green band is a thin strip behind the back
+        // button/logo only -- held past the title/subtitle the fade's
+        // mid-tone green was exactly where text contrast was worst (this
+        // was too tall a fade before and made the subtitle unreadable).
+        locations={isLight ? [0, 0.13] : undefined}
         style={{ position: "absolute", inset: 0 }}
       />
       <BotanicalBackdrop />
@@ -72,8 +94,8 @@ export function AuthScreen({
                 alignItems: "center",
                 justifyContent: "center",
                 borderWidth: 1,
-                borderColor: authTokens.border,
-                backgroundColor: pressed ? authTokens.surfacePressed : "transparent",
+                borderColor: c.border,
+                backgroundColor: pressed ? c.pressedBg : "transparent",
                 // Optically aligns the glyph with the 24px screen gutter --
                 // a 44px tap target padded to the gutter would push the arrow
                 // visibly inboard of the title below it.
@@ -83,7 +105,7 @@ export function AuthScreen({
               <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
                 <Path
                   d="M12 4 L6 10 L12 16"
-                  stroke={authTokens.text}
+                  stroke={c.text}
                   strokeWidth="1.8"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -96,9 +118,9 @@ export function AuthScreen({
           {/* Tighter under a back arrow than under the brand mark: the arrow
               is a control the title follows, not a logo it needs clearance
               from. */}
-          <AppText variant="display" style={{ color: authTokens.text, marginTop: onBack ? 14 : 20 }}>{title}</AppText>
+          <AppText variant="display" style={{ color: c.text, marginTop: onBack ? 14 : 20 }}>{title}</AppText>
           {subtitle ? (
-            <AppText variant="body" style={{ color: authTokens.muted, marginTop: 6 }}>{subtitle}</AppText>
+            <AppText variant="body" style={{ color: c.muted, marginTop: 6 }}>{subtitle}</AppText>
           ) : null}
         </Animated.View>
 

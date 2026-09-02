@@ -226,6 +226,15 @@ export default function BizDashboard() {
               tone={stats.acceptedValueCents > 0 ? "default" : "muted"}
             />
           </StatRow>
+          {/* Three unlabelled dollar figures read as a cart total as easily
+              as an amount owed to you -- an App Store reviewer read this
+              screen exactly that way (Guideline 3.1.1, "external mechanism
+              for purchases"). Every figure on this dashboard is money Rebin
+              Tech owes the vendor, never the reverse, and that has to be
+              said next to the numbers, not just be true of the business. */}
+          <AppText variant="label" tone="muted">
+            You'll be paid this — Rebin Tech never charges you
+          </AppText>
           {/* The number above comes from the catalog, not a scale. For a
               supplier the scale has the final say, so an unqualified total
               here would be a promise this dashboard can't keep. */}
